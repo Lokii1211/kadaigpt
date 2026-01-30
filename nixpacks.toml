@@ -2,12 +2,12 @@
 # Builds both frontend and backend in a single deployment
 
 [phases.setup]
-nixPkgs = ["nodejs-18_x", "python311", "python311Packages.pip"]
+nixPkgs = ["nodejs-18_x", "python311"]
 
 [phases.install]
 cmds = [
     "cd frontend && npm ci",
-    "cd backend && pip install -r requirements.txt"
+    "cd backend && python -m venv venv && . venv/bin/activate && pip install -r requirements.txt"
 ]
 
 [phases.build]
@@ -16,4 +16,4 @@ cmds = [
 ]
 
 [start]
-cmd = "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+cmd = "cd backend && . venv/bin/activate && python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
