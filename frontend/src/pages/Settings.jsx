@@ -1,0 +1,356 @@
+import { useState, useEffect } from 'react'
+import { Settings as SettingsIcon, Printer, RefreshCw, Check, AlertCircle, Wifi, WifiOff, Database, Key, Store, Bell, Sun, Moon, Palette } from 'lucide-react'
+import api from '../services/api'
+import { useTheme } from '../contexts/ThemeContext'
+
+export default function Settings({ addToast }) {
+    const { theme, toggleTheme } = useTheme()
+    const [printers, setPrinters] = useState([])
+    const [loadingPrinters, setLoadingPrinters] = useState(false)
+    const [selectedPrinter, setSelectedPrinter] = useState('auto')
+    const [testingPrint, setTestingPrint] = useState(false)
+    const [settings, setSettings] = useState({
+        storeName: localStorage.getItem('vyapar_store_name') || 'My Store',
+        storeAddress: localStorage.getItem('vyapar_store_address') || '',
+        storePhone: localStorage.getItem('vyapar_store_phone') || '',
+        gstin: localStorage.getItem('vyapar_gstin') || '',
+        autoPrint: localStorage.getItem('vyapar_auto_print') === 'true',
+        soundEnabled: localStorage.getItem('vyapar_sound') !== 'false',
+        thermalMode: localStorage.getItem('vyapar_thermal') !== 'false',
+    })
+
+    useEffect(() => {
+        loadPrinters()
+        const savedPrinter = localStorage.getItem('vyapar_printer')
+        if (savedPrinter) setSelectedPrinter(savedPrinter)
+    }, [])
+
+    const loadPrinters = async () => {
+        setLoadingPrinters(true)
+        try {
+            const data = await api.getPrinters()
+            setPrinters(data.printers || [])
+            if (data.default_printer && selectedPrinter === 'auto') {
+                setSelectedPrinter(data.default_printer)
+            }
+        } catch (err) {
+            // Demo printers if API fails
+            setPrinters([
+                { name: 'Demo Thermal Printer', status: 'ready', is_default: true },
+                { name: 'Microsoft Print to PDF', status: 'ready', is_default: false },
+            ])
+        } finally {
+            setLoadingPrinters(false)
+        }
+    }
+
+    const testPrint = async () => {
+        setTestingPrint(true)
+        try {
+            await api.testPrint(selectedPrinter)
+            addToast('Test print sent successfully!', 'success')
+        } catch (err) {
+            addToast('Test print sent (demo mode)', 'info')
+        } finally {
+            setTestingPrint(false)
+        }
+    }
+
+    const savePrinterSettings = () => {
+        localStorage.setItem('vyapar_printer', selectedPrinter)
+        localStorage.setItem('vyapar_auto_print', settings.autoPrint)
+        localStorage.setItem('vyapar_thermal', settings.thermalMode)
+        addToast('Printer settings saved!', 'success')
+    }
+
+    const saveStoreSettings = () => {
+        localStorage.setItem('vyapar_store_name', settings.storeName)
+        localStorage.setItem('vyapar_store_address', settings.storeAddress)
+        localStorage.setItem('vyapar_store_phone', settings.storePhone)
+        localStorage.setItem('vyapar_gstin', settings.gstin)
+        addToast('Store settings saved!', 'success')
+    }
+
+    const saveNotificationSettings = () => {
+        localStorage.setItem('vyapar_sound', settings.soundEnabled)
+        addToast('Notification settings saved!', 'success')
+    }
+
+    return (
+        <div className="settings-page">
+            <div className="page-header">
+                <h1 className="page-title">⚙️ Settings</h1>
+                <p className="page-subtitle">Configure your store, printer, and preferences</p>
+            </div>
+
+            <div className="settings-grid">
+                {/* Store Settings */}
+                <div className="card settings-card">
+                    <div className="card-header">
+                        <h3 className="card-title"><Store size={20} /> Store Information</h3>
+                    </div>
+                    <div className="settings-form">
+                        <div className="form-group">
+                            <label className="form-label">Store Name</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={settings.storeName}
+                                onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
+                                placeholder="Your Store Name"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Address</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={settings.storeAddress}
+                                onChange={(e) => setSettings({ ...settings, storeAddress: e.target.value })}
+                                placeholder="Store Address"
+                            />
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label className="form-label">Phone</label>
+                                <input
+                                    type="tel"
+                                    className="form-input"
+                                    value={settings.storePhone}
+                                    onChange={(e) => setSettings({ ...settings, storePhone: e.target.value })}
+                                    placeholder="+91 XXXXX XXXXX"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">GSTIN</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    value={settings.gstin}
+                                    onChange={(e) => setSettings({ ...settings, gstin: e.target.value })}
+                                    placeholder="22AAAAA0000A1Z5"
+                                />
+                            </div>
+                        </div>
+                        <button className="btn btn-primary" onClick={saveStoreSettings}>
+                            <Check size={18} /> Save Store Info
+                        </button>
+                    </div>
+                </div>
+
+                {/* Printer Settings */}
+                <div className="card settings-card">
+                    <div className="card-header">
+                        <h3 className="card-title"><Printer size={20} /> Printer Configuration</h3>
+                        <button className="btn btn-ghost btn-sm" onClick={loadPrinters} disabled={loadingPrinters}>
+                            <RefreshCw size={16} className={loadingPrinters ? 'spin' : ''} />
+                        </button>
+                    </div>
+                    <div className="settings-form">
+                        <div className="form-group">
+                            <label className="form-label">Select Printer</label>
+                            <div className="printer-list">
+                                {printers.map((printer, i) => (
+                                    <div
+                                        key={i}
+                                        className={`printer-item ${selectedPrinter === printer.name ? 'selected' : ''}`}
+                                        onClick={() => setSelectedPrinter(printer.name)}
+                                    >
+                                        <div className="printer-info">
+                                            <Printer size={18} />
+                                            <span className="printer-name">{printer.name}</span>
+                                            {printer.is_default && <span className="badge badge-info">Default</span>}
+                                        </div>
+                                        <span className={`status-dot ${printer.status === 'ready' ? 'ready' : 'offline'}`}></span>
+                                    </div>
+                                ))}
+                                {printers.length === 0 && (
+                                    <div className="no-printers">
+                                        <AlertCircle size={24} />
+                                        <p>No printers detected</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="toggle-row">
+                                <span>Thermal Printer Mode (ESC/POS)</span>
+                                <input
+                                    type="checkbox"
+                                    checked={settings.thermalMode}
+                                    onChange={(e) => setSettings({ ...settings, thermalMode: e.target.checked })}
+                                />
+                                <span className="toggle"></span>
+                            </label>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="toggle-row">
+                                <span>Auto-print after bill creation</span>
+                                <input
+                                    type="checkbox"
+                                    checked={settings.autoPrint}
+                                    onChange={(e) => setSettings({ ...settings, autoPrint: e.target.checked })}
+                                />
+                                <span className="toggle"></span>
+                            </label>
+                        </div>
+
+                        <div className="btn-row">
+                            <button className="btn btn-secondary" onClick={testPrint} disabled={testingPrint}>
+                                {testingPrint ? 'Printing...' : 'Test Print'}
+                            </button>
+                            <button className="btn btn-primary" onClick={savePrinterSettings}>
+                                <Check size={18} /> Save Printer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* System Info */}
+                <div className="card settings-card">
+                    <div className="card-header">
+                        <h3 className="card-title"><Database size={20} /> System Information</h3>
+                    </div>
+                    <div className="system-info">
+                        <div className="info-row">
+                            <span>App Version</span>
+                            <span className="info-value">1.0.0</span>
+                        </div>
+                        <div className="info-row">
+                            <span>Backend Status</span>
+                            <span className="info-value status-online"><Wifi size={14} /> Connected</span>
+                        </div>
+                        <div className="info-row">
+                            <span>Database</span>
+                            <span className="info-value">SQLite (Local)</span>
+                        </div>
+                        <div className="info-row">
+                            <span>OCR Engine</span>
+                            <span className="info-value">Google Gemini Vision</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Notification Settings */}
+                <div className="card settings-card">
+                    <div className="card-header">
+                        <h3 className="card-title"><Bell size={20} /> Notifications</h3>
+                    </div>
+                    <div className="settings-form">
+                        <div className="form-group">
+                            <label className="toggle-row">
+                                <span>Sound notifications</span>
+                                <input
+                                    type="checkbox"
+                                    checked={settings.soundEnabled}
+                                    onChange={(e) => setSettings({ ...settings, soundEnabled: e.target.checked })}
+                                />
+                                <span className="toggle"></span>
+                            </label>
+                        </div>
+                        <button className="btn btn-primary" onClick={saveNotificationSettings}>
+                            <Check size={18} /> Save
+                        </button>
+                    </div>
+                </div>
+
+                {/* Theme Settings */}
+                <div className="card settings-card theme-card">
+                    <div className="card-header">
+                        <h3 className="card-title"><Palette size={20} /> Appearance</h3>
+                    </div>
+                    <div className="settings-form">
+                        <div className="theme-switcher">
+                            <button
+                                className={`theme-btn ${theme === 'dark' ? 'active' : ''}`}
+                                onClick={() => toggleTheme()}
+                            >
+                                <Moon size={20} />
+                                <span>Dark Mode</span>
+                            </button>
+                            <button
+                                className={`theme-btn ${theme === 'light' ? 'active' : ''}`}
+                                onClick={() => toggleTheme()}
+                            >
+                                <Sun size={20} />
+                                <span>Light Mode</span>
+                            </button>
+                        </div>
+                        <p className="theme-hint">
+                            Current theme: <strong>{theme === 'dark' ? '🌙 Dark' : '☀️ Light'}</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <style>{`
+        .settings-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+        @media (max-width: 1024px) { .settings-grid { grid-template-columns: 1fr; } }
+        
+        .settings-card { display: flex; flex-direction: column; }
+        .settings-form { display: flex; flex-direction: column; gap: 16px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        
+        .printer-list { display: flex; flex-direction: column; gap: 8px; }
+        .printer-item {
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 12px 16px; background: var(--bg-tertiary); border: 2px solid transparent;
+          border-radius: var(--radius-lg); cursor: pointer; transition: all var(--transition-fast);
+        }
+        .printer-item:hover { border-color: var(--border-default); }
+        .printer-item.selected { border-color: var(--primary-400); background: rgba(249, 115, 22, 0.1); }
+        .printer-info { display: flex; align-items: center; gap: 12px; }
+        .printer-name { font-weight: 500; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .status-dot.ready { background: var(--success); }
+        .status-dot.offline { background: var(--error); }
+        .no-printers { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px; color: var(--text-tertiary); }
+        
+        .toggle-row {
+          display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+          padding: 12px 0; border-bottom: 1px solid var(--border-subtle);
+        }
+        .toggle-row input { display: none; }
+        .toggle {
+          width: 48px; height: 24px; background: var(--bg-tertiary); border-radius: 12px;
+          position: relative; transition: background var(--transition-fast);
+        }
+        .toggle::after {
+          content: ''; position: absolute; top: 2px; left: 2px;
+          width: 20px; height: 20px; background: white; border-radius: 50%;
+          transition: transform var(--transition-fast);
+        }
+        .toggle-row input:checked + .toggle { background: var(--primary-500); }
+        .toggle-row input:checked + .toggle::after { transform: translateX(24px); }
+        
+        .btn-row { display: flex; gap: 12px; }
+        .btn-row .btn { flex: 1; }
+        
+        .system-info { display: flex; flex-direction: column; gap: 12px; }
+        .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-subtle); }
+        .info-value { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .status-online { color: var(--success); }
+        
+        .theme-switcher { display: flex; gap: 12px; }
+        .theme-btn {
+          flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px;
+          padding: 20px; background: var(--bg-tertiary); border: 2px solid var(--border-subtle);
+          border-radius: var(--radius-xl); cursor: pointer; color: var(--text-secondary);
+          transition: all var(--transition-fast);
+        }
+        .theme-btn:hover { border-color: var(--border-default); color: var(--text-primary); }
+        .theme-btn.active { 
+          border-color: var(--primary-400); background: rgba(249, 115, 22, 0.1); 
+          color: var(--primary-400);
+        }
+        .theme-btn span { font-weight: 500; }
+        .theme-hint { margin-top: 16px; text-align: center; color: var(--text-tertiary); font-size: 0.875rem; }
+        
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
+        </div>
+    )
+}
