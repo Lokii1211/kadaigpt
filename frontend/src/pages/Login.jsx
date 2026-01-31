@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ShoppingCart, Mail, Lock, User, ArrowRight, Loader2, Sparkles, Zap, Shield, Wifi, Eye, EyeOff } from 'lucide-react'
 import api from '../services/api'
 
@@ -13,11 +13,6 @@ export default function Login({ onLogin }) {
     password: '',
     storeName: '',
   })
-
-  // Clear any stale token on mount
-  useEffect(() => {
-    api.logout() // Clear any old session
-  }, [])
 
   // Clear error when switching between login/register
   const toggleMode = () => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Settings as SettingsIcon, Printer, RefreshCw, Check, AlertCircle, Wifi, WifiOff, Database, Key, Store, Bell, Sun, Moon, Palette } from 'lucide-react'
+import { Settings as SettingsIcon, Printer, RefreshCw, Check, AlertCircle, Wifi, WifiOff, Database, Key, Store, Bell, Sun, Moon, Palette, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import api from '../services/api'
+import gstService from '../services/gstService'
 import { useTheme } from '../contexts/ThemeContext'
 
 export default function Settings({ addToast }) {
@@ -9,6 +10,8 @@ export default function Settings({ addToast }) {
     const [loadingPrinters, setLoadingPrinters] = useState(false)
     const [selectedPrinter, setSelectedPrinter] = useState('auto')
     const [testingPrint, setTestingPrint] = useState(false)
+    const [gstValidation, setGstValidation] = useState({ status: 'empty', message: '' })
+    const [verifyingGst, setVerifyingGst] = useState(false)
     const [settings, setSettings] = useState({
         storeName: localStorage.getItem('kadai_store_name') || 'My Store',
         storeAddress: localStorage.getItem('kadai_store_address') || '',
@@ -23,6 +26,12 @@ export default function Settings({ addToast }) {
         loadPrinters()
         const savedPrinter = localStorage.getItem('kadai_printer')
         if (savedPrinter) setSelectedPrinter(savedPrinter)
+
+        // Validate existing GSTIN on load
+        if (settings.gstin) {
+            const validation = gstService.validateRealtime(settings.gstin)
+            setGstValidation(validation)
+        }
     }, [])
 
     const loadPrinters = async () => {
@@ -63,7 +72,52 @@ export default function Settings({ addToast }) {
         addToast('Printer settings saved!', 'success')
     }
 
+    // Handle GSTIN change with real-time validation
+    const handleGstinChange = (value) => {
+        const upperValue = value.toUpperCase().replace(/\s/g, '')
+        setSettings({ ...settings, gstin: upperValue })
+
+        // Real-time validation
+        const validation = gstService.validateRealtime(upperValue)
+        setGstValidation(validation)
+    }
+
+    // Verify GSTIN with API
+    const verifyGstin = async () => {
+        if (!settings.gstin || settings.gstin.length !== 15) {
+            addToast('Please enter a complete 15-digit GSTIN', 'error')
+            return
+        }
+
+        setVerifyingGst(true)
+        try {
+            const result = await gstService.verifyWithAPI(settings.gstin)
+            if (result.verified) {
+                setGstValidation({
+                    status: 'verified',
+                    message: `✓ Verified: ${result.tradeName || result.legalName}`,
+                    details: result
+                })
+                addToast('GSTIN verified successfully!', 'success')
+            } else {
+                setGstValidation({
+                    status: 'error',
+                    message: result.error || 'Verification failed'
+                })
+                addToast(result.error || 'GSTIN verification failed', 'error')
+            }
+        } catch (error) {
+            addToast('Verification service unavailable', 'error')
+        } finally {
+            setVerifyingGst(false)
+        }
+    }
+
     const saveStoreSettings = () => {
+        if (settings.gstin && gstValidation.status === 'error') {
+            addToast('Please fix GSTIN errors before saving', 'error')
+            return
+        }
         localStorage.setItem('kadai_store_name', settings.storeName)
         localStorage.setItem('kadai_store_address', settings.storeAddress)
         localStorage.setItem('kadai_store_phone', settings.storePhone)
@@ -121,15 +175,42 @@ export default function Settings({ addToast }) {
                                     placeholder="+91 XXXXX XXXXX"
                                 />
                             </div>
-                            <div className="form-group">
+                            <div className="form-group gstin-group">
                                 <label className="form-label">GSTIN</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    value={settings.gstin}
-                                    onChange={(e) => setSettings({ ...settings, gstin: e.target.value })}
-                                    placeholder="22AAAAA0000A1Z5"
-                                />
+                                <div className="gstin-input-wrapper">
+                                    <input
+                                        type="text"
+                                        className={`form-input ${gstValidation.status === 'valid' || gstValidation.status === 'verified' ? 'valid' : gstValidation.status === 'error' ? 'error' : ''}`}
+                                        value={settings.gstin}
+                                        onChange={(e) => handleGstinChange(e.target.value)}
+                                        placeholder="22AAAAA0000A1Z5"
+                                        maxLength={15}
+                                    />
+                                    {gstValidation.status === 'valid' && (
+                                        <CheckCircle className="gstin-icon valid" size={18} />
+                                    )}
+                                    {gstValidation.status === 'verified' && (
+                                        <CheckCircle className="gstin-icon verified" size={18} />
+                                    )}
+                                    {gstValidation.status === 'error' && (
+                                        <XCircle className="gstin-icon error" size={18} />
+                                    )}
+                                </div>
+                                {gstValidation.message && (
+                                    <span className={`gstin-message ${gstValidation.status}`}>
+                                        {gstValidation.message}
+                                    </span>
+                                )}
+                                {settings.gstin.length === 15 && gstValidation.status === 'valid' && (
+                                    <button
+                                        className="btn btn-sm btn-secondary verify-btn"
+                                        onClick={verifyGstin}
+                                        disabled={verifyingGst}
+                                    >
+                                        {verifyingGst ? <Loader2 size={14} className="spin" /> : <Check size={14} />}
+                                        {verifyingGst ? 'Verifying...' : 'Verify GSTIN'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                         <button className="btn btn-primary" onClick={saveStoreSettings}>
@@ -350,6 +431,49 @@ export default function Settings({ addToast }) {
         
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* GSTIN Validation Styles */
+        .gstin-group { flex: 1.5; }
+        .gstin-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+        .gstin-input-wrapper .form-input {
+          padding-right: 40px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          font-family: monospace;
+        }
+        .gstin-input-wrapper .form-input.valid {
+          border-color: var(--success);
+        }
+        .gstin-input-wrapper .form-input.error {
+          border-color: var(--error);
+        }
+        .gstin-icon {
+          position: absolute;
+          right: 12px;
+          pointer-events: none;
+        }
+        .gstin-icon.valid { color: var(--success); }
+        .gstin-icon.verified { color: var(--primary-400); }
+        .gstin-icon.error { color: var(--error); }
+        .gstin-message {
+          display: block;
+          font-size: 0.75rem;
+          margin-top: 4px;
+          padding-left: 2px;
+        }
+        .gstin-message.valid, .gstin-message.verified, .gstin-message.partial { color: var(--success); }
+        .gstin-message.error { color: var(--error); }
+        .gstin-message.typing { color: var(--text-tertiary); }
+        .verify-btn {
+          margin-top: 8px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
       `}</style>
         </div>
     )

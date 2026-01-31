@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { Camera, Upload, FileText, Loader2, Check, AlertCircle, Edit2, Trash2, Plus, Sparkles, Lightbulb, X, Volume2 } from 'lucide-react'
 import api from '../services/api'
+import ocrService from '../services/ocrService'
 
 export default function OCRCapture({ addToast, setCurrentPage }) {
     const [image, setImage] = useState(null)
@@ -14,9 +15,9 @@ export default function OCRCapture({ addToast, setCurrentPage }) {
 
     const languages = [
         { code: 'en', label: 'English' },
-        { code: 'hi', label: 'हिंदी' },
-        { code: 'ta', label: 'தமிழ்' },
-        { code: 'te', label: 'తెలుగు' },
+        { code: 'hi', label: 'Hindi' },
+        { code: 'ta', label: 'Tamil' },
+        { code: 'te', label: 'Telugu' },
     ]
 
     const handleFileSelect = (e) => {
@@ -39,25 +40,24 @@ export default function OCRCapture({ addToast, setCurrentPage }) {
         setProcessing(true)
         setError('')
 
-        // Simulate AI processing (In production, this would call Gemini Vision API)
-        setTimeout(() => {
-            // Demo result - simulating OCR extraction
-            const demoResult = {
-                confidence: 94,
-                items: [
-                    { id: 1, name: 'Basmati Rice', quantity: 2, unit: 'kg', price: 85, confidence: 98 },
-                    { id: 2, name: 'Toor Dal', quantity: 1, unit: 'kg', price: 140, confidence: 95 },
-                    { id: 3, name: 'Sugar', quantity: 2, unit: 'kg', price: 45, confidence: 92 },
-                    { id: 4, name: 'Sunflower Oil', quantity: 1, unit: 'L', price: 180, confidence: 89 },
-                ],
-                customerName: 'Rajesh Kumar',
-                date: new Date().toISOString().split('T')[0],
-                total: 535
+        try {
+            // Use OCR service for extraction
+            const extractedData = await ocrService.processImage(image, language)
+
+            if (extractedData.success && extractedData.items.length > 0) {
+                setResult(extractedData)
+                addToast(`Extracted ${extractedData.items.length} items with ${extractedData.confidence}% confidence!`, 'success')
+            } else {
+                setError('Could not extract items from this image. Please try a clearer photo.')
+                addToast('Extraction failed. Try a clearer image.', 'error')
             }
-            setResult(demoResult)
+        } catch (err) {
+            console.error('OCR Error:', err)
+            setError('Failed to process image. Please try again.')
+            addToast('Processing failed', 'error')
+        } finally {
             setProcessing(false)
-            addToast('Bill extracted successfully!', 'success')
-        }, 3000)
+        }
     }
 
     const handleCreateBill = () => {

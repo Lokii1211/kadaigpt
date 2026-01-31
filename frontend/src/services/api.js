@@ -230,9 +230,14 @@ class ApiService {
     }
 
     logout() {
-        this.setToken(null)
+        this.token = null
+        // Clear all auth and user data from localStorage
+        localStorage.removeItem('kadai_token')
         localStorage.removeItem('kadai_store_name')
         localStorage.removeItem('kadai_gstin')
+        localStorage.removeItem('kadai_demo_mode')
+        localStorage.removeItem('kadai_store_address')
+        localStorage.removeItem('kadai_store_phone')
     }
 
     // Products endpoints
