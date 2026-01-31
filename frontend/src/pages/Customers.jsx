@@ -1,79 +1,109 @@
-import { useState } from 'react'
-import { Users, Search, Plus, Phone, IndianRupee, Calendar, ArrowUpRight, ArrowDownRight, X, Send, Check, AlertCircle } from 'lucide-react'
-
-// Demo customers with credit (Khata)
-const demoCustomers = [
-    { id: 1, name: "Rajesh Kumar", phone: "9876543210", credit: 2500, lastPurchase: "2026-01-30", totalPurchases: 45600, isPaid: false },
-    { id: 2, name: "Priya Sharma", phone: "9876543211", credit: 0, lastPurchase: "2026-01-29", totalPurchases: 23400, isPaid: true },
-    { id: 3, name: "Amit Patel", phone: "9876543212", credit: 1850, lastPurchase: "2026-01-28", totalPurchases: 67800, isPaid: false },
-    { id: 4, name: "Sunita Verma", phone: "9876543213", credit: 500, lastPurchase: "2026-01-27", totalPurchases: 12300, isPaid: false },
-    { id: 5, name: "Mohan Singh", phone: "9876543214", credit: 0, lastPurchase: "2026-01-25", totalPurchases: 34500, isPaid: true },
-]
+import { useState, useEffect } from 'react'
+import { Users, Search, Plus, Phone, IndianRupee, Calendar, X, Send, Check, AlertCircle, Loader2 } from 'lucide-react'
+import api from '../services/api'
 
 export default function Customers({ addToast }) {
-    const [customers, setCustomers] = useState(demoCustomers)
+    const [customers, setCustomers] = useState([])
+    const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
     const [showAddModal, setShowAddModal] = useState(false)
     const [selectedCustomer, setSelectedCustomer] = useState(null)
     const [newCustomer, setNewCustomer] = useState({ name: '', phone: '' })
     const [paymentAmount, setPaymentAmount] = useState('')
 
+    // Load customers from API
+    useEffect(() => {
+        loadCustomers()
+    }, [])
+
+    const loadCustomers = async () => {
+        try {
+            setLoading(true)
+            const data = await api.getCustomers()
+            setCustomers(Array.isArray(data) ? data : [])
+        } catch (error) {
+            console.error('Error loading customers:', error)
+            // Don't show error for empty data
+            setCustomers([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
     // Statistics
-    const totalCredit = customers.reduce((sum, c) => sum + c.credit, 0)
-    const customersWithCredit = customers.filter(c => c.credit > 0).length
+    const totalCredit = customers.reduce((sum, c) => sum + (c.credit || 0), 0)
+    const customersWithCredit = customers.filter(c => (c.credit || 0) > 0).length
 
     // Filter
     const filteredCustomers = customers.filter(c =>
         c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.phone.includes(search)
+        (c.phone && c.phone.includes(search))
     )
 
-    const handleAddCustomer = () => {
-        if (!newCustomer.name || !newCustomer.phone) return
-        const customer = {
-            id: Date.now(),
-            name: newCustomer.name,
-            phone: newCustomer.phone,
-            credit: 0,
-            lastPurchase: new Date().toISOString().split('T')[0],
-            totalPurchases: 0,
-            isPaid: true
+    const handleAddCustomer = async () => {
+        if (!newCustomer.name || !newCustomer.phone) {
+            addToast('Name and phone are required', 'error')
+            return
         }
-        setCustomers([customer, ...customers])
-        setNewCustomer({ name: '', phone: '' })
-        setShowAddModal(false)
-        addToast('Customer added successfully!', 'success')
+
+        try {
+            const customer = await api.createCustomer(newCustomer)
+            setCustomers([customer, ...customers])
+            setNewCustomer({ name: '', phone: '' })
+            setShowAddModal(false)
+            addToast('Customer added successfully!', 'success')
+        } catch (error) {
+            addToast(error.message || 'Failed to add customer', 'error')
+        }
     }
 
-    const handlePayment = (customerId) => {
+    const handlePayment = async (customerId) => {
         const amount = parseFloat(paymentAmount)
-        if (!amount || amount <= 0) return
+        if (!amount || amount <= 0) {
+            addToast('Enter a valid amount', 'error')
+            return
+        }
 
-        setCustomers(customers.map(c => {
-            if (c.id === customerId) {
-                const newCredit = Math.max(0, c.credit - amount)
-                return { ...c, credit: newCredit, isPaid: newCredit === 0 }
-            }
-            return c
-        }))
-        setPaymentAmount('')
-        setSelectedCustomer(null)
-        addToast(`Payment of ₹${amount} recorded!`, 'success')
+        try {
+            const result = await api.recordPayment(customerId, amount)
+            setCustomers(customers.map(c =>
+                c.id === customerId ? result.customer : c
+            ))
+            setPaymentAmount('')
+            setSelectedCustomer(null)
+            addToast(`Payment of ₹${amount} recorded!`, 'success')
+        } catch (error) {
+            addToast(error.message || 'Failed to record payment', 'error')
+        }
     }
 
-    const handleAddCredit = (customerId, amount) => {
-        setCustomers(customers.map(c => {
-            if (c.id === customerId) {
-                return { ...c, credit: c.credit + amount, isPaid: false }
-            }
-            return c
-        }))
-        addToast(`Added ₹${amount} to credit`, 'info')
+    const handleAddCredit = async (customerId, amount) => {
+        try {
+            const result = await api.addCredit(customerId, amount)
+            setCustomers(customers.map(c =>
+                c.id === customerId ? result.customer : c
+            ))
+            addToast(`Added ₹${amount} to credit`, 'info')
+        } catch (error) {
+            addToast(error.message || 'Failed to add credit', 'error')
+        }
     }
 
     const sendReminder = (customer) => {
-        // Simulate WhatsApp/SMS reminder
-        addToast(`Reminder sent to ${customer.name} on ${customer.phone}`, 'success')
+        // Open WhatsApp with reminder message
+        const message = `Hi ${customer.name}, this is a friendly reminder about your pending dues of ₹${customer.credit}. Please clear at your earliest convenience. Thank you!`
+        const url = `https://wa.me/91${customer.phone}?text=${encodeURIComponent(message)}`
+        window.open(url, '_blank')
+        addToast(`Reminder sent to ${customer.name}`, 'success')
+    }
+
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <Loader2 className="spin" size={48} />
+                <p>Loading customers...</p>
+            </div>
+        )
     }
 
     return (
@@ -127,10 +157,22 @@ export default function Customers({ addToast }) {
                 </div>
             </div>
 
+            {/* Empty State */}
+            {customers.length === 0 && (
+                <div className="empty-state">
+                    <Users size={64} />
+                    <h3>No Customers Yet</h3>
+                    <p>Add your first customer to start managing credit</p>
+                    <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+                        <Plus size={18} /> Add First Customer
+                    </button>
+                </div>
+            )}
+
             {/* Customer List */}
             <div className="customers-grid">
                 {filteredCustomers.map(customer => (
-                    <div key={customer.id} className={`customer-card ${customer.credit > 0 ? 'has-credit' : ''}`}>
+                    <div key={customer.id} className={`customer-card ${(customer.credit || 0) > 0 ? 'has-credit' : ''}`}>
                         <div className="customer-header">
                             <div className="customer-avatar">
                                 {customer.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
@@ -139,7 +181,7 @@ export default function Customers({ addToast }) {
                                 <h3>{customer.name}</h3>
                                 <span className="phone"><Phone size={12} /> {customer.phone}</span>
                             </div>
-                            {customer.credit > 0 && (
+                            {(customer.credit || 0) > 0 && (
                                 <span className="credit-badge">₹{customer.credit} Due</span>
                             )}
                         </div>
@@ -147,15 +189,19 @@ export default function Customers({ addToast }) {
                         <div className="customer-stats">
                             <div className="customer-stat">
                                 <span className="label">Total Purchases</span>
-                                <span className="value">₹{customer.totalPurchases.toLocaleString()}</span>
+                                <span className="value">₹{(customer.total_purchases || 0).toLocaleString()}</span>
                             </div>
                             <div className="customer-stat">
                                 <span className="label">Last Purchase</span>
-                                <span className="value">{new Date(customer.lastPurchase).toLocaleDateString('en-IN')}</span>
+                                <span className="value">
+                                    {customer.last_purchase
+                                        ? new Date(customer.last_purchase).toLocaleDateString('en-IN')
+                                        : 'Never'}
+                                </span>
                             </div>
                         </div>
 
-                        {customer.credit > 0 && (
+                        {(customer.credit || 0) > 0 && (
                             <div className="credit-section">
                                 <div className="credit-amount">
                                     <span>Pending Amount</span>
@@ -172,7 +218,7 @@ export default function Customers({ addToast }) {
                             </div>
                         )}
 
-                        {customer.credit === 0 && (
+                        {(customer.credit || 0) === 0 && (
                             <div className="no-credit">
                                 <Check size={16} />
                                 <span>All dues cleared</span>
@@ -257,6 +303,15 @@ export default function Customers({ addToast }) {
             )}
 
             <style>{`
+        .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; gap: 16px; }
+        .loading-container .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; }
+        .empty-state svg { color: var(--text-tertiary); margin-bottom: 16px; }
+        .empty-state h3 { margin-bottom: 8px; }
+        .empty-state p { color: var(--text-tertiary); margin-bottom: 20px; }
+
         .credit-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
         @media (max-width: 768px) { .credit-stats { grid-template-columns: 1fr; } }
         .stat-card { 

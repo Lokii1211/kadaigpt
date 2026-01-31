@@ -378,9 +378,71 @@ class ApiService {
         return result
     }
 
-    async updateCustomerCredit(id, amount) {
-        return this.request(`/customers/${id}/credit`, {
+    async recordPayment(customerId, amount) {
+        return this.request(`/customers/${customerId}/payment`, {
+            method: 'POST',
+            body: JSON.stringify({ amount }),
+        })
+    }
+
+    async addCredit(customerId, amount) {
+        return this.request(`/customers/${customerId}/credit`, {
+            method: 'POST',
+            body: JSON.stringify({ amount }),
+        })
+    }
+
+    async deleteCustomer(customerId) {
+        return this.request(`/customers/${customerId}`, {
+            method: 'DELETE',
+        })
+    }
+
+    // Supplier endpoints
+    async getSuppliers() {
+        return this.request('/suppliers')
+    }
+
+    async createSupplier(supplier) {
+        return this.request('/suppliers', {
+            method: 'POST',
+            body: JSON.stringify(supplier),
+        })
+    }
+
+    async updateSupplier(supplierId, data) {
+        return this.request(`/suppliers/${supplierId}`, {
             method: 'PUT',
+            body: JSON.stringify(data),
+        })
+    }
+
+    async deleteSupplier(supplierId) {
+        return this.request(`/suppliers/${supplierId}`, {
+            method: 'DELETE',
+        })
+    }
+
+    async getPurchaseOrders() {
+        return this.request('/suppliers/orders/list')
+    }
+
+    async createPurchaseOrder(order) {
+        return this.request('/suppliers/orders', {
+            method: 'POST',
+            body: JSON.stringify(order),
+        })
+    }
+
+    async updateOrderStatus(orderId, status) {
+        return this.request(`/suppliers/orders/${orderId}/status?status=${status}`, {
+            method: 'PUT',
+        })
+    }
+
+    async recordSupplierPayment(supplierId, amount) {
+        return this.request(`/suppliers/${supplierId}/payment`, {
+            method: 'POST',
             body: JSON.stringify({ amount }),
         })
     }
@@ -389,3 +451,4 @@ class ApiService {
 const api = new ApiService()
 export default api
 export { offlineStorage }
+
