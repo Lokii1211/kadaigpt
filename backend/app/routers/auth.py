@@ -68,17 +68,24 @@ async def get_current_user(
     
     try:
         payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
-        user_id: int = payload.get("sub")
-        if user_id is None:
+        user_id_raw = payload.get("sub")
+        if user_id_raw is None:
+            raise credentials_exception
+        # Handle both string and int user_id
+        try:
+            user_id = int(user_id_raw)
+        except (ValueError, TypeError):
             raise credentials_exception
         token_data = TokenData(user_id=user_id)
-    except JWTError:
+    except JWTError as e:
+        print(f"[Auth] JWT decode error: {e}")
         raise credentials_exception
     
     result = await db.execute(select(User).where(User.id == token_data.user_id))
     user = result.scalar_one_or_none()
     
     if user is None:
+        print(f"[Auth] User not found for id: {token_data.user_id}")
         raise credentials_exception
     
     if not user.is_active:
