@@ -136,15 +136,22 @@ class ApiService {
                 headers,
             })
 
+            // Handle 401 - just clear token silently, throw generic auth error
             if (response.status === 401) {
                 this.setToken(null)
-                throw new Error('Session expired')
+                const data = await response.json().catch(() => ({}))
+                throw new Error(data.detail || 'Authentication required')
             }
 
             const data = await response.json()
 
             if (!response.ok) {
-                throw new Error(data.detail || 'Request failed')
+                // Handle Pydantic validation errors
+                if (data.detail && Array.isArray(data.detail)) {
+                    const messages = data.detail.map(err => err.msg || err.message || JSON.stringify(err))
+                    throw new Error(messages.join(', '))
+                }
+                throw new Error(data.detail || data.message || 'Request failed')
             }
 
             return data
