@@ -30,11 +30,25 @@ export default function Bills({ addToast, setCurrentPage }) {
 
     const loadBills = async () => {
         setLoading(true)
+        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+
         try {
-            const data = await api.getBills()
-            setBills(data.bills || demoBills)
-        } catch {
-            setBills(demoBills)
+            if (isDemoMode) {
+                // Demo mode - use demo data
+                setBills(demoBills)
+            } else {
+                // Real user - fetch from API
+                const data = await api.getBills()
+                setBills(data.bills || [])
+            }
+        } catch (error) {
+            console.error('Failed to load bills:', error)
+            // For real users, show empty state; for demo, show demo data
+            if (isDemoMode) {
+                setBills(demoBills)
+            } else {
+                setBills([])
+            }
         } finally {
             setLoading(false)
         }
