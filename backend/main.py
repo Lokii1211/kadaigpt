@@ -43,6 +43,11 @@ async def lifespan(app: FastAPI):
     await offline_agent.start_network_monitoring()
     print("✅ Network monitoring started")
     
+    # Debug: Print JWT config
+    jwt_key = settings.jwt_secret_key
+    print(f"🔐 JWT Key (first 10 chars): {jwt_key[:10]}...")
+    print(f"🔐 JWT Algorithm: {settings.jwt_algorithm}")
+    
     print("═" * 50)
     print("🎉 KadaiGPT is ready!")
     print(f"📍 API running at: http://localhost:8000")

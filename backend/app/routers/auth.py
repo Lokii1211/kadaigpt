@@ -50,7 +50,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
     
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+    
+    # Debug: log key being used
+    jwt_key = settings.jwt_secret_key
+    print(f"[Auth] Creating token with key: {jwt_key[:10]}... for user: {data.get('sub')}")
+    
+    encoded_jwt = jwt.encode(to_encode, jwt_key, algorithm=settings.jwt_algorithm)
     
     return encoded_jwt
 
@@ -67,8 +72,11 @@ async def get_current_user(
     )
     
     try:
-        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        jwt_key = settings.jwt_secret_key
+        print(f"[Auth] Validating token with key: {jwt_key[:10]}...")
+        payload = jwt.decode(token, jwt_key, algorithms=[settings.jwt_algorithm])
         user_id_raw = payload.get("sub")
+        print(f"[Auth] Token decoded successfully, user_id: {user_id_raw}")
         if user_id_raw is None:
             raise credentials_exception
         # Handle both string and int user_id
