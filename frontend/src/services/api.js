@@ -145,10 +145,17 @@ class ApiService {
                 headers,
             })
 
-            // Handle 401 - just clear token silently, throw generic auth error
+            // Handle 401 - log details first
             if (response.status === 401) {
-                this.setToken(null)
                 const data = await response.json().catch(() => ({}))
+                console.error('[API] 401 Error on', endpoint, 'Details:', data)
+
+                // Only clear token if it's an auth validation failure, not just missing token
+                // Don't clear on login/register endpoints as those fail for different reasons
+                if (!endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
+                    console.log('[API] Clearing token due to 401 on protected endpoint')
+                    this.setToken(null)
+                }
                 throw new Error(data.detail || 'Authentication required')
             }
 
