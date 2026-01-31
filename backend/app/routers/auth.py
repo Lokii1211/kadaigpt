@@ -156,8 +156,8 @@ async def register(
     await db.refresh(user)
     await db.refresh(store)
     
-    # Generate token
-    access_token = create_access_token(data={"sub": user.id})
+    # Generate token - sub must be a string
+    access_token = create_access_token(data={"sub": str(user.id)})
     
     return {
         "message": "Registration successful",
@@ -205,8 +205,8 @@ async def login(
     user.last_login = datetime.utcnow()
     await db.commit()
     
-    # Generate token
-    access_token = create_access_token(data={"sub": user.id})
+    # Generate token - sub must be a string
+    access_token = create_access_token(data={"sub": str(user.id)})
     
     return Token(access_token=access_token, token_type="bearer")
 
