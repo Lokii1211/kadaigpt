@@ -3,205 +3,214 @@ import { ShoppingCart, Mail, Lock, User, ArrowRight, Loader2, Sparkles, Zap, Shi
 import api from '../services/api'
 
 export default function Login({ onLogin }) {
-    const [isLogin, setIsLogin] = useState(true)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState('')
-    const [form, setForm] = useState({
-        username: '',
-        email: '',
-        password: '',
-        storeName: '',
-    })
+  const [isLogin, setIsLogin] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({
+    username: '',
+    email: '',
+    password: '',
+    storeName: '',
+  })
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        setLoading(true)
-        setError('')
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
 
-        try {
-            if (isLogin) {
-                await api.login(form.username, form.password)
-                const user = await api.getProfile()
-                onLogin(user)
-            } else {
-                await api.register({
-                    username: form.username,
-                    email: form.email,
-                    password: form.password,
-                    store_name: form.storeName,
-                })
-                await api.login(form.username, form.password)
-                const user = await api.getProfile()
-                onLogin(user)
-            }
-        } catch (err) {
-            // Handle different error formats
-            const errorMessage = typeof err === 'string' ? err
-                : err?.message
-                || err?.detail
-                || (err?.response?.data?.detail)
-                || 'Something went wrong. Please try again.'
-            setError(errorMessage)
-        } finally {
-            setLoading(false)
-        }
+    try {
+      if (isLogin) {
+        // Login uses email (form.username contains the email)
+        await api.login(form.email || form.username, form.password)
+        const user = await api.getProfile()
+        onLogin(user)
+      } else {
+        // Register expects full_name, not username
+        await api.register({
+          full_name: form.username, // This is their display name
+          email: form.email,
+          password: form.password,
+          store_name: form.storeName,
+        })
+        // After registration, log in with email
+        await api.login(form.email, form.password)
+        const user = await api.getProfile()
+        onLogin(user)
+      }
+    } catch (err) {
+      // Handle different error formats
+      const errorMessage = typeof err === 'string' ? err
+        : err?.message
+        || err?.detail
+        || (err?.response?.data?.detail)
+        || 'Something went wrong. Please try again.'
+      setError(errorMessage)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    const handleDemo = () => {
-        onLogin({ username: 'demo', store_name: 'Demo Store' })
-    }
+  const handleDemo = () => {
+    onLogin({ username: 'demo', store_name: 'Demo Store' })
+  }
 
-    const features = [
-        { icon: Sparkles, text: 'AI-Powered Bill Scanning' },
-        { icon: Zap, text: 'Instant Silent Printing' },
-        { icon: Wifi, text: 'Works Offline' },
-        { icon: Shield, text: 'GST Compliant' },
-    ]
+  const features = [
+    { icon: Sparkles, text: 'AI-Powered Bill Scanning' },
+    { icon: Zap, text: 'Instant Silent Printing' },
+    { icon: Wifi, text: 'Works Offline' },
+    { icon: Shield, text: 'GST Compliant' },
+  ]
 
-    return (
-        <div className="login-page">
-            <div className="login-container">
-                {/* Left - Branding */}
-                <div className="login-brand">
-                    <div className="brand-content">
-                        <div className="brand-logo">
-                            <ShoppingCart size={40} />
-                        </div>
-                        <h1>KadaiGPT</h1>
-                        <p className="tagline">AI-Powered Retail Intelligence</p>
-                        <p className="tamil-tagline">கடை சிறியது, கனவுகள் பெரியது</p>
-                        <p className="description">
-                            India's first Agentic AI platform for retail. Voice commands in Tamil, Hindi & Telugu.
-                            Predictive analytics, WhatsApp integration, and works 100% offline.
-                        </p>
+  return (
+    <div className="login-page">
+      <div className="login-container">
+        {/* Left - Branding */}
+        <div className="login-brand">
+          <div className="brand-content">
+            <div className="brand-logo">
+              <ShoppingCart size={40} />
+            </div>
+            <h1>KadaiGPT</h1>
+            <p className="tagline">AI-Powered Retail Intelligence</p>
+            <p className="tamil-tagline">கடை சிறியது, கனவுகள் பெரியது</p>
+            <p className="description">
+              India's first Agentic AI platform for retail. Voice commands in Tamil, Hindi & Telugu.
+              Predictive analytics, WhatsApp integration, and works 100% offline.
+            </p>
 
-                        <div className="features-grid">
-                            {features.map((feature, i) => (
-                                <div key={i} className="feature-item">
-                                    <feature.icon size={20} />
-                                    <span>{feature.text}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="trust-badges">
-                            <div className="badge-item">
-                                <span className="badge-number">10,000+</span>
-                                <span className="badge-text">Bills Processed</span>
-                            </div>
-                            <div className="badge-item">
-                                <span className="badge-number">500+</span>
-                                <span className="badge-text">Happy Stores</span>
-                            </div>
-                            <div className="badge-item">
-                                <span className="badge-number">99.9%</span>
-                                <span className="badge-text">Uptime</span>
-                            </div>
-                        </div>
-                    </div>
+            <div className="features-grid">
+              {features.map((feature, i) => (
+                <div key={i} className="feature-item">
+                  <feature.icon size={20} />
+                  <span>{feature.text}</span>
                 </div>
-
-                {/* Right - Form */}
-                <div className="login-form-section">
-                    <div className="form-container">
-                        <h2>{isLogin ? 'Welcome Back!' : 'Get Started Free'}</h2>
-                        <p className="form-subtitle">
-                            {isLogin ? 'Sign in to your store account' : 'Create your AI-powered store in seconds'}
-                        </p>
-
-                        {error && <div className="error-alert">{error}</div>}
-
-                        <form onSubmit={handleSubmit}>
-                            <div className="form-group">
-                                <label className="form-label">Username</label>
-                                <div className="input-icon">
-                                    <User size={18} />
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="Enter your username"
-                                        value={form.username}
-                                        onChange={(e) => setForm({ ...form, username: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {!isLogin && (
-                                <>
-                                    <div className="form-group">
-                                        <label className="form-label">Email Address</label>
-                                        <div className="input-icon">
-                                            <Mail size={18} />
-                                            <input
-                                                type="email"
-                                                className="form-input"
-                                                placeholder="your@email.com"
-                                                value={form.email}
-                                                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Store Name</label>
-                                        <div className="input-icon">
-                                            <ShoppingCart size={18} />
-                                            <input
-                                                type="text"
-                                                className="form-input"
-                                                placeholder="Your Store Name"
-                                                value={form.storeName}
-                                                onChange={(e) => setForm({ ...form, storeName: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            <div className="form-group">
-                                <label className="form-label">Password</label>
-                                <div className="input-icon">
-                                    <Lock size={18} />
-                                    <input
-                                        type="password"
-                                        className="form-input"
-                                        placeholder="Enter your password"
-                                        value={form.password}
-                                        onChange={(e) => setForm({ ...form, password: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <button type="submit" className="btn btn-primary btn-lg w-full" disabled={loading}>
-                                {loading ? <Loader2 size={20} className="spin" /> : <><span>{isLogin ? 'Sign In' : 'Create Account'}</span><ArrowRight size={18} /></>}
-                            </button>
-                        </form>
-
-                        <div className="divider"><span>or continue with</span></div>
-
-                        <button className="btn btn-demo btn-lg w-full" onClick={handleDemo}>
-                            <Sparkles size={18} />
-                            Try Demo Mode - No Login Required
-                        </button>
-
-                        <p className="switch-mode">
-                            {isLogin ? "Don't have an account? " : "Already have an account? "}
-                            <button onClick={() => setIsLogin(!isLogin)}>
-                                {isLogin ? 'Sign Up Free' : 'Sign In'}
-                            </button>
-                        </p>
-
-                        <p className="terms-text">
-                            By continuing, you agree to our Terms of Service and Privacy Policy
-                        </p>
-                    </div>
-                </div>
+              ))}
             </div>
 
-            <style>{`
+            <div className="trust-badges">
+              <div className="badge-item">
+                <span className="badge-number">10,000+</span>
+                <span className="badge-text">Bills Processed</span>
+              </div>
+              <div className="badge-item">
+                <span className="badge-number">500+</span>
+                <span className="badge-text">Happy Stores</span>
+              </div>
+              <div className="badge-item">
+                <span className="badge-number">99.9%</span>
+                <span className="badge-text">Uptime</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right - Form */}
+        <div className="login-form-section">
+          <div className="form-container">
+            <h2>{isLogin ? 'Welcome Back!' : 'Get Started Free'}</h2>
+            <p className="form-subtitle">
+              {isLogin ? 'Sign in to your store account' : 'Create your AI-powered store in seconds'}
+            </p>
+
+            {error && <div className="error-alert">{error}</div>}
+
+            <form onSubmit={handleSubmit}>
+              {/* For Registration - Show Full Name first */}
+              {!isLogin && (
+                <div className="form-group">
+                  <label className="form-label">Full Name</label>
+                  <div className="input-icon">
+                    <User size={18} />
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Your full name"
+                      value={form.username}
+                      onChange={(e) => setForm({ ...form, username: e.target.value })}
+                      required
+                      minLength={2}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Email - Always shown */}
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <div className="input-icon">
+                  <Mail size={18} />
+                  <input
+                    type="email"
+                    className="form-input"
+                    placeholder="your@email.com"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Store Name - Registration only */}
+              {!isLogin && (
+                <div className="form-group">
+                  <label className="form-label">Store Name</label>
+                  <div className="input-icon">
+                    <ShoppingCart size={18} />
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Your Store Name"
+                      value={form.storeName}
+                      onChange={(e) => setForm({ ...form, storeName: e.target.value })}
+                      required
+                      minLength={2}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="form-group">
+                <label className="form-label">Password</label>
+                <div className="input-icon">
+                  <Lock size={18} />
+                  <input
+                    type="password"
+                    className="form-input"
+                    placeholder="Enter your password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-lg w-full" disabled={loading}>
+                {loading ? <Loader2 size={20} className="spin" /> : <><span>{isLogin ? 'Sign In' : 'Create Account'}</span><ArrowRight size={18} /></>}
+              </button>
+            </form>
+
+            <div className="divider"><span>or continue with</span></div>
+
+            <button className="btn btn-demo btn-lg w-full" onClick={handleDemo}>
+              <Sparkles size={18} />
+              Try Demo Mode - No Login Required
+            </button>
+
+            <p className="switch-mode">
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              <button onClick={() => setIsLogin(!isLogin)}>
+                {isLogin ? 'Sign Up Free' : 'Sign In'}
+              </button>
+            </p>
+
+            <p className="terms-text">
+              By continuing, you agree to our Terms of Service and Privacy Policy
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
         /* Login Page - Cross Platform Responsive */
         .login-page {
           min-height: 100vh;
@@ -596,6 +605,6 @@ export default function Login({ onLogin }) {
           }
         }
       `}</style>
-        </div>
-    )
+    </div>
+  )
 }
