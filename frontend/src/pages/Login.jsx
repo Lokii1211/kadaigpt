@@ -52,10 +52,28 @@ export default function Login({ onLogin }) {
         })
         console.log('Registration successful:', registerResult)
 
-        // After registration, log in with email
-        await api.login(form.email, form.password)
-        const user = await api.getProfile()
-        onLogin(user)
+        // Registration already returns a token - use it directly!
+        if (registerResult.access_token) {
+          api.setToken(registerResult.access_token)
+          // Store the store name for display
+          if (registerResult.store?.name) {
+            localStorage.setItem('kadai_store_name', registerResult.store.name)
+          }
+          // Create user object from registration response
+          const user = {
+            id: registerResult.user?.id,
+            email: registerResult.user?.email,
+            full_name: registerResult.user?.full_name,
+            username: registerResult.user?.full_name || form.username,
+            store_name: registerResult.store?.name || form.storeName,
+          }
+          onLogin(user)
+        } else {
+          // Fallback: try to login if no token in response
+          await api.login(form.email, form.password)
+          const user = await api.getProfile()
+          onLogin(user)
+        }
       }
     } catch (err) {
       console.error('Auth error:', err)
