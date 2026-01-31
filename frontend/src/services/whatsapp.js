@@ -206,6 +206,12 @@ _${storeName}_`
                 template: 'Hi {name}, {product} is back in stock at {store}! Visit us to grab yours.'
             },
             {
+                id: 'low_stock_alert',
+                name: 'Low Stock Alert',
+                icon: '⚠️',
+                template: '⚠️ Low Stock Alert!\n\n{products}\n\nPlease restock soon to avoid stockouts.\n\n_KadaiGPT_'
+            },
+            {
                 id: 'festive_offer',
                 name: 'Festive Offer',
                 icon: '🎉',
@@ -224,12 +230,84 @@ _${storeName}_`
                 template: 'Hi {name}, your order from {store} is out for delivery and will reach you shortly!'
             },
             {
+                id: 'daily_summary',
+                name: 'Daily Summary',
+                icon: '📊',
+                template: '📊 *Daily Summary - {date}*\n\n💰 Total Sales: ₹{total_sales}\n🧾 Bills: {bill_count}\n📈 Avg Bill: ₹{avg_bill}\n\n_KadaiGPT_'
+            },
+            {
+                id: 'expiry_alert',
+                name: 'Expiry Alert',
+                icon: '⏰',
+                template: '⏰ Expiry Alert!\n\nThe following products are expiring soon:\n{products}\n\nPlease take action.\n\n_KadaiGPT_'
+            },
+            {
                 id: 'thank_you',
                 name: 'Thank You',
                 icon: '🙏',
                 template: 'Thank you {name} for shopping at {store}! We hope to see you again soon. Have a great day!'
+            },
+            {
+                id: 'new_arrival',
+                name: 'New Arrival',
+                icon: '🆕',
+                template: '🆕 New Arrival at {store}!\n\n{product} is now available.\nPrice: ₹{price}\n\nVisit us to check it out!'
             }
         ]
+    }
+
+    // Generate daily summary message
+    generateDailySummary(stats, storeName) {
+        const today = new Date().toLocaleDateString('en-IN', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long'
+        })
+
+        return `📊 *Daily Sales Summary*
+*${storeName}*
+${today}
+
+━━━━━━━━━━━━━━━━
+💰 Total Sales: ₹${stats.totalSales.toLocaleString('en-IN')}
+🧾 Bills Created: ${stats.billCount}
+📈 Average Bill: ₹${stats.avgBill.toLocaleString('en-IN')}
+👥 Customers Served: ${stats.customerCount}
+━━━━━━━━━━━━━━━━
+
+📦 Low Stock Items: ${stats.lowStockCount}
+⚠️ Pending Payments: ₹${(stats.pendingPayments || 0).toLocaleString('en-IN')}
+
+_Powered by KadaiGPT_`
+    }
+
+    // Send daily summary to owner
+    sendDailySummary(phone, stats, storeName) {
+        const message = this.generateDailySummary(stats, storeName)
+        return this.openWhatsApp(phone, message)
+    }
+
+    // Generate low stock notification for owner
+    generateLowStockNotification(products, storeName) {
+        const productList = products.slice(0, 10).map(p =>
+            `• ${p.name}: ${p.stock} left (Min: ${p.minStock})`
+        ).join('\n')
+
+        return `⚠️ *Low Stock Alert*
+*${storeName}*
+
+The following items need restocking:
+
+${productList}
+${products.length > 10 ? `\n...and ${products.length - 10} more items` : ''}
+
+_Sent by KadaiGPT_`
+    }
+
+    // Send low stock alert
+    sendLowStockAlert(phone, products, storeName) {
+        const message = this.generateLowStockNotification(products, storeName)
+        return this.openWhatsApp(phone, message)
     }
 
     // Parse template with variables
