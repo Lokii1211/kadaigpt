@@ -101,22 +101,27 @@ class ApiService {
     constructor() {
         this.baseUrl = API_BASE_URL
         this.token = localStorage.getItem('kadai_token')
+        console.log('[API] Initialized with token:', this.token ? 'token exists' : 'no token')
 
         // Listen for online/offline events
         window.addEventListener('online', () => this.syncOfflineData())
     }
 
     setToken(token) {
+        console.log('[API] setToken called:', token ? 'setting token' : 'clearing token')
         this.token = token
         if (token) {
             localStorage.setItem('kadai_token', token)
+            console.log('[API] Token saved to localStorage')
         } else {
             localStorage.removeItem('kadai_token')
+            console.log('[API] Token removed from localStorage')
         }
     }
 
     getToken() {
-        return this.token || localStorage.getItem('kadai_token')
+        const token = this.token || localStorage.getItem('kadai_token')
+        return token
     }
 
     async request(endpoint, options = {}) {
@@ -126,8 +131,12 @@ class ApiService {
             ...options.headers,
         }
 
-        if (this.getToken()) {
-            headers['Authorization'] = `Bearer ${this.getToken()}`
+        const token = this.getToken()
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`
+            console.log('[API] Request to', endpoint, '- Token attached')
+        } else {
+            console.log('[API] Request to', endpoint, '- NO TOKEN!')
         }
 
         try {
