@@ -284,6 +284,12 @@ class ApiService {
         return result
     }
 
+    async deleteProduct(id) {
+        return this.request(`/products/${id}`, {
+            method: 'DELETE',
+        })
+    }
+
     // Bills endpoints
     async getBills(params = {}) {
         const query = new URLSearchParams(params).toString()

@@ -3,12 +3,10 @@ import { Truck, Plus, Phone, MapPin, Package, Calendar, Clock, TrendingUp, X, Ch
 import whatsappService from '../services/whatsapp'
 import api from '../services/api'
 
-// Low stock products for ordering (will be fetched from API)
-const initialLowStock = []
-
 export default function Suppliers({ addToast }) {
     const [suppliers, setSuppliers] = useState([])
     const [orders, setOrders] = useState([])
+    const [lowStockProducts, setLowStockProducts] = useState([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
     const [showAddModal, setShowAddModal] = useState(false)
@@ -28,12 +26,18 @@ export default function Suppliers({ addToast }) {
     const loadData = async () => {
         try {
             setLoading(true)
-            const [suppliersData, ordersData] = await Promise.all([
+            const [suppliersData, ordersData, productsData] = await Promise.all([
                 api.getSuppliers().catch(() => []),
-                api.getPurchaseOrders().catch(() => [])
+                api.getPurchaseOrders().catch(() => []),
+                api.getProducts().catch(() => ({ products: [] }))
             ])
             setSuppliers(Array.isArray(suppliersData) ? suppliersData : [])
             setOrders(Array.isArray(ordersData) ? ordersData : [])
+
+            // Get low stock products
+            const products = productsData?.products || []
+            const lowStock = products.filter(p => (p.stock || 0) <= (p.min_stock || p.minStock || 10))
+            setLowStockProducts(lowStock)
         } catch (error) {
             console.error('Error loading suppliers:', error)
         } finally {
@@ -49,7 +53,7 @@ export default function Suppliers({ addToast }) {
     // Filter
     const filteredSuppliers = suppliers.filter(s =>
         s.name.toLowerCase().includes(search.toLowerCase()) ||
-        s.category.toLowerCase().includes(search.toLowerCase()) ||
+        (s.category && s.category.toLowerCase().includes(search.toLowerCase())) ||
         (s.contact && s.contact.toLowerCase().includes(search.toLowerCase()))
     )
 
@@ -98,28 +102,46 @@ export default function Suppliers({ addToast }) {
         }
     }
 
-    const createPurchaseOrder = () => {
-        if (!selectedSupplier) return
-
-        const order = {
-            id: Date.now(),
-            orderNo: `PO-2026-${String(orders.length + 24).padStart(4, '0')}`,
-            supplier: selectedSupplier.name,
-            items: orderItems.length || lowStockProducts.length,
-            amount: orderItems.reduce((sum, item) => sum + (item.price || 0) * (item.qty || 1), 0) || 15000,
-            status: 'pending',
-            date: new Date().toISOString().split('T')[0],
-            expectedDelivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const createPurchaseOrder = async () => {
+        if (!selectedSupplier) {
+            addToast('Please select a supplier', 'error')
+            return
         }
-        setOrders([order, ...orders])
 
-        // Send WhatsApp notification to supplier
-        whatsappService.sendStockOrder(selectedSupplier, lowStockProducts, storeName)
+        try {
+            // Create order data
+            const orderData = {
+                supplier_id: selectedSupplier.id,
+                items: orderItems.length > 0 ? orderItems.map(item => ({
+                    product_name: item.name,
+                    quantity: item.qty || 1,
+                    unit: item.unit || 'pcs',
+                    unit_price: item.price || 0
+                })) : lowStockProducts.map(p => ({
+                    product_name: p.name,
+                    quantity: p.suggestedQty || 20,
+                    unit: p.unit || 'kg',
+                    unit_price: p.price || 100
+                })),
+                notes: `Order placed from ${storeName}`
+            }
 
-        addToast(`Purchase order ${order.orderNo} created and sent via WhatsApp`, 'success')
-        setShowOrderModal(false)
-        setSelectedSupplier(null)
-        setOrderItems([])
+            const newOrder = await api.createPurchaseOrder(orderData)
+            setOrders([newOrder, ...orders])
+
+            // Send WhatsApp notification to supplier
+            if (selectedSupplier.phone) {
+                const items = orderItems.length > 0 ? orderItems : lowStockProducts
+                whatsappService.sendStockOrder(selectedSupplier, items, storeName)
+            }
+
+            addToast(`Purchase order ${newOrder.order_no} created!`, 'success')
+            setShowOrderModal(false)
+            setSelectedSupplier(null)
+            setOrderItems([])
+        } catch (error) {
+            addToast(error.message || 'Failed to create order', 'error')
+        }
     }
 
     const renderStars = (rating) => {

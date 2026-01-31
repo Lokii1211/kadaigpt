@@ -89,32 +89,53 @@ export default function Products({ addToast }) {
         return { status: 'ok', label: 'In Stock', color: 'success' }
     }
 
-    const handleAddProduct = () => {
-        const product = {
-            ...newProduct,
-            id: Date.now(),
-            price: parseFloat(newProduct.price),
-            stock: parseInt(newProduct.stock),
-            minStock: parseInt(newProduct.minStock),
-            dailySales: 0,
-            trend: 'stable'
+    const handleAddProduct = async () => {
+        if (!newProduct.name || !newProduct.price || !newProduct.stock) {
+            addToast('Please fill in all required fields', 'error')
+            return
         }
-        setProducts([product, ...products])
-        setShowAddModal(false)
-        setNewProduct({ name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'Essentials' })
-        addToast('Product added successfully!', 'success')
+
+        try {
+            const productData = {
+                name: newProduct.name,
+                sku: newProduct.sku || `SKU${Date.now()}`,
+                price: parseFloat(newProduct.price),
+                unit: newProduct.unit,
+                stock: parseInt(newProduct.stock),
+                min_stock: parseInt(newProduct.minStock) || 10,
+                category: newProduct.category
+            }
+
+            const result = await api.createProduct(productData)
+            setProducts([result, ...products])
+            setShowAddModal(false)
+            setNewProduct({ name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'Essentials' })
+            addToast('Product added successfully!', 'success')
+        } catch (error) {
+            addToast(error.message || 'Failed to add product', 'error')
+        }
     }
 
-    const handleUpdateStock = (id, newStock) => {
-        setProducts(products.map(p =>
-            p.id === id ? { ...p, stock: Math.max(0, newStock) } : p
-        ))
-        addToast('Stock updated!', 'success')
+    const handleUpdateStock = async (id, newStock) => {
+        try {
+            await api.updateProduct(id, { stock: Math.max(0, newStock) })
+            setProducts(products.map(p =>
+                p.id === id ? { ...p, stock: Math.max(0, newStock) } : p
+            ))
+            addToast('Stock updated!', 'success')
+        } catch (error) {
+            addToast(error.message || 'Failed to update stock', 'error')
+        }
     }
 
-    const handleDeleteProduct = (id) => {
-        setProducts(products.filter(p => p.id !== id))
-        addToast('Product deleted', 'info')
+    const handleDeleteProduct = async (id) => {
+        try {
+            await api.deleteProduct(id)
+            setProducts(products.filter(p => p.id !== id))
+            addToast('Product deleted', 'info')
+        } catch (error) {
+            addToast(error.message || 'Failed to delete product', 'error')
+        }
     }
 
     return (
