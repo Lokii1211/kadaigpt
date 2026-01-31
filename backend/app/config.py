@@ -7,6 +7,7 @@ India's First Agentic AI-Powered Retail Intelligence Platform
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 from typing import Optional
+import os
 
 
 class Settings(BaseSettings):
@@ -16,10 +17,11 @@ class Settings(BaseSettings):
     app_name: str = "KadaiGPT"
     app_tagline: str = "AI-Powered Retail Intelligence for Bharat"
     app_env: str = "development"
-    debug: bool = True
+    debug: bool = False
     secret_key: str = "kadaigpt-super-secret-key-change-in-production-2026"
     
-    # Database
+    # Database - Railway provides DATABASE_URL for PostgreSQL
+    # We need to convert postgres:// to postgresql+asyncpg:// for async support
     database_url: str = "sqlite+aiosqlite:///./kadaigpt.db"
     
     # JWT Settings
@@ -57,6 +59,26 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
+    
+    def get_async_database_url(self) -> str:
+        """
+        Convert database URL to async-compatible format.
+        Railway provides postgres:// but we need postgresql+asyncpg://
+        """
+        url = self.database_url
+        
+        # Check for Railway's DATABASE_URL environment variable
+        railway_url = os.environ.get("DATABASE_URL")
+        if railway_url:
+            url = railway_url
+        
+        # Convert postgres:// to postgresql+asyncpg://
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        
+        return url
 
 
 @lru_cache()
@@ -66,3 +88,4 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+
