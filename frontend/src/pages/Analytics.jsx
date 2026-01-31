@@ -1,18 +1,31 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { TrendingUp, ShoppingBag, Users, IndianRupee, ArrowUpRight, ArrowDownRight, Minus, Zap, BarChart3, PieChart } from 'lucide-react'
 import { demoAnalytics, demoProducts } from '../services/demoData'
+import api from '../services/api'
 
 export default function Analytics({ addToast }) {
     const [period, setPeriod] = useState('week')
+    const [loading, setLoading] = useState(true)
 
-    const analytics = demoAnalytics
-    const maxWeeklySale = Math.max(...analytics.weeklySales)
+    // Check demo mode
+    const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+
+    // Use demo data for demo mode, empty state for real users without data
+    const analytics = isDemoMode ? demoAnalytics : {
+        todaySales: 0,
+        todayBills: 0,
+        avgBillValue: 0,
+        weeklySales: [0, 0, 0, 0, 0, 0, 0],
+        hourlyData: []
+    }
+
+    const maxWeeklySale = Math.max(...analytics.weeklySales, 1) // Prevent division by zero
 
     const kpis = [
-        { label: 'Total Revenue', value: `₹${analytics.todaySales.toLocaleString()}`, change: 18.5, icon: IndianRupee, positive: true },
-        { label: 'Total Orders', value: analytics.todayBills, change: 12, icon: ShoppingBag, positive: true },
-        { label: 'New Customers', value: 23, change: 8.2, icon: Users, positive: true },
-        { label: 'Avg Order Value', value: `₹${analytics.avgBillValue}`, change: 5.7, icon: TrendingUp, positive: true },
+        { label: 'Total Revenue', value: `₹${analytics.todaySales.toLocaleString()}`, change: isDemoMode ? 18.5 : 0, icon: IndianRupee, positive: true },
+        { label: 'Total Orders', value: analytics.todayBills, change: isDemoMode ? 12 : 0, icon: ShoppingBag, positive: true },
+        { label: 'New Customers', value: isDemoMode ? 23 : 0, change: isDemoMode ? 8.2 : 0, icon: Users, positive: true },
+        { label: 'Avg Order Value', value: `₹${analytics.avgBillValue}`, change: isDemoMode ? 5.7 : 0, icon: TrendingUp, positive: true },
     ]
 
     const aiInsights = [

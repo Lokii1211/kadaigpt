@@ -7,9 +7,18 @@ export default function GSTReports({ addToast }) {
     const [generating, setGenerating] = useState(false)
     const [showExportMenu, setShowExportMenu] = useState(false)
 
-    const gstData = demoGSTData
+    // Check demo mode
+    const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+
+    // Use demo data for demo mode, empty state for real users
+    const gstData = isDemoMode ? demoGSTData : {
+        summary: { totalSales: 0, taxableAmount: 0, cgst: 0, sgst: 0, totalTax: 0 },
+        monthly: [{ month: 'Jan 2026', sales: 0, tax: 0 }],
+        invoices: []
+    }
+
     const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
-    const gstin = localStorage.getItem('kadai_gstin') || '33AABCU9603R1ZM'
+    const gstin = localStorage.getItem('kadai_gstin') || 'Not Configured'
 
     const handleGenerateGSTR1 = () => {
         setGenerating(true)
