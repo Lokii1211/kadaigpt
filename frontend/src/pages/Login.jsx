@@ -26,6 +26,9 @@ export default function Login({ onLogin }) {
     setError('') // Clear any previous error
 
     try {
+      // Clear demo mode - user is using real credentials
+      localStorage.removeItem('kadai_demo_mode')
+
       if (isLogin) {
         // Login uses email
         console.log('Attempting login with email:', form.email)
