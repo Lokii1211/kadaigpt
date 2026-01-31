@@ -27,34 +27,49 @@ export default function Login({ onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
+    setError('') // Clear any previous error
 
     try {
       if (isLogin) {
-        // Login uses email (form.username contains the email)
-        await api.login(form.email || form.username, form.password)
+        // Login uses email
+        console.log('Attempting login with email:', form.email)
+        await api.login(form.email, form.password)
         const user = await api.getProfile()
         onLogin(user)
       } else {
-        // Register expects full_name, not username
-        await api.register({
-          full_name: form.username, // This is their display name
+        // Register with full_name
+        console.log('Attempting registration with:', {
+          full_name: form.username,
+          email: form.email,
+          store_name: form.storeName
+        })
+
+        const registerResult = await api.register({
+          full_name: form.username,
           email: form.email,
           password: form.password,
           store_name: form.storeName,
         })
+        console.log('Registration successful:', registerResult)
+
         // After registration, log in with email
         await api.login(form.email, form.password)
         const user = await api.getProfile()
         onLogin(user)
       }
     } catch (err) {
+      console.error('Auth error:', err)
       // Handle different error formats
-      const errorMessage = typeof err === 'string' ? err
-        : err?.message
-        || err?.detail
-        || (err?.response?.data?.detail)
-        || 'Something went wrong. Please try again.'
+      let errorMessage = 'Something went wrong. Please try again.'
+
+      if (typeof err === 'string') {
+        errorMessage = err
+      } else if (err?.message) {
+        errorMessage = err.message
+      } else if (err?.detail) {
+        errorMessage = typeof err.detail === 'string' ? err.detail : JSON.stringify(err.detail)
+      }
+
       setError(errorMessage)
     } finally {
       setLoading(false)
