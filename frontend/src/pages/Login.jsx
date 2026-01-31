@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ShoppingCart, Mail, Lock, User, ArrowRight, Loader2, Sparkles, Zap, Shield, Wifi } from 'lucide-react'
 import api from '../services/api'
 
@@ -12,6 +12,17 @@ export default function Login({ onLogin }) {
     password: '',
     storeName: '',
   })
+
+  // Clear any stale token on mount
+  useEffect(() => {
+    api.logout() // Clear any old session
+  }, [])
+
+  // Clear error when switching between login/register
+  const toggleMode = () => {
+    setError('')
+    setIsLogin(!isLogin)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -198,7 +209,7 @@ export default function Login({ onLogin }) {
 
             <p className="switch-mode">
               {isLogin ? "Don't have an account? " : "Already have an account? "}
-              <button onClick={() => setIsLogin(!isLogin)}>
+              <button onClick={toggleMode}>
                 {isLogin ? 'Sign Up Free' : 'Sign In'}
               </button>
             </p>
