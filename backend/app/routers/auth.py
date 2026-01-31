@@ -1,5 +1,5 @@
 """
-VyaparAI - Authentication Router
+KadaiGPT - Authentication Router
 User registration, login, and session management
 """
 

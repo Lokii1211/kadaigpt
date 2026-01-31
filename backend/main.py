@@ -27,7 +27,7 @@ from app.agents import offline_agent
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
     # Startup
-    print("🚀 Starting VyaparAI...")
+    print("🚀 Starting KadaiGPT...")
     print("═" * 50)
     
     # Initialize database
@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
     print("✅ Network monitoring started")
     
     print("═" * 50)
-    print("🎉 VyaparAI is ready!")
+    print("🎉 KadaiGPT is ready!")
     print(f"📍 API running at: http://localhost:8000")
     print(f"📚 Docs available at: http://localhost:8000/docs")
     print("═" * 50)
@@ -52,16 +52,16 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    print("\n🛑 Shutting down VyaparAI...")
+    print("\n🛑 Shutting down KadaiGPT...")
     await offline_agent.stop_network_monitoring()
     print("✅ Cleanup complete")
 
 
 # Create FastAPI application
 app = FastAPI(
-    title="VyaparAI",
+    title="KadaiGPT",
     description="""
-    # 🛒 VyaparAI - Agentic AI-Powered Retail Operations Platform
+    # 🛒 KadaiGPT - AI-Powered Retail Intelligence Platform
     
     India's first intelligent billing and retail management system powered by autonomous AI agents.
     
@@ -140,7 +140,7 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "service": "VyaparAI",
+        "service": "KadaiGPT",
         "version": "1.0.0"
     }
 
@@ -150,7 +150,7 @@ async def health_check():
 async def root():
     """Welcome endpoint"""
     return {
-        "message": "🛒 Welcome to VyaparAI!",
+        "message": "🛒 Welcome to KadaiGPT!",
         "tagline": "Bill Karo, AI Sambhalo",
         "description": "India's First Agentic AI-Powered Retail Operations Platform",
         "docs": "/docs",

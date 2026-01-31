@@ -1,5 +1,5 @@
 """
-VyaparAI - Thermal Printer Support with ESC/POS Commands
+KadaiGPT - Thermal Printer Support with ESC/POS Commands
 Professional receipt printing for retail stores
 """
 
@@ -188,7 +188,7 @@ class ReceiptBuilder:
     """
     📄 RECEIPT BUILDER
     
-    Creates professional receipts for VyaparAI bills
+    Creates professional receipts for KadaiGPT bills
     """
     
     def __init__(self, printer: Optional[ThermalPrinter] = None):
@@ -196,7 +196,7 @@ class ReceiptBuilder:
     
     def build_receipt(self, bill_data: Dict[str, Any]) -> bytes:
         """Build complete receipt from bill data"""
-        store_name = bill_data.get("store_name", "VyaparAI Store")
+        store_name = bill_data.get("store_name", "KadaiGPT Store")
         store_address = bill_data.get("store_address", "")
         store_phone = bill_data.get("store_phone", "")
         store_gstin = bill_data.get("gstin", "")
@@ -270,7 +270,7 @@ class ReceiptBuilder:
     
     def build_plain_receipt(self, bill_data: Dict[str, Any]) -> str:
         """Build plain text receipt (for regular printers)"""
-        store_name = bill_data.get("store_name", "VyaparAI Store")
+        store_name = bill_data.get("store_name", "KadaiGPT Store")
         bill_number = bill_data.get("bill_number", f"INV-{int(datetime.now().timestamp())}")
         customer_name = bill_data.get("customer_name", "Walk-in Customer")
         items = bill_data.get("items", [])
@@ -300,7 +300,7 @@ class ReceiptBuilder:
         lines.append(f"{'TOTAL':>{width-12}} ₹{total:>10,.2f}")
         lines.append("=" * width)
         lines.append(f"{'Thank You!':^{width}}")
-        lines.append(f"{'Powered by VyaparAI':^{width}}")
+        lines.append(f"{'Powered by KadaiGPT':^{width}}")
         lines.append("")
         
         return "\n".join(lines)

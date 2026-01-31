@@ -1,5 +1,5 @@
 """
-VyaparAI - Print API Router
+KadaiGPT - Print API Router
 Handles receipt printing requests
 """
 
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/print", tags=["Printing"])
 class PrintReceiptRequest(BaseModel):
     """Request model for printing receipts"""
     bill_number: str
-    store_name: Optional[str] = "VyaparAI Store"
+    store_name: Optional[str] = "KadaiGPT Store"
     store_address: Optional[str] = None
     store_phone: Optional[str] = None
     gstin: Optional[str] = None
@@ -169,7 +169,7 @@ async def test_print(printer_name: Optional[str] = "auto"):
     try:
         test_bill = {
             "bill_number": "TEST-001",
-            "store_name": "VyaparAI Store",
+            "store_name": "KadaiGPT Store",
             "customer_name": "Test Print",
             "items": [
                 {"product_name": "Test Item 1", "quantity": 1, "unit_price": 100},
