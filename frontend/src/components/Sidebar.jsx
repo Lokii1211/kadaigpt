@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { ShoppingCart, LayoutDashboard, FileText, Camera, Package, Settings, LogOut, PlusCircle, User, BarChart3, Users, Receipt, MessageCircle, Truck, Gift, Menu, X, Brain, Wallet, ClipboardList } from 'lucide-react'
+import { ShoppingCart, LayoutDashboard, FileText, Camera, Package, Settings, LogOut, PlusCircle, User, BarChart3, Users, Receipt, MessageCircle, Truck, Gift, X, Brain, Wallet, ClipboardList } from 'lucide-react'
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -18,39 +17,15 @@ const menuItems = [
   { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
 ]
 
-export default function Sidebar({ currentPage, setCurrentPage, isOnline, user, onLogout }) {
-  const [mobileOpen, setMobileOpen] = useState(false)
-
+export default function Sidebar({ currentPage, setCurrentPage, isOnline, user, onLogout, isOpen = false }) {
   const handleNavClick = (pageId) => {
     setCurrentPage(pageId)
-    setMobileOpen(false) // Close sidebar on mobile after navigation
   }
 
   return (
     <>
-      {/* Mobile Header */}
-      <div className="mobile-header">
-        <button className="hamburger-btn" onClick={() => setMobileOpen(true)}>
-          <Menu size={24} />
-        </button>
-        <div className="mobile-logo">
-          <ShoppingCart size={20} />
-          <span>KadaiGPT</span>
-        </div>
-        <div className={`mobile-status ${isOnline ? 'online' : 'offline'}`}>
-          <span className="dot"></span>
-        </div>
-      </div>
-
-      {/* Mobile Overlay */}
-      {mobileOpen && <div className="sidebar-overlay" onClick={() => setMobileOpen(false)}></div>}
-
       {/* Sidebar */}
-      <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
-        {/* Close button for mobile */}
-        <button className="sidebar-close" onClick={() => setMobileOpen(false)}>
-          <X size={20} />
-        </button>
+      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
 
         {/* Logo */}
         <div className="sidebar-logo">

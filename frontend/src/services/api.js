@@ -183,7 +183,13 @@ class ApiService {
         const data = await response.json()
 
         if (!response.ok) {
-            throw new Error(data.detail || 'Login failed')
+            // Handle Pydantic validation errors (array format)
+            if (Array.isArray(data.detail)) {
+                const messages = data.detail.map(err => err.msg || err.message || JSON.stringify(err))
+                throw new Error(messages.join(', '))
+            }
+            // Handle string error messages
+            throw new Error(typeof data.detail === 'string' ? data.detail : 'Login failed')
         }
 
         this.setToken(data.access_token)
@@ -200,7 +206,13 @@ class ApiService {
         const data = await response.json()
 
         if (!response.ok) {
-            throw new Error(data.detail || 'Registration failed')
+            // Handle Pydantic validation errors (array format)
+            if (Array.isArray(data.detail)) {
+                const messages = data.detail.map(err => err.msg || err.message || JSON.stringify(err))
+                throw new Error(messages.join(', '))
+            }
+            // Handle string error messages
+            throw new Error(typeof data.detail === 'string' ? data.detail : 'Registration failed')
         }
 
         return data

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { ShoppingCart, Home, FileText, Camera, Package, Menu, X, BarChart3, Settings as SettingsIcon, Plus } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import VoiceAssistant from './components/VoiceAssistant'
 import Dashboard from './pages/Dashboard'
@@ -28,6 +29,7 @@ function App() {
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
     const [products] = useState(demoProducts)
+    const [sidebarOpen, setSidebarOpen] = useState(false)
 
     useEffect(() => {
         // Check for existing session
@@ -87,6 +89,11 @@ function App() {
             window.removeEventListener('offline', handleOffline)
         }
     }, [])
+
+    // Close sidebar when page changes on mobile
+    useEffect(() => {
+        setSidebarOpen(false)
+    }, [currentPage])
 
     const addToast = (message, type = 'info') => {
         const id = Date.now()
@@ -166,16 +173,92 @@ function App() {
 
     return (
         <div className="app-layout">
+            {/* Mobile Header */}
+            <header className="mobile-header">
+                <div className="mobile-header-title">
+                    <ShoppingCart size={24} />
+                    <span>KadaiGPT</span>
+                </div>
+                <div className="mobile-header-actions">
+                    <button
+                        className="btn btn-ghost btn-icon"
+                        onClick={() => setSidebarOpen(!sidebarOpen)}
+                        aria-label="Toggle menu"
+                    >
+                        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+                    </button>
+                </div>
+            </header>
+
+            {/* Sidebar Backdrop */}
+            <div
+                className={`sidebar-backdrop ${sidebarOpen ? 'visible' : ''}`}
+                onClick={() => setSidebarOpen(false)}
+            />
+
+            {/* Sidebar with open state */}
             <Sidebar
                 currentPage={currentPage}
                 setCurrentPage={setCurrentPage}
                 isOnline={isOnline}
                 user={user}
                 onLogout={handleLogout}
+                isOpen={sidebarOpen}
             />
+
             <main className="main-content">
                 {renderPage()}
             </main>
+
+            {/* Bottom Navigation - Mobile Only */}
+            <nav className="bottom-nav">
+                <div className="bottom-nav-items">
+                    <button
+                        className={`bottom-nav-item ${currentPage === 'dashboard' ? 'active' : ''}`}
+                        onClick={() => setCurrentPage('dashboard')}
+                    >
+                        <Home size={24} />
+                        <span>Home</span>
+                    </button>
+                    <button
+                        className={`bottom-nav-item ${currentPage === 'bills' ? 'active' : ''}`}
+                        onClick={() => setCurrentPage('bills')}
+                    >
+                        <FileText size={24} />
+                        <span>Bills</span>
+                    </button>
+                    <button
+                        className={`bottom-nav-item ${currentPage === 'ocr' ? 'active' : ''}`}
+                        onClick={() => setCurrentPage('ocr')}
+                    >
+                        <Camera size={24} />
+                        <span>Scan</span>
+                    </button>
+                    <button
+                        className={`bottom-nav-item ${currentPage === 'products' ? 'active' : ''}`}
+                        onClick={() => setCurrentPage('products')}
+                    >
+                        <Package size={24} />
+                        <span>Products</span>
+                    </button>
+                    <button
+                        className={`bottom-nav-item ${currentPage === 'analytics' ? 'active' : ''}`}
+                        onClick={() => setCurrentPage('analytics')}
+                    >
+                        <BarChart3 size={24} />
+                        <span>Analytics</span>
+                    </button>
+                </div>
+            </nav>
+
+            {/* Floating Action Button - Create Bill */}
+            <button
+                className="fab"
+                onClick={() => setCurrentPage('create-bill')}
+                aria-label="Create new bill"
+            >
+                <Plus size={28} />
+            </button>
 
             {/* Voice Assistant */}
             <VoiceAssistant
@@ -194,7 +277,7 @@ function App() {
                 ))}
             </div>
 
-            {/* Keyboard Shortcut Hint */}
+            {/* Keyboard Shortcut Hint - Hidden on mobile via CSS */}
             <div className="keyboard-hint">
                 <span>F1 Dashboard</span>
                 <span>F2 New Bill</span>
@@ -213,3 +296,4 @@ function App() {
 }
 
 export default App
+
