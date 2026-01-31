@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MessageCircle, Send, Users, Clock, CheckCheck, FileText, Plus, Phone, AlertCircle, Sparkles, Check, X, Loader2 } from 'lucide-react'
 import whatsappService from '../services/whatsapp'
+import api from '../services/api'
 import { demoCustomers } from '../services/demoData'
 
 export default function WhatsAppIntegration({ addToast }) {
-    const [customers, setCustomers] = useState(demoCustomers)
+    const [customers, setCustomers] = useState([])
     const [selectedCustomers, setSelectedCustomers] = useState([])
     const [message, setMessage] = useState('')
     const [selectedTemplate, setSelectedTemplate] = useState(null)
@@ -12,18 +13,41 @@ export default function WhatsAppIntegration({ addToast }) {
     const [quickMessage, setQuickMessage] = useState('')
     const [sending, setSending] = useState(false)
     const [progress, setProgress] = useState({ current: 0, total: 0 })
+    const [loading, setLoading] = useState(true)
 
     const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
 
+    // Load customers
+    useEffect(() => {
+        loadCustomers()
+    }, [])
+
+    const loadCustomers = async () => {
+        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+        try {
+            if (isDemoMode) {
+                setCustomers(demoCustomers)
+            } else {
+                const data = await api.getCustomers()
+                setCustomers(Array.isArray(data) ? data : [])
+            }
+        } catch (error) {
+            console.error('Error loading customers:', error)
+            setCustomers([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const templates = whatsappService.getTemplates()
-    const customersWithDue = customers.filter(c => c.credit > 0)
+    const customersWithDue = customers.filter(c => (c.credit || 0) > 0)
 
     // Stats
     const stats = {
         total: customers.length,
         withDues: customersWithDue.length,
-        totalDues: customersWithDue.reduce((sum, c) => sum + c.credit, 0),
-        messagesSent: 156 // Demo stat
+        totalDues: customersWithDue.reduce((sum, c) => sum + (c.credit || 0), 0),
+        messagesSent: 0
     }
 
     const handleTemplateSelect = (template) => {

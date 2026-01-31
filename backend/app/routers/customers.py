@@ -82,6 +82,29 @@ def save_user_customers(user_id: int, customers: list):
 
 # ==================== ROUTES ====================
 
+@router.get("/stats/summary", response_model=dict)
+async def get_customer_stats(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get customer statistics
+    """
+    customers = get_user_customers(current_user.id)
+    
+    total_customers = len(customers)
+    total_credit = sum(c['credit'] for c in customers)
+    customers_with_credit = sum(1 for c in customers if c['credit'] > 0)
+    total_business = sum(c['total_purchases'] for c in customers)
+    
+    return {
+        "total_customers": total_customers,
+        "total_credit": total_credit,
+        "customers_with_credit": customers_with_credit,
+        "total_business": total_business
+    }
+
+
 @router.get("", response_model=List[dict])
 async def get_customers(
     search: Optional[str] = Query(None, description="Search by name or phone"),
@@ -302,25 +325,3 @@ async def add_credit(
         "customer": customer
     }
 
-
-@router.get("/stats/summary", response_model=dict)
-async def get_customer_stats(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Get customer statistics
-    """
-    customers = get_user_customers(current_user.id)
-    
-    total_customers = len(customers)
-    total_credit = sum(c['credit'] for c in customers)
-    customers_with_credit = sum(1 for c in customers if c['credit'] > 0)
-    total_business = sum(c['total_purchases'] for c in customers)
-    
-    return {
-        "total_customers": total_customers,
-        "total_credit": total_credit,
-        "customers_with_credit": customers_with_credit,
-        "total_business": total_business
-    }

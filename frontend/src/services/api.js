@@ -435,7 +435,7 @@ class ApiService {
     }
 
     async updateOrderStatus(orderId, status) {
-        return this.request(`/suppliers/orders/${orderId}/status?status=${status}`, {
+        return this.request(`/suppliers/orders/${orderId}/status?new_status=${status}`, {
             method: 'PUT',
         })
     }
