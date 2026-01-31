@@ -1,32 +1,15 @@
-import { useState } from 'react'
-import { Truck, Plus, Phone, MapPin, Package, Calendar, Clock, TrendingUp, X, Check, AlertTriangle, Search, Filter, Mail, Star, ShoppingCart, MessageCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Truck, Plus, Phone, MapPin, Package, Calendar, Clock, TrendingUp, X, Check, AlertTriangle, Search, Filter, Mail, Star, ShoppingCart, MessageCircle, Loader2 } from 'lucide-react'
 import whatsappService from '../services/whatsapp'
+import api from '../services/api'
 
-// Demo suppliers
-const demoSuppliers = [
-    { id: 1, name: 'Metro Wholesale', contact: 'Ajay Kumar', phone: '9876543210', email: 'ajay@metro.com', address: 'Kuniyamuthur, Coimbatore', category: 'Grains', rating: 4.5, totalOrders: 45, pendingAmount: 12500, lastOrder: '2026-01-28' },
-    { id: 2, name: 'Reliance Fresh B2B', contact: 'Suresh Menon', phone: '9876543211', email: 'suresh@reliance.com', address: 'RS Puram, Coimbatore', category: 'Dairy', rating: 4.8, totalOrders: 32, pendingAmount: 0, lastOrder: '2026-01-25' },
-    { id: 3, name: 'Udaan India', contact: 'Priya Verma', phone: '9876543212', email: 'priya@udaan.in', address: 'Gandhipuram, Coimbatore', category: 'General', rating: 4.2, totalOrders: 28, pendingAmount: 8500, lastOrder: '2026-01-20' },
-    { id: 4, name: 'JioMart Business', contact: 'Rahul Sharma', phone: '9876543213', email: 'rahul@jiomart.com', address: 'Saibaba Colony, Coimbatore', category: 'FMCG', rating: 4.6, totalOrders: 15, pendingAmount: 0, lastOrder: '2026-01-15' },
-]
-
-// Demo purchase orders
-const demoPurchaseOrders = [
-    { id: 1, orderNo: 'PO-2026-0023', supplier: 'Metro Wholesale', items: 5, amount: 15000, status: 'pending', date: '2026-01-30', expectedDelivery: '2026-02-01' },
-    { id: 2, orderNo: 'PO-2026-0022', supplier: 'Udaan India', items: 8, amount: 8500, status: 'delivered', date: '2026-01-28' },
-    { id: 3, orderNo: 'PO-2026-0021', supplier: 'Reliance Fresh B2B', items: 3, amount: 4200, status: 'delivered', date: '2026-01-25' },
-    { id: 4, orderNo: 'PO-2026-0020', supplier: 'Metro Wholesale', items: 12, amount: 28000, status: 'delivered', date: '2026-01-20' },
-]
-
-// Low stock products for ordering
-const lowStockProducts = [
-    { id: 1, name: 'Toor Dal', stock: 8, minStock: 15, unit: 'kg', suggestedQty: 20 },
-    { id: 2, name: 'Salt', stock: 5, minStock: 20, unit: 'kg', suggestedQty: 30 },
-]
+// Low stock products for ordering (will be fetched from API)
+const initialLowStock = []
 
 export default function Suppliers({ addToast }) {
-    const [suppliers, setSuppliers] = useState(demoSuppliers)
-    const [orders, setOrders] = useState(demoPurchaseOrders)
+    const [suppliers, setSuppliers] = useState([])
+    const [orders, setOrders] = useState([])
+    const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
     const [showAddModal, setShowAddModal] = useState(false)
     const [showOrderModal, setShowOrderModal] = useState(false)
@@ -37,8 +20,29 @@ export default function Suppliers({ addToast }) {
 
     const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
 
+    // Load data from API
+    useEffect(() => {
+        loadData()
+    }, [])
+
+    const loadData = async () => {
+        try {
+            setLoading(true)
+            const [suppliersData, ordersData] = await Promise.all([
+                api.getSuppliers().catch(() => []),
+                api.getPurchaseOrders().catch(() => [])
+            ])
+            setSuppliers(Array.isArray(suppliersData) ? suppliersData : [])
+            setOrders(Array.isArray(ordersData) ? ordersData : [])
+        } catch (error) {
+            console.error('Error loading suppliers:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     // Stats
-    const totalPending = suppliers.reduce((sum, s) => sum + s.pendingAmount, 0)
+    const totalPending = suppliers.reduce((sum, s) => sum + (s.pending_amount || 0), 0)
     const pendingOrders = orders.filter(o => o.status === 'pending').length
     const totalSuppliers = suppliers.length
 
@@ -46,27 +50,24 @@ export default function Suppliers({ addToast }) {
     const filteredSuppliers = suppliers.filter(s =>
         s.name.toLowerCase().includes(search.toLowerCase()) ||
         s.category.toLowerCase().includes(search.toLowerCase()) ||
-        s.contact.toLowerCase().includes(search.toLowerCase())
+        (s.contact && s.contact.toLowerCase().includes(search.toLowerCase()))
     )
 
-    const handleAddSupplier = () => {
+    const handleAddSupplier = async () => {
         if (!newSupplier.name || !newSupplier.phone) {
             addToast('Name and phone are required', 'error')
             return
         }
 
-        const supplier = {
-            id: Date.now(),
-            ...newSupplier,
-            rating: 4.0,
-            totalOrders: 0,
-            pendingAmount: 0,
-            lastOrder: null
+        try {
+            const supplier = await api.createSupplier(newSupplier)
+            setSuppliers([supplier, ...suppliers])
+            setNewSupplier({ name: '', contact: '', phone: '', email: '', address: '', category: 'General' })
+            setShowAddModal(false)
+            addToast('Supplier added successfully!', 'success')
+        } catch (error) {
+            addToast(error.message || 'Failed to add supplier', 'error')
         }
-        setSuppliers([supplier, ...suppliers])
-        setNewSupplier({ name: '', contact: '', phone: '', email: '', address: '', category: 'General' })
-        setShowAddModal(false)
-        addToast('Supplier added successfully!', 'success')
     }
 
     const handleCall = (supplier) => {
@@ -137,6 +138,20 @@ export default function Suppliers({ addToast }) {
     const markDelivered = (orderId) => {
         setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'delivered' } : o))
         addToast('Order marked as delivered', 'success')
+    }
+
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <Loader2 className="spin" size={48} />
+                <p>Loading suppliers...</p>
+                <style>{`
+                    .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; gap: 16px; }
+                    .loading-container .spin { animation: spin 1s linear infinite; }
+                    @keyframes spin { to { transform: rotate(360deg); } }
+                `}</style>
+            </div>
+        )
     }
 
     return (

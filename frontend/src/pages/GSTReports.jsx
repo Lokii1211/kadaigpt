@@ -22,9 +22,128 @@ export default function GSTReports({ addToast }) {
     const handleExport = (format) => {
         setShowExportMenu(false)
         addToast(`Exporting as ${format.toUpperCase()}...`, 'info')
-        setTimeout(() => {
-            addToast(`${format.toUpperCase()} file downloaded!`, 'success')
-        }, 1000)
+
+        try {
+            const selectedData = gstData.monthly.find(m => m.month === selectedMonth) || gstData.monthly[0]
+
+            if (format === 'csv') {
+                // Generate CSV
+                const headers = ['Invoice No', 'Date', 'Customer GSTIN', 'Taxable Amount', 'CGST', 'SGST', 'Total']
+                const rows = gstData.invoices.map(inv => [
+                    inv.invoiceNo,
+                    inv.date,
+                    inv.customerGstin || 'N/A',
+                    inv.taxableAmount,
+                    inv.cgst,
+                    inv.sgst,
+                    inv.total
+                ])
+
+                const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+                downloadFile(csvContent, `GST_Report_${selectedMonth.replace(' ', '_')}.csv`, 'text/csv')
+            } else if (format === 'json') {
+                // Generate JSON
+                const jsonData = {
+                    storeName,
+                    gstin,
+                    period: selectedMonth,
+                    summary: gstData.summary,
+                    invoices: gstData.invoices,
+                    generatedAt: new Date().toISOString()
+                }
+                downloadFile(JSON.stringify(jsonData, null, 2), `GST_Report_${selectedMonth.replace(' ', '_')}.json`, 'application/json')
+            } else if (format === 'pdf') {
+                // Generate simple HTML that can be printed as PDF
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>GST Report - ${selectedMonth}</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; margin: 40px; }
+                            h1 { color: #333; border-bottom: 2px solid #7c3aed; padding-bottom: 10px; }
+                            .info { margin: 20px 0; }
+                            .info p { margin: 5px 0; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                            th { background: #7c3aed; color: white; }
+                            tr:nth-child(even) { background: #f9f9f9; }
+                            .summary { display: flex; gap: 20px; margin: 20px 0; }
+                            .summary-box { background: #f3f4f6; padding: 15px; border-radius: 8px; flex: 1; }
+                            .summary-box h3 { margin: 0 0 5px 0; font-size: 14px; color: #666; }
+                            .summary-box p { margin: 0; font-size: 20px; font-weight: bold; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>🧾 GST Report - ${selectedMonth}</h1>
+                        <div class="info">
+                            <p><strong>Store:</strong> ${storeName}</p>
+                            <p><strong>GSTIN:</strong> ${gstin}</p>
+                            <p><strong>Generated:</strong> ${new Date().toLocaleString('en-IN')}</p>
+                        </div>
+                        <div class="summary">
+                            <div class="summary-box">
+                                <h3>Total Sales</h3>
+                                <p>₹${gstData.summary.totalSales.toLocaleString()}</p>
+                            </div>
+                            <div class="summary-box">
+                                <h3>CGST Collected</h3>
+                                <p>₹${gstData.summary.cgst.toLocaleString()}</p>
+                            </div>
+                            <div class="summary-box">
+                                <h3>SGST Collected</h3>
+                                <p>₹${gstData.summary.sgst.toLocaleString()}</p>
+                            </div>
+                        </div>
+                        <h2>Invoice Details</h2>
+                        <table>
+                            <tr>
+                                <th>Invoice No</th>
+                                <th>Date</th>
+                                <th>Taxable Amount</th>
+                                <th>CGST</th>
+                                <th>SGST</th>
+                                <th>Total</th>
+                            </tr>
+                            ${gstData.invoices.map(inv => `
+                                <tr>
+                                    <td>${inv.invoiceNo}</td>
+                                    <td>${inv.date}</td>
+                                    <td>₹${inv.taxableAmount.toLocaleString()}</td>
+                                    <td>₹${inv.cgst.toLocaleString()}</td>
+                                    <td>₹${inv.sgst.toLocaleString()}</td>
+                                    <td>₹${inv.total.toLocaleString()}</td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                        <p style="margin-top: 40px; color: #666; font-size: 12px;">Generated by KadaiGPT - India's AI-Powered Retail Platform</p>
+                    </body>
+                    </html>
+                `
+
+                // Open in new window for printing as PDF
+                const printWindow = window.open('', '_blank')
+                printWindow.document.write(htmlContent)
+                printWindow.document.close()
+                printWindow.print()
+            }
+
+            addToast(`${format.toUpperCase()} report ready!`, 'success')
+        } catch (error) {
+            addToast(`Failed to export: ${error.message}`, 'error')
+        }
+    }
+
+    const downloadFile = (content, filename, mimeType) => {
+        const blob = new Blob([content], { type: mimeType })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
     }
 
     const gstSlabs = [
