@@ -35,7 +35,13 @@ export default function Login({ onLogin }) {
                 onLogin(user)
             }
         } catch (err) {
-            setError(err.message || 'Something went wrong')
+            // Handle different error formats
+            const errorMessage = typeof err === 'string' ? err
+                : err?.message
+                || err?.detail
+                || (err?.response?.data?.detail)
+                || 'Something went wrong. Please try again.'
+            setError(errorMessage)
         } finally {
             setLoading(false)
         }
