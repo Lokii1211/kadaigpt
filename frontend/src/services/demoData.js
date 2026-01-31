@@ -123,12 +123,12 @@ export const barcodeDatabase = {
 
 // Store info for demo
 export const demoStoreInfo = {
-    name: 'VyaparAI Demo Store',
+    name: 'KadaiGPT Demo Store',
     address: 'Kuniyamuthur, Coimbatore, Tamil Nadu',
     phone: '9876543210',
     gstin: '33AABCU9603R1ZM',
-    email: 'demo@vyaparai.in',
-    website: 'www.vyaparai.in'
+    email: 'demo@KadaiGPT.in',
+    website: 'www.KadaiGPT.in'
 }
 
 // Activity feed

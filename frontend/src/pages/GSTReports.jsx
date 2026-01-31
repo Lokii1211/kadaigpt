@@ -8,8 +8,8 @@ export default function GSTReports({ addToast }) {
     const [showExportMenu, setShowExportMenu] = useState(false)
 
     const gstData = demoGSTData
-    const storeName = localStorage.getItem('vyapar_store_name') || 'VyaparAI Store'
-    const gstin = localStorage.getItem('vyapar_gstin') || '33AABCU9603R1ZM'
+    const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
+    const gstin = localStorage.getItem('kadai_gstin') || '33AABCU9603R1ZM'
 
     const handleGenerateGSTR1 = () => {
         setGenerating(true)

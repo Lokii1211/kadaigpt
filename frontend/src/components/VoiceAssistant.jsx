@@ -200,14 +200,14 @@ export default function VoiceAssistant({ onCommand, onNavigate, products = [], a
         setMode('call')
         setIsOpen(true)
         startListening()
-        speak('Hello! Welcome to VyaparAI. How can I help you today?')
-        addToConversation('assistant', 'Hello! Welcome to VyaparAI. How can I help you today?')
+        speak('Hello! Welcome to KadaiGPT. How can I help you today?')
+        addToConversation('assistant', 'Hello! Welcome to KadaiGPT. How can I help you today?')
     }
 
     const endCall = () => {
         stopListening()
         setMode('chat')
-        speak('Thank you for using VyaparAI. Goodbye!')
+        speak('Thank you for using KadaiGPT. Goodbye!')
         setTimeout(() => setIsOpen(false), 2000)
     }
 
@@ -228,7 +228,7 @@ export default function VoiceAssistant({ onCommand, onNavigate, products = [], a
                     <div className="voice-header">
                         <div className="voice-title">
                             <Bot size={20} />
-                            <span>VyaparAI Assistant</span>
+                            <span>KadaiGPT Assistant</span>
                         </div>
                         <div className="voice-controls">
                             <button

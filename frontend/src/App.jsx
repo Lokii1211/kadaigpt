@@ -104,12 +104,18 @@ function App() {
     }
 
     const handleLogin = (userData) => {
+        // Clear demo mode if user is not demo
+        if (!userData.isDemo) {
+            localStorage.removeItem('kadai_demo_mode')
+        }
         setUser(userData)
-        addToast(`Welcome, ${userData.username || 'User'}!`, 'success')
+        addToast(`Welcome, ${userData.username || userData.full_name || 'User'}!`, 'success')
     }
 
     const handleLogout = () => {
         api.logout()
+        // Clear demo mode flag
+        localStorage.removeItem('kadai_demo_mode')
         setUser(null)
         setCurrentPage('dashboard')
         addToast('Logged out successfully', 'info')

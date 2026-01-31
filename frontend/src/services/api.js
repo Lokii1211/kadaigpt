@@ -3,7 +3,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
 
 // IndexedDB for offline storage
-const DB_NAME = 'VyaparAI_DB'
+const DB_NAME = 'KadaiGPT_DB'
 const DB_VERSION = 1
 
 class OfflineStorageService {
@@ -100,7 +100,7 @@ const offlineStorage = new OfflineStorageService()
 class ApiService {
     constructor() {
         this.baseUrl = API_BASE_URL
-        this.token = localStorage.getItem('vyapar_token')
+        this.token = localStorage.getItem('kadai_token')
 
         // Listen for online/offline events
         window.addEventListener('online', () => this.syncOfflineData())
@@ -109,14 +109,14 @@ class ApiService {
     setToken(token) {
         this.token = token
         if (token) {
-            localStorage.setItem('vyapar_token', token)
+            localStorage.setItem('kadai_token', token)
         } else {
-            localStorage.removeItem('vyapar_token')
+            localStorage.removeItem('kadai_token')
         }
     }
 
     getToken() {
-        return this.token || localStorage.getItem('vyapar_token')
+        return this.token || localStorage.getItem('kadai_token')
     }
 
     async request(endpoint, options = {}) {
@@ -231,8 +231,8 @@ class ApiService {
 
     logout() {
         this.setToken(null)
-        localStorage.removeItem('vyapar_store_name')
-        localStorage.removeItem('vyapar_gstin')
+        localStorage.removeItem('kadai_store_name')
+        localStorage.removeItem('kadai_gstin')
     }
 
     // Products endpoints

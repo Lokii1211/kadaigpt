@@ -35,7 +35,7 @@ export default function Suppliers({ addToast }) {
     const [newSupplier, setNewSupplier] = useState({ name: '', contact: '', phone: '', email: '', address: '', category: 'General' })
     const [orderItems, setOrderItems] = useState([])
 
-    const storeName = localStorage.getItem('vyapar_store_name') || 'VyaparAI Store'
+    const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
 
     // Stats
     const totalPending = suppliers.reduce((sum, s) => sum + s.pendingAmount, 0)

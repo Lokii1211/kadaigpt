@@ -13,7 +13,7 @@ export default function WhatsAppIntegration({ addToast }) {
     const [sending, setSending] = useState(false)
     const [progress, setProgress] = useState({ current: 0, total: 0 })
 
-    const storeName = localStorage.getItem('vyapar_store_name') || 'VyaparAI Store'
+    const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
 
     const templates = whatsappService.getTemplates()
     const customersWithDue = customers.filter(c => c.credit > 0)

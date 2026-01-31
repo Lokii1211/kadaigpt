@@ -1,254 +1,309 @@
 import { useState, useEffect } from 'react'
 import { TrendingUp, ShoppingBag, Users, AlertTriangle, IndianRupee, ArrowUpRight, Clock, Zap, FileText, Package, Plus, Camera, BarChart3, RefreshCw } from 'lucide-react'
 import { demoAnalytics, demoBills, demoActivity, demoProducts } from '../services/demoData'
+import api from '../services/api'
 
 export default function Dashboard({ addToast, setCurrentPage }) {
-    const [stats, setStats] = useState({
+  const [stats, setStats] = useState({
+    todaySales: 0,
+    todayBills: 0,
+    avgBillValue: 0,
+    lowStockCount: 0
+  })
+  const [products, setProducts] = useState([])
+  const [bills, setBills] = useState([])
+  const [activity, setActivity] = useState([])
+  const [hourlyData, setHourlyData] = useState([])
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isDemoMode, setIsDemoMode] = useState(false)
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [])
+
+  const loadDashboardData = async () => {
+    const demoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+    setIsDemoMode(demoMode)
+
+    if (demoMode) {
+      // Demo mode - use demo data
+      setStats({
         todaySales: 24580,
         todayBills: 47,
         avgBillValue: 523,
         lowStockCount: 5
-    })
-    const [currentTime, setCurrentTime] = useState(new Date())
-    const [isRefreshing, setIsRefreshing] = useState(false)
+      })
+      setProducts(demoProducts)
+      setBills(demoBills)
+      setActivity(demoActivity)
+      setHourlyData(demoAnalytics.hourlyData)
+    } else {
+      // Real user - fetch from API
+      try {
+        const [statsData, productsData, billsData] = await Promise.all([
+          api.getDashboardStats?.().catch(() => null),
+          api.getProducts().catch(() => ({ products: [] })),
+          api.getBills?.().catch(() => ({ bills: [] }))
+        ])
 
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000)
-        return () => clearInterval(timer)
-    }, [])
+        setProducts(productsData?.products || [])
+        setBills(billsData?.bills || [])
 
-    const formatCurrency = (n) => `₹${n.toLocaleString('en-IN')}`
-    const formatTime = (date) => date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
-    const formatDate = (date) => date.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-
-    const lowStockProducts = demoProducts.filter(p => p.stock <= p.minStock)
-    const hourlyData = demoAnalytics.hourlyData
-    const maxSales = Math.max(...hourlyData.map(h => h.sales))
-
-    const refresh = () => {
-        setIsRefreshing(true)
-        setTimeout(() => {
-            setStats(prev => ({ ...prev, todaySales: prev.todaySales + Math.floor(Math.random() * 500) }))
-            setIsRefreshing(false)
-            addToast('Dashboard refreshed', 'success')
-        }, 1000)
+        if (statsData) {
+          setStats(statsData)
+        } else {
+          // Calculate stats from data
+          setStats({
+            todaySales: 0,
+            todayBills: billsData?.bills?.length || 0,
+            avgBillValue: 0,
+            lowStockCount: productsData?.products?.filter(p => p.stock <= p.minStock).length || 0
+          })
+        }
+        setHourlyData([])
+        setActivity([])
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error)
+      }
     }
+  }
 
-    const quickActions = [
-        { label: 'New Bill', icon: Plus, page: 'create-bill', color: 'primary' },
-        { label: 'Scan Bill', icon: Camera, page: 'ocr', color: 'secondary' },
-        { label: 'View Bills', icon: FileText, page: 'bills', color: 'secondary' },
-        { label: 'Analytics', icon: BarChart3, page: 'analytics', color: 'secondary' },
-    ]
+  const formatCurrency = (n) => `₹${n.toLocaleString('en-IN')}`
+  const formatTime = (date) => date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  const formatDate = (date) => date.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
-    return (
-        <div className="dashboard">
-            {/* Header with Time */}
-            <div className="dashboard-header">
-                <div>
-                    <h1 className="page-title">🏪 Dashboard</h1>
-                    <p className="page-subtitle">{formatDate(currentTime)}</p>
-                </div>
-                <div className="header-right">
-                    <div className="live-time">
-                        <Clock size={18} />
-                        <span>{formatTime(currentTime)}</span>
-                    </div>
-                    <button className={`btn btn-ghost ${isRefreshing ? 'spin' : ''}`} onClick={refresh}>
-                        <RefreshCw size={18} />
-                    </button>
-                </div>
-            </div>
+  const lowStockProducts = products.filter(p => p.stock <= p.minStock)
+  const maxSales = Math.max(...(hourlyData.map(h => h.sales) || [0]), 1)
 
-            {/* Quick Actions */}
-            <div className="quick-actions-grid">
-                {quickActions.map((action, i) => (
-                    <button
-                        key={i}
-                        className={`quick-action-btn ${action.color}`}
-                        onClick={() => setCurrentPage(action.page)}
+  const refresh = () => {
+    setIsRefreshing(true)
+    loadDashboardData().finally(() => {
+      setIsRefreshing(false)
+      addToast('Dashboard refreshed', 'success')
+    })
+  }
+
+  const quickActions = [
+    { label: 'New Bill', icon: Plus, page: 'create-bill', color: 'primary' },
+    { label: 'Scan Bill', icon: Camera, page: 'ocr', color: 'secondary' },
+    { label: 'View Bills', icon: FileText, page: 'bills', color: 'secondary' },
+    { label: 'Analytics', icon: BarChart3, page: 'analytics', color: 'secondary' },
+  ]
+
+  return (
+    <div className="dashboard">
+      {/* Header with Time */}
+      <div className="dashboard-header">
+        <div>
+          <h1 className="page-title">🏪 Dashboard</h1>
+          <p className="page-subtitle">{formatDate(currentTime)}</p>
+        </div>
+        <div className="header-right">
+          <div className="live-time">
+            <Clock size={18} />
+            <span>{formatTime(currentTime)}</span>
+          </div>
+          <button className={`btn btn-ghost ${isRefreshing ? 'spin' : ''}`} onClick={refresh}>
+            <RefreshCw size={18} />
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="quick-actions-grid">
+        {quickActions.map((action, i) => (
+          <button
+            key={i}
+            className={`quick-action-btn ${action.color}`}
+            onClick={() => setCurrentPage(action.page)}
+          >
+            <action.icon size={24} />
+            <span>{action.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Stats Grid */}
+      <div className="stats-grid">
+        <div className="stat-card highlight">
+          <div className="stat-icon"><IndianRupee size={28} /></div>
+          <div className="stat-content">
+            <span className="stat-value">{formatCurrency(stats.todaySales)}</span>
+            <span className="stat-label">Today's Sales</span>
+          </div>
+          <div className="stat-change positive">
+            <ArrowUpRight size={16} />
+            +18.5%
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon"><ShoppingBag size={28} /></div>
+          <div className="stat-content">
+            <span className="stat-value">{stats.todayBills}</span>
+            <span className="stat-label">Total Bills</span>
+          </div>
+          <div className="stat-change positive">
+            <ArrowUpRight size={16} />
+            +12%
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon"><TrendingUp size={28} /></div>
+          <div className="stat-content">
+            <span className="stat-value">{formatCurrency(stats.avgBillValue)}</span>
+            <span className="stat-label">Avg Bill Value</span>
+          </div>
+          <div className="stat-change positive">
+            <ArrowUpRight size={16} />
+            +5.2%
+          </div>
+        </div>
+        <div className={`stat-card ${stats.lowStockCount > 0 ? 'warning' : ''}`}>
+          <div className="stat-icon"><Package size={28} /></div>
+          <div className="stat-content">
+            <span className="stat-value">{stats.lowStockCount}</span>
+            <span className="stat-label">Low Stock Items</span>
+          </div>
+          {stats.lowStockCount > 0 && (
+            <button className="btn btn-sm btn-warning" onClick={() => setCurrentPage('products')}>Fix</button>
+          )}
+        </div>
+      </div>
+
+      <div className="dashboard-grid">
+        {/* Sales Chart */}
+        <div className="card chart-card">
+          <div className="card-header">
+            <h3 className="card-title"><BarChart3 size={20} /> Today's Sales Trend</h3>
+          </div>
+          <div className="chart-container">
+            <div className="area-chart">
+              <div className="chart-bars">
+                {hourlyData.map((data, i) => (
+                  <div key={i} className="chart-bar-wrapper">
+                    <div
+                      className="chart-bar"
+                      style={{ height: `${(data.sales / maxSales) * 100}%` }}
+                      title={`${data.hour}: ₹${data.sales}`}
                     >
-                        <action.icon size={24} />
-                        <span>{action.label}</span>
-                    </button>
+                      <span className="bar-tooltip">₹{data.sales}</span>
+                    </div>
+                    <span className="bar-label">{data.hour}</span>
+                  </div>
                 ))}
+              </div>
             </div>
-
-            {/* Stats Grid */}
-            <div className="stats-grid">
-                <div className="stat-card highlight">
-                    <div className="stat-icon"><IndianRupee size={28} /></div>
-                    <div className="stat-content">
-                        <span className="stat-value">{formatCurrency(stats.todaySales)}</span>
-                        <span className="stat-label">Today's Sales</span>
-                    </div>
-                    <div className="stat-change positive">
-                        <ArrowUpRight size={16} />
-                        +18.5%
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon"><ShoppingBag size={28} /></div>
-                    <div className="stat-content">
-                        <span className="stat-value">{stats.todayBills}</span>
-                        <span className="stat-label">Total Bills</span>
-                    </div>
-                    <div className="stat-change positive">
-                        <ArrowUpRight size={16} />
-                        +12%
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon"><TrendingUp size={28} /></div>
-                    <div className="stat-content">
-                        <span className="stat-value">{formatCurrency(stats.avgBillValue)}</span>
-                        <span className="stat-label">Avg Bill Value</span>
-                    </div>
-                    <div className="stat-change positive">
-                        <ArrowUpRight size={16} />
-                        +5.2%
-                    </div>
-                </div>
-                <div className={`stat-card ${stats.lowStockCount > 0 ? 'warning' : ''}`}>
-                    <div className="stat-icon"><Package size={28} /></div>
-                    <div className="stat-content">
-                        <span className="stat-value">{stats.lowStockCount}</span>
-                        <span className="stat-label">Low Stock Items</span>
-                    </div>
-                    {stats.lowStockCount > 0 && (
-                        <button className="btn btn-sm btn-warning" onClick={() => setCurrentPage('products')}>Fix</button>
-                    )}
-                </div>
+          </div>
+          <div className="chart-summary">
+            <div className="summary-item">
+              <span className="label">Peak Hour</span>
+              <span className="value">11 AM - ₹6,800</span>
             </div>
-
-            <div className="dashboard-grid">
-                {/* Sales Chart */}
-                <div className="card chart-card">
-                    <div className="card-header">
-                        <h3 className="card-title"><BarChart3 size={20} /> Today's Sales Trend</h3>
-                    </div>
-                    <div className="chart-container">
-                        <div className="area-chart">
-                            <div className="chart-bars">
-                                {hourlyData.map((data, i) => (
-                                    <div key={i} className="chart-bar-wrapper">
-                                        <div
-                                            className="chart-bar"
-                                            style={{ height: `${(data.sales / maxSales) * 100}%` }}
-                                            title={`${data.hour}: ₹${data.sales}`}
-                                        >
-                                            <span className="bar-tooltip">₹{data.sales}</span>
-                                        </div>
-                                        <span className="bar-label">{data.hour}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="chart-summary">
-                        <div className="summary-item">
-                            <span className="label">Peak Hour</span>
-                            <span className="value">11 AM - ₹6,800</span>
-                        </div>
-                        <div className="summary-item">
-                            <span className="label">Total Customers</span>
-                            <span className="value">{hourlyData.reduce((s, h) => s + h.customers, 0)}</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Activity Feed */}
-                <div className="card">
-                    <div className="card-header">
-                        <h3 className="card-title"><Zap size={20} /> Live Activity</h3>
-                    </div>
-                    <div className="activity-feed">
-                        {demoActivity.map(item => (
-                            <div key={item.id} className={`activity-item ${item.type}`}>
-                                <div className="activity-dot"></div>
-                                <div className="activity-content">
-                                    <p>{item.message}</p>
-                                    <span className="activity-time">{item.time}</span>
-                                </div>
-                                {item.amount && <span className="activity-amount">₹{item.amount}</span>}
-                            </div>
-                        ))}
-                    </div>
-                </div>
+            <div className="summary-item">
+              <span className="label">Total Customers</span>
+              <span className="value">{hourlyData.reduce((s, h) => s + h.customers, 0)}</span>
             </div>
+          </div>
+        </div>
 
-            <div className="dashboard-grid">
-                {/* Low Stock Alert */}
-                <div className="card">
-                    <div className="card-header">
-                        <h3 className="card-title"><AlertTriangle size={20} /> Low Stock Alerts</h3>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setCurrentPage('products')}>View All</button>
-                    </div>
-                    <div className="low-stock-list">
-                        {lowStockProducts.slice(0, 5).map(product => (
-                            <div key={product.id} className="low-stock-item">
-                                <div className="product-info">
-                                    <span className="product-name">{product.name}</span>
-                                    <span className="product-category">{product.category}</span>
-                                </div>
-                                <div className="stock-info">
-                                    <span className={`stock-level ${product.stock === 0 ? 'out' : 'low'}`}>
-                                        {product.stock} / {product.minStock} {product.unit}
-                                    </span>
-                                    <div className="stock-bar">
-                                        <div
-                                            className="stock-fill"
-                                            style={{ width: `${Math.min(100, (product.stock / product.minStock) * 100)}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+        {/* Activity Feed */}
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title"><Zap size={20} /> Live Activity</h3>
+          </div>
+          <div className="activity-feed">
+            {demoActivity.map(item => (
+              <div key={item.id} className={`activity-item ${item.type}`}>
+                <div className="activity-dot"></div>
+                <div className="activity-content">
+                  <p>{item.message}</p>
+                  <span className="activity-time">{item.time}</span>
                 </div>
+                {item.amount && <span className="activity-amount">₹{item.amount}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-                {/* Recent Bills */}
-                <div className="card">
-                    <div className="card-header">
-                        <h3 className="card-title"><FileText size={20} /> Recent Bills</h3>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setCurrentPage('bills')}>View All</button>
-                    </div>
-                    <div className="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Bill No</th>
-                                    <th>Customer</th>
-                                    <th>Amount</th>
-                                    <th>Mode</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {demoBills.slice(0, 5).map(bill => (
-                                    <tr key={bill.id}>
-                                        <td><code>{bill.bill_number}</code></td>
-                                        <td>{bill.customer_name}</td>
-                                        <td className="amount">₹{bill.total.toFixed(2)}</td>
-                                        <td><span className={`badge badge-${bill.payment_mode === 'UPI' ? 'info' : bill.payment_mode === 'Card' ? 'warning' : 'success'}`}>{bill.payment_mode}</span></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+      <div className="dashboard-grid">
+        {/* Low Stock Alert */}
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title"><AlertTriangle size={20} /> Low Stock Alerts</h3>
+            <button className="btn btn-ghost btn-sm" onClick={() => setCurrentPage('products')}>View All</button>
+          </div>
+          <div className="low-stock-list">
+            {lowStockProducts.slice(0, 5).map(product => (
+              <div key={product.id} className="low-stock-item">
+                <div className="product-info">
+                  <span className="product-name">{product.name}</span>
+                  <span className="product-category">{product.category}</span>
                 </div>
-            </div>
-
-            {/* AI Insights Banner */}
-            <div className="ai-insights-banner">
-                <div className="ai-icon"><Zap size={24} /></div>
-                <div className="ai-content">
-                    <h4>AI Insight</h4>
-                    <p>Your peak sales hour is 11 AM - 12 PM. Consider having extra staff during this time for faster billing.</p>
+                <div className="stock-info">
+                  <span className={`stock-level ${product.stock === 0 ? 'out' : 'low'}`}>
+                    {product.stock} / {product.minStock} {product.unit}
+                  </span>
+                  <div className="stock-bar">
+                    <div
+                      className="stock-fill"
+                      style={{ width: `${Math.min(100, (product.stock / product.minStock) * 100)}%` }}
+                    ></div>
+                  </div>
                 </div>
-                <button className="btn btn-primary" onClick={() => setCurrentPage('analytics')}>View More Insights</button>
-            </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-            <style>{`
+        {/* Recent Bills */}
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title"><FileText size={20} /> Recent Bills</h3>
+            <button className="btn btn-ghost btn-sm" onClick={() => setCurrentPage('bills')}>View All</button>
+          </div>
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Bill No</th>
+                  <th>Customer</th>
+                  <th>Amount</th>
+                  <th>Mode</th>
+                </tr>
+              </thead>
+              <tbody>
+                {demoBills.slice(0, 5).map(bill => (
+                  <tr key={bill.id}>
+                    <td><code>{bill.bill_number}</code></td>
+                    <td>{bill.customer_name}</td>
+                    <td className="amount">₹{bill.total.toFixed(2)}</td>
+                    <td><span className={`badge badge-${bill.payment_mode === 'UPI' ? 'info' : bill.payment_mode === 'Card' ? 'warning' : 'success'}`}>{bill.payment_mode}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Insights Banner */}
+      <div className="ai-insights-banner">
+        <div className="ai-icon"><Zap size={24} /></div>
+        <div className="ai-content">
+          <h4>AI Insight</h4>
+          <p>Your peak sales hour is 11 AM - 12 PM. Consider having extra staff during this time for faster billing.</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setCurrentPage('analytics')}>View More Insights</button>
+      </div>
+
+      <style>{`
         /* Dashboard Header */
         .dashboard-header { 
           display: flex; 
@@ -824,6 +879,6 @@ export default function Dashboard({ addToast, setCurrentPage }) {
           }
         }
       `}</style>
-        </div>
-    )
+    </div>
+  )
 }

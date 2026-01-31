@@ -103,7 +103,7 @@ export default function Bills({ addToast, setCurrentPage }) {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `VyaparAI_Bills_${new Date().toISOString().split('T')[0]}.csv`
+        a.download = `KadaiGPT_Bills_${new Date().toISOString().split('T')[0]}.csv`
         a.click()
         URL.revokeObjectURL(url)
         addToast('Bills exported to CSV successfully!', 'success')
@@ -120,7 +120,7 @@ export default function Bills({ addToast, setCurrentPage }) {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `VyaparAI_Bills_${new Date().toISOString().split('T')[0]}.json`
+        a.download = `KadaiGPT_Bills_${new Date().toISOString().split('T')[0]}.json`
         a.click()
         URL.revokeObjectURL(url)
         addToast('Bills exported to JSON successfully!', 'success')
@@ -445,7 +445,7 @@ function generateReceiptText(bill) {
     const w = 32
     let r = ''
     r += '='.repeat(w) + '\n'
-    r += 'VyaparAI Store'.padStart(w / 2 + 7).padEnd(w) + '\n'
+    r += 'KadaiGPT Store'.padStart(w / 2 + 7).padEnd(w) + '\n'
     r += '='.repeat(w) + '\n'
     r += `Bill: ${bill.bill_number}\n`
     r += `Date: ${new Date(bill.created_at).toLocaleString()}\n`
@@ -468,6 +468,6 @@ function generateReceiptText(bill) {
     r += `Payment: ${bill.payment_mode}\n`
     r += '\n'
     r += 'Thank You!'.padStart(w / 2 + 5).padEnd(w) + '\n'
-    r += 'Powered by VyaparAI'.padStart(w / 2 + 10).padEnd(w) + '\n'
+    r += 'Powered by KadaiGPT'.padStart(w / 2 + 10).padEnd(w) + '\n'
     return r
 }

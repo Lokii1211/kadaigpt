@@ -5,14 +5,14 @@ const ThemeContext = createContext()
 
 export function ThemeProvider({ children }) {
     const [theme, setTheme] = useState(() => {
-        const saved = localStorage.getItem('vyapar_theme')
+        const saved = localStorage.getItem('kadai_theme')
         return saved || 'dark'
     })
 
     useEffect(() => {
         // Apply theme to document
         document.documentElement.setAttribute('data-theme', theme)
-        localStorage.setItem('vyapar_theme', theme)
+        localStorage.setItem('kadai_theme', theme)
 
         // Update meta theme-color
         const metaTheme = document.querySelector('meta[name="theme-color"]')

@@ -73,10 +73,10 @@ export default function CreateBill({ addToast, setCurrentPage }) {
 
     const getBillData = () => ({
         bill_number: billNumber || `INV-${Date.now().toString().slice(-6)}`,
-        store_name: localStorage.getItem('vyapar_store_name') || 'VyaparAI Store',
-        store_address: localStorage.getItem('vyapar_store_address') || '',
-        store_phone: localStorage.getItem('vyapar_store_phone') || '',
-        gstin: localStorage.getItem('vyapar_gstin') || '',
+        store_name: localStorage.getItem('kadai_store_name') || 'KadaiGPT Store',
+        store_address: localStorage.getItem('kadai_store_address') || '',
+        store_phone: localStorage.getItem('kadai_store_phone') || '',
+        gstin: localStorage.getItem('kadai_gstin') || '',
         customer_name: customer.name || 'Walk-in Customer',
         items: cart.map(item => ({
             product_name: item.name,
@@ -88,7 +88,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         discount: 0,
         total,
         payment_mode: paymentMode,
-        use_thermal: localStorage.getItem('vyapar_thermal') !== 'false'
+        use_thermal: localStorage.getItem('kadai_thermal') !== 'false'
     })
 
     const handlePreview = async () => {
@@ -121,7 +121,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
             preview += `${'TOTAL'.padEnd(20)} ₹${total.toFixed(2)}\n`
             preview += '================================\n'
             preview += '        Thank You!\n'
-            preview += '    Powered by VyaparAI\n'
+            preview += '    Powered by KadaiGPT\n'
             setPreviewContent(preview)
             setShowPreview(true)
         }

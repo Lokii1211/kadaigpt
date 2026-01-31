@@ -10,18 +10,18 @@ export default function Settings({ addToast }) {
     const [selectedPrinter, setSelectedPrinter] = useState('auto')
     const [testingPrint, setTestingPrint] = useState(false)
     const [settings, setSettings] = useState({
-        storeName: localStorage.getItem('vyapar_store_name') || 'My Store',
-        storeAddress: localStorage.getItem('vyapar_store_address') || '',
-        storePhone: localStorage.getItem('vyapar_store_phone') || '',
-        gstin: localStorage.getItem('vyapar_gstin') || '',
-        autoPrint: localStorage.getItem('vyapar_auto_print') === 'true',
-        soundEnabled: localStorage.getItem('vyapar_sound') !== 'false',
-        thermalMode: localStorage.getItem('vyapar_thermal') !== 'false',
+        storeName: localStorage.getItem('kadai_store_name') || 'My Store',
+        storeAddress: localStorage.getItem('kadai_store_address') || '',
+        storePhone: localStorage.getItem('kadai_store_phone') || '',
+        gstin: localStorage.getItem('kadai_gstin') || '',
+        autoPrint: localStorage.getItem('kadai_auto_print') === 'true',
+        soundEnabled: localStorage.getItem('kadai_sound') !== 'false',
+        thermalMode: localStorage.getItem('kadai_thermal') !== 'false',
     })
 
     useEffect(() => {
         loadPrinters()
-        const savedPrinter = localStorage.getItem('vyapar_printer')
+        const savedPrinter = localStorage.getItem('kadai_printer')
         if (savedPrinter) setSelectedPrinter(savedPrinter)
     }, [])
 
@@ -57,22 +57,22 @@ export default function Settings({ addToast }) {
     }
 
     const savePrinterSettings = () => {
-        localStorage.setItem('vyapar_printer', selectedPrinter)
-        localStorage.setItem('vyapar_auto_print', settings.autoPrint)
-        localStorage.setItem('vyapar_thermal', settings.thermalMode)
+        localStorage.setItem('kadai_printer', selectedPrinter)
+        localStorage.setItem('kadai_auto_print', settings.autoPrint)
+        localStorage.setItem('kadai_thermal', settings.thermalMode)
         addToast('Printer settings saved!', 'success')
     }
 
     const saveStoreSettings = () => {
-        localStorage.setItem('vyapar_store_name', settings.storeName)
-        localStorage.setItem('vyapar_store_address', settings.storeAddress)
-        localStorage.setItem('vyapar_store_phone', settings.storePhone)
-        localStorage.setItem('vyapar_gstin', settings.gstin)
+        localStorage.setItem('kadai_store_name', settings.storeName)
+        localStorage.setItem('kadai_store_address', settings.storeAddress)
+        localStorage.setItem('kadai_store_phone', settings.storePhone)
+        localStorage.setItem('kadai_gstin', settings.gstin)
         addToast('Store settings saved!', 'success')
     }
 
     const saveNotificationSettings = () => {
-        localStorage.setItem('vyapar_sound', settings.soundEnabled)
+        localStorage.setItem('kadai_sound', settings.soundEnabled)
         addToast('Notification settings saved!', 'success')
     }
 

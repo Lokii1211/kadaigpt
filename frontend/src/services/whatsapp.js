@@ -68,7 +68,7 @@ Please clear your dues at your earliest convenience.
 Thank you for your business! 🙏
 
 _${storeName}_
-_Sent via VyaparAI_`
+_Sent via KadaiGPT_`
     }
 
     // Generate festive offer message
@@ -85,7 +85,7 @@ Celebrate with us at *${storeName}*!
 Visit us today and save big! 
 
 🛒 *${storeName}*
-_Powered by VyaparAI_`
+_Powered by KadaiGPT_`
     }
 
     // Generate stock alert message (for suppliers)
@@ -106,7 +106,7 @@ ${productList}
 Please confirm availability and delivery timeline.
 
 Thank you!
-_Sent via VyaparAI_`
+_Sent via KadaiGPT_`
     }
 
     // Generate loyalty points message

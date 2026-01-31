@@ -36,11 +36,26 @@ export default function Products({ addToast }) {
 
     const loadProducts = async () => {
         setLoading(true)
+        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+
         try {
-            const data = await api.getProducts()
-            setProducts(data.products || demoProducts)
-        } catch {
-            setProducts(demoProducts)
+            if (isDemoMode) {
+                // Demo mode - use demo data
+                setProducts(demoProducts)
+            } else {
+                // Real user - fetch from API
+                const data = await api.getProducts()
+                // If API returns products, use them; otherwise show empty state
+                setProducts(data.products || [])
+            }
+        } catch (error) {
+            console.error('Failed to load products:', error)
+            // For real users, show empty state on error; for demo, show demo data
+            if (isDemoMode) {
+                setProducts(demoProducts)
+            } else {
+                setProducts([])
+            }
         } finally {
             setLoading(false)
         }

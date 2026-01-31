@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { ShoppingCart, Mail, Lock, User, ArrowRight, Loader2, Sparkles, Zap, Shield, Wifi } from 'lucide-react'
+import { ShoppingCart, Mail, Lock, User, ArrowRight, Loader2, Sparkles, Zap, Shield, Wifi, Eye, EyeOff } from 'lucide-react'
 import api from '../services/api'
 
 export default function Login({ onLogin }) {
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState({
     username: '',
     email: '',
@@ -95,7 +96,13 @@ export default function Login({ onLogin }) {
   }
 
   const handleDemo = () => {
-    onLogin({ username: 'demo', store_name: 'Demo Store' })
+    // Mark as demo mode in localStorage
+    localStorage.setItem('kadai_demo_mode', 'true')
+    onLogin({
+      username: 'Demo User',
+      store_name: 'KadaiGPT Demo Store',
+      isDemo: true
+    })
   }
 
   const features = [
@@ -116,10 +123,9 @@ export default function Login({ onLogin }) {
             </div>
             <h1>KadaiGPT</h1>
             <p className="tagline">AI-Powered Retail Intelligence</p>
-            <p className="tamil-tagline">கடை சிறியது, கனவுகள் பெரியது</p>
             <p className="description">
-              India's first Agentic AI platform for retail. Voice commands in Tamil, Hindi & Telugu.
-              Predictive analytics, WhatsApp integration, and works 100% offline.
+              Smart billing, inventory management, and analytics for your retail store.
+              WhatsApp integration, works offline, and GST compliant.
             </p>
 
             <div className="features-grid">
@@ -215,16 +221,25 @@ export default function Login({ onLogin }) {
 
               <div className="form-group">
                 <label className="form-label">Password</label>
-                <div className="input-icon">
+                <div className="input-icon password-input">
                   <Lock size={18} />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     className="form-input"
                     placeholder="Enter your password"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     required
+                    minLength={6}
                   />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
 
@@ -492,6 +507,36 @@ export default function Login({ onLogin }) {
           min-height: 48px;
           -webkit-appearance: none;
           appearance: none;
+        }
+        
+        /* Password input with toggle */
+        .password-input input {
+          padding-right: 44px;
+        }
+        
+        .password-toggle {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: var(--text-tertiary);
+          cursor: pointer;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: color var(--transition-fast);
+          -webkit-tap-highlight-color: transparent;
+        }
+        
+        .password-toggle:hover {
+          color: var(--text-primary);
+        }
+        
+        .password-toggle:focus {
+          outline: none;
         }
         
         .w-full { 
