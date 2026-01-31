@@ -1,5 +1,5 @@
 """
-VyaparAI - AI Agents Package
+KadaiGPT - AI Agents Package
 Export all agents for easy import
 """
 

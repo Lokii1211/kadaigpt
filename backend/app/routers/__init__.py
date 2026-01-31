@@ -1,5 +1,5 @@
 """
-VyaparAI - Routers Package
+KadaiGPT - Routers Package
 """
 
 from app.routers.auth import router as auth_router

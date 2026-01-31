@@ -1,5 +1,5 @@
 """
-VyaparAI - Database Models
+KadaiGPT - Database Models
 Complete data models for the retail operations platform
 """
 

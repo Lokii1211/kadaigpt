@@ -1,1 +1,1 @@
-"""VyaparAI App Package"""
+"""KadaiGPT App Package"""

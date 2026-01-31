@@ -1,5 +1,5 @@
 """
-VyaparAI - OCR Router
+KadaiGPT - OCR Router
 Handwritten bill processing with AI-powered extraction
 """
 

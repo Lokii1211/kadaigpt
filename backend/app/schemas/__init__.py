@@ -1,5 +1,5 @@
 """
-VyaparAI - Pydantic Schemas
+KadaiGPT - Pydantic Schemas
 Request/Response schemas for API endpoints
 """
 

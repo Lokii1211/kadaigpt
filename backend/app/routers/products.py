@@ -1,5 +1,5 @@
 """
-VyaparAI - Products Router
+KadaiGPT - Products Router
 Product and category management with inventory tracking
 """
 

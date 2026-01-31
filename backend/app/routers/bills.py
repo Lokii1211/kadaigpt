@@ -1,5 +1,5 @@
 """
-VyaparAI - Bills Router
+KadaiGPT - Bills Router
 Core billing functionality with AI agent integration
 """
 
@@ -290,7 +290,7 @@ async def create_bill(
         bill_for_print = {
             "id": bill.id,
             "bill_number": bill.bill_number,
-            "store_name": store.name if store else "VyaparAI Store",
+            "store_name": store.name if store else "KadaiGPT Store",
             "items": [
                 {
                     "product_name": item.product_name,
