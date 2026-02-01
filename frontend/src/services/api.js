@@ -452,6 +452,29 @@ class ApiService {
             body: JSON.stringify({ amount }),
         })
     }
+
+    // WhatsApp Bot endpoints
+    async getWhatsAppTemplates() {
+        return this.request('/whatsapp/templates')
+    }
+
+    async getWhatsAppStats() {
+        return this.request('/whatsapp/stats')
+    }
+
+    async sendWhatsAppMessage(phone, message) {
+        return this.request('/whatsapp/send', {
+            method: 'POST',
+            body: JSON.stringify({ phone, message }),
+        })
+    }
+
+    async sendBulkReminders(customerIds) {
+        return this.request('/whatsapp/bulk-reminder', {
+            method: 'POST',
+            body: JSON.stringify(customerIds),
+        })
+    }
 }
 
 const api = new ApiService()
