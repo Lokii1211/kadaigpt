@@ -155,6 +155,14 @@ app.include_router(analytics_router, prefix=settings.api_v1_prefix)
 from app.routers.notifications import router as notifications_router
 app.include_router(notifications_router, prefix=settings.api_v1_prefix)
 
+# Include bulk operations router
+from app.routers.bulk import router as bulk_router
+app.include_router(bulk_router, prefix=settings.api_v1_prefix)
+
+# Include scheduler router
+from app.services.scheduler import router as scheduler_router
+app.include_router(scheduler_router, prefix=settings.api_v1_prefix)
+
 # Add security middleware if available
 if SECURITY_MIDDLEWARE_AVAILABLE:
     app.add_middleware(SecurityMiddleware)
