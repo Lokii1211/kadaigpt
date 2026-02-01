@@ -27,7 +27,8 @@ const demoExpenses = [
 ]
 
 export default function ExpenseTracker({ addToast }) {
-    const [expenses, setExpenses] = useState(demoExpenses)
+    const [expenses, setExpenses] = useState([])
+    const [loading, setLoading] = useState(true)
     const [showAddModal, setShowAddModal] = useState(false)
     const [filter, setFilter] = useState('all')
     const [dateRange, setDateRange] = useState('month')
@@ -38,6 +39,41 @@ export default function ExpenseTracker({ addToast }) {
         date: new Date().toISOString().split('T')[0],
         recurring: false
     })
+
+    useEffect(() => {
+        loadExpenses()
+    }, [])
+
+    const loadExpenses = () => {
+        setLoading(true)
+        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+
+        if (isDemoMode) {
+            setExpenses(demoExpenses)
+        } else {
+            // For real users, start with empty expenses (could be loaded from API in future)
+            // Check if we have localStorage expenses
+            const savedExpenses = localStorage.getItem('kadai_expenses')
+            if (savedExpenses) {
+                try {
+                    setExpenses(JSON.parse(savedExpenses))
+                } catch {
+                    setExpenses([])
+                }
+            } else {
+                setExpenses([])
+            }
+        }
+        setLoading(false)
+    }
+
+    // Save expenses to localStorage for persistence (for real users)
+    useEffect(() => {
+        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+        if (!isDemoMode && expenses.length > 0) {
+            localStorage.setItem('kadai_expenses', JSON.stringify(expenses))
+        }
+    }, [expenses])
 
     const filteredExpenses = expenses.filter(e =>
         filter === 'all' || e.category === filter

@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Gift, Star, Users, Trophy, ArrowUpRight, Plus, X, Check, Award, Zap, CreditCard } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Gift, Star, Users, Trophy, ArrowUpRight, Plus, X, Check, Award, Zap, CreditCard, Loader2 } from 'lucide-react'
+import api from '../services/api'
 
 // Demo loyalty data
 const demoLoyaltyCustomers = [
@@ -26,12 +27,49 @@ const demoRewards = [
 ]
 
 export default function LoyaltyRewards({ addToast }) {
-    const [customers, setCustomers] = useState(demoLoyaltyCustomers)
+    const [customers, setCustomers] = useState([])
+    const [loading, setLoading] = useState(true)
     const [selectedCustomer, setSelectedCustomer] = useState(null)
     const [showRedeemModal, setShowRedeemModal] = useState(false)
 
-    const totalPoints = customers.reduce((sum, c) => sum + c.points, 0)
-    const avgPointsPerCustomer = Math.round(totalPoints / customers.length)
+    useEffect(() => {
+        loadCustomers()
+    }, [])
+
+    const loadCustomers = async () => {
+        setLoading(true)
+        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+
+        try {
+            if (isDemoMode) {
+                setCustomers(demoLoyaltyCustomers)
+            } else {
+                // Fetch customers from API and calculate loyalty points
+                const data = await api.getCustomers()
+                const customersWithPoints = (Array.isArray(data) ? data : []).map(c => ({
+                    ...c,
+                    points: Math.floor((c.totalPurchases || c.total_purchases || 0) / 100),
+                    tier: getTierFromPoints(Math.floor((c.totalPurchases || c.total_purchases || 0) / 100))
+                }))
+                setCustomers(customersWithPoints)
+            }
+        } catch (error) {
+            console.error('Error loading loyalty customers:', error)
+            setCustomers([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const getTierFromPoints = (points) => {
+        if (points >= 2000) return "Platinum"
+        if (points >= 1000) return "Gold"
+        if (points >= 500) return "Silver"
+        return "Bronze"
+    }
+
+    const totalPoints = customers.reduce((sum, c) => sum + (c.points || 0), 0)
+    const avgPointsPerCustomer = customers.length > 0 ? Math.round(totalPoints / customers.length) : 0
 
     const getTierInfo = (tierName) => loyaltyTiers.find(t => t.name === tierName)
     const getNextTier = (currentPoints) => {

@@ -17,13 +17,27 @@ export default function Customers({ addToast }) {
     }, [])
 
     const loadCustomers = async () => {
+        setLoading(true)
+        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+
         try {
-            setLoading(true)
-            const data = await api.getCustomers()
-            setCustomers(Array.isArray(data) ? data : [])
+            if (isDemoMode) {
+                // Demo mode - use demo data
+                const demoCustomers = [
+                    { id: 1, name: "Rajesh Kumar", phone: "9876543210", credit: 2500, lastPurchase: "2026-01-30", totalPurchases: 45600, visits: 45 },
+                    { id: 2, name: "Priya Sharma", phone: "9876543211", credit: 0, lastPurchase: "2026-01-29", totalPurchases: 23400, visits: 32 },
+                    { id: 3, name: "Amit Patel", phone: "9876543212", credit: 1850, lastPurchase: "2026-01-28", totalPurchases: 67800, visits: 56 },
+                    { id: 4, name: "Sunita Verma", phone: "9876543213", credit: 500, lastPurchase: "2026-01-27", totalPurchases: 12300, visits: 18 },
+                    { id: 5, name: "Mohan Singh", phone: "9876543214", credit: 0, lastPurchase: "2026-01-25", totalPurchases: 34500, visits: 28 },
+                ]
+                setCustomers(demoCustomers)
+            } else {
+                // Real user - fetch from API
+                const data = await api.getCustomers()
+                setCustomers(Array.isArray(data) ? data : [])
+            }
         } catch (error) {
             console.error('Error loading customers:', error)
-            // Don't show error for empty data
             setCustomers([])
         } finally {
             setLoading(false)
