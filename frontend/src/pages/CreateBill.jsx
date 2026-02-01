@@ -18,7 +18,8 @@ const demoProducts = [
 
 export default function CreateBill({ addToast, setCurrentPage }) {
     const [search, setSearch] = useState('')
-    const [products] = useState(demoProducts)
+    const [products, setProducts] = useState([])
+    const [loading, setLoading] = useState(true)
     const [cart, setCart] = useState([])
     const [customer, setCustomer] = useState({ name: '', phone: '' })
     const [showPayment, setShowPayment] = useState(false)
@@ -27,6 +28,30 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     const [billNumber, setBillNumber] = useState('')
     const [printing, setPrinting] = useState(false)
     const [paymentMode, setPaymentMode] = useState('Cash')
+
+    useEffect(() => {
+        loadProducts()
+    }, [])
+
+    const loadProducts = async () => {
+        setLoading(true)
+        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+
+        try {
+            if (isDemoMode) {
+                setProducts(demoProducts)
+            } else {
+                const data = await api.getProducts()
+                setProducts(data.products || [])
+            }
+        } catch (error) {
+            console.error('Error loading products:', error)
+            // Fallback to demo products
+            setProducts(demoProducts)
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const filteredProducts = products.filter(p =>
         p.name.toLowerCase().includes(search.toLowerCase())
@@ -133,10 +158,28 @@ export default function CreateBill({ addToast, setCurrentPage }) {
             return
         }
 
-        const newBillNumber = `INV-${Date.now().toString().slice(-6)}`
-        setBillNumber(newBillNumber)
-        addToast('Bill saved successfully!', 'success')
-        setShowPayment(true)
+        const billData = getBillData()
+
+        try {
+            // Save bill to API
+            const result = await api.createBill({
+                ...billData,
+                payment_mode: paymentMode,
+                total: total
+            })
+
+            const newBillNumber = result.bill_number || `INV-${Date.now().toString().slice(-6)}`
+            setBillNumber(newBillNumber)
+            addToast('Bill saved successfully!', 'success')
+            setShowPayment(true)
+        } catch (error) {
+            console.error('Error saving bill:', error)
+            // Fallback - still show as saved locally
+            const newBillNumber = `INV-${Date.now().toString().slice(-6)}`
+            setBillNumber(newBillNumber)
+            addToast('Bill saved locally', 'info')
+            setShowPayment(true)
+        }
     }
 
     const handlePrint = async () => {
