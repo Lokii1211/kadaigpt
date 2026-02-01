@@ -4,6 +4,7 @@ import {
     ShoppingCart, Users, Package, IndianRupee, Sparkles,
     Calendar, RefreshCw, ChevronRight, Zap, Target, Award
 } from 'lucide-react'
+import api from '../services/api'
 
 // Simulated AI predictions - In production, this would come from the backend
 const generateAIInsights = () => {
@@ -64,9 +65,23 @@ export default function AIInsights({ addToast }) {
 
     const fetchInsights = async () => {
         setLoading(true)
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500))
-        setInsights(generateAIInsights())
+
+        try {
+            // Try to get insights from API
+            const apiInsights = await api.getDashboardInsights()
+            if (apiInsights && apiInsights.insights) {
+                // Merge API insights with generated ones
+                const generatedInsights = generateAIInsights()
+                generatedInsights.apiInsights = apiInsights.insights
+                setInsights(generatedInsights)
+            } else {
+                setInsights(generateAIInsights())
+            }
+        } catch {
+            // Fallback to generated insights
+            setInsights(generateAIInsights())
+        }
+
         setLastUpdated(new Date())
         setLoading(false)
     }
