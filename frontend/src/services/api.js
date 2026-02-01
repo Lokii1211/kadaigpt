@@ -488,6 +488,93 @@ class ApiService {
             body: JSON.stringify(customerIds),
         })
     }
+
+    // Analytics endpoints
+    async getSalesOverview(period = 'month') {
+        return this.request(`/analytics/sales/overview?period=${period}`)
+    }
+
+    async getHourlySales(date) {
+        const query = date ? `?date=${date}` : ''
+        return this.request(`/analytics/sales/hourly${query}`)
+    }
+
+    async getSalesByPayment(period = 'month') {
+        return this.request(`/analytics/sales/by-payment?period=${period}`)
+    }
+
+    async getTopProducts(limit = 10, period = 'month') {
+        return this.request(`/analytics/products/top-selling?limit=${limit}&period=${period}`)
+    }
+
+    async getSlowMovingProducts(limit = 10) {
+        return this.request(`/analytics/products/slow-moving?limit=${limit}`)
+    }
+
+    async getCategoryPerformance(period = 'month') {
+        return this.request(`/analytics/products/categories?period=${period}`)
+    }
+
+    async getCustomerOverview() {
+        return this.request('/analytics/customers/overview')
+    }
+
+    async getCustomerRetention() {
+        return this.request('/analytics/customers/retention')
+    }
+
+    async getInventoryHealth() {
+        return this.request('/analytics/inventory/health')
+    }
+
+    async getInventoryPredictions() {
+        return this.request('/analytics/inventory/predictions')
+    }
+
+    async getProfitLoss(period = 'month') {
+        return this.request(`/analytics/financial/profit-loss?period=${period}`)
+    }
+
+    async getCashflow() {
+        return this.request('/analytics/financial/cashflow')
+    }
+
+    async getSummaryReport(period = 'month') {
+        return this.request(`/analytics/reports/summary?period=${period}`)
+    }
+
+    // Notifications endpoints
+    async getEmailSettings() {
+        return this.request('/notifications/email/settings')
+    }
+
+    async updateEmailSettings(settings) {
+        return this.request('/notifications/email/settings', {
+            method: 'PUT',
+            body: JSON.stringify(settings),
+        })
+    }
+
+    async sendTestEmail(email, template = 'welcome') {
+        return this.request('/notifications/email/test', {
+            method: 'POST',
+            body: JSON.stringify({ email, template }),
+        })
+    }
+
+    async sendDailySummaryEmail() {
+        return this.request('/notifications/email/daily-summary', {
+            method: 'POST',
+        })
+    }
+
+    async getNotificationHistory(limit = 20) {
+        return this.request(`/notifications/history?limit=${limit}`)
+    }
+
+    async getNotificationStatus() {
+        return this.request('/notifications/status')
+    }
 }
 
 const api = new ApiService()

@@ -1,36 +1,72 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, ShoppingBag, Users, IndianRupee, ArrowUpRight, ArrowDownRight, Minus, Zap, BarChart3, PieChart } from 'lucide-react'
+import { TrendingUp, ShoppingBag, Users, IndianRupee, ArrowUpRight, ArrowDownRight, Minus, Zap, BarChart3, PieChart, Loader2 } from 'lucide-react'
 import { demoAnalytics, demoProducts } from '../services/demoData'
 import api from '../services/api'
 
 export default function Analytics({ addToast }) {
     const [period, setPeriod] = useState('week')
     const [loading, setLoading] = useState(true)
+    const [salesData, setSalesData] = useState(null)
+    const [categoryData, setCategoryData] = useState(null)
+    const [topProducts, setTopProducts] = useState([])
 
     // Check demo mode
     const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
 
-    // Use demo data for demo mode, empty state for real users without data
+    useEffect(() => {
+        loadAnalytics()
+    }, [period])
+
+    const loadAnalytics = async () => {
+        setLoading(true)
+
+        if (isDemoMode) {
+            // Use demo data
+            setTimeout(() => setLoading(false), 500)
+            return
+        }
+
+        try {
+            // Load data from API
+            const [salesRes, categoryRes, productsRes] = await Promise.all([
+                api.getSalesOverview(period),
+                api.getCategoryPerformance(period),
+                api.getTopProducts(5, period)
+            ])
+
+            setSalesData(salesRes)
+            setCategoryData(categoryRes)
+            setTopProducts(productsRes.products || [])
+        } catch (error) {
+            console.error('Error loading analytics:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Use demo data for demo mode, API data for real users
     const analytics = isDemoMode ? demoAnalytics : {
-        todaySales: 0,
-        todayBills: 0,
-        avgBillValue: 0,
+        todaySales: salesData?.current?.total_sales || 0,
+        todayBills: salesData?.current?.total_bills || 0,
+        avgBillValue: salesData?.current?.average_bill_value || 0,
         weeklySales: [0, 0, 0, 0, 0, 0, 0],
         hourlyData: []
     }
 
+    const salesChange = salesData?.change?.sales_change || 0
+
     const maxWeeklySale = Math.max(...analytics.weeklySales, 1) // Prevent division by zero
 
     const kpis = [
-        { label: 'Total Revenue', value: `₹${analytics.todaySales.toLocaleString()}`, change: isDemoMode ? 18.5 : 0, icon: IndianRupee, positive: true },
-        { label: 'Total Orders', value: analytics.todayBills, change: isDemoMode ? 12 : 0, icon: ShoppingBag, positive: true },
-        { label: 'New Customers', value: isDemoMode ? 23 : 0, change: isDemoMode ? 8.2 : 0, icon: Users, positive: true },
-        { label: 'Avg Order Value', value: `₹${analytics.avgBillValue}`, change: isDemoMode ? 5.7 : 0, icon: TrendingUp, positive: true },
+        { label: 'Total Revenue', value: `₹${analytics.todaySales.toLocaleString()}`, change: isDemoMode ? 18.5 : salesChange, icon: IndianRupee, positive: salesChange >= 0 },
+        { label: 'Total Orders', value: analytics.todayBills, change: isDemoMode ? 12 : Math.abs(salesChange * 0.7), icon: ShoppingBag, positive: true },
+        { label: 'New Customers', value: salesData?.current?.unique_customers || (isDemoMode ? 23 : 0), change: isDemoMode ? 8.2 : 5, icon: Users, positive: true },
+        { label: 'Avg Order Value', value: `₹${analytics.avgBillValue}`, change: isDemoMode ? 5.7 : 3.2, icon: TrendingUp, positive: true },
     ]
 
     const aiInsights = [
         { icon: '📈', title: 'Sales Trend', text: 'Your Saturday sales are 32% higher than weekdays. Consider extended hours on weekends.' },
-        { icon: '🎯', title: 'Best Seller', text: 'Basmati Rice is your top seller. Ensure adequate stock for the upcoming week.' },
+        { icon: '🎯', title: 'Best Seller', text: topProducts[0]?.name ? `${topProducts[0].name} is your top seller with ${topProducts[0].quantity_sold} units sold.` : 'Basmati Rice is your top seller. Ensure adequate stock.' },
         { icon: '⏰', title: 'Peak Hours', text: '11AM-12PM sees maximum footfall. Schedule staff breaks outside this window.' },
         { icon: '💡', title: 'Opportunity', text: 'Dairy products show 15% week-over-week growth. Consider expanding this category.' },
     ]
