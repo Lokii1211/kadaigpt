@@ -489,6 +489,19 @@ class ApiService {
         })
     }
 
+    // Dashboard endpoints
+    async getDashboardStats() {
+        return this.request('/dashboard/stats')
+    }
+
+    async getDashboardActivity(limit = 10) {
+        return this.request(`/dashboard/activity?limit=${limit}`)
+    }
+
+    async getDashboardInsights() {
+        return this.request('/dashboard/insights')
+    }
+
     // Analytics endpoints
     async getSalesOverview(period = 'month') {
         return this.request(`/analytics/sales/overview?period=${period}`)
