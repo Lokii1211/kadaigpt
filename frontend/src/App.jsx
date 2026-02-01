@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { ShoppingCart, Home, FileText, Camera, Package, Menu, X, BarChart3, Settings as SettingsIcon, Plus } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import VoiceAssistant from './components/VoiceAssistant'
+import MobileNav from './components/MobileNav'
 import Dashboard from './pages/Dashboard'
 import Bills from './pages/Bills'
 import OCRCapture from './pages/OCRCapture'
@@ -21,6 +22,9 @@ import Login from './pages/Login'
 import api from './services/api'
 import { demoProducts } from './services/demoData'
 import './App.css'
+import './styles/mobile.css'
+import './styles/enhancements.css'
+
 
 function App() {
     const [currentPage, setCurrentPage] = useState('dashboard')
@@ -282,6 +286,9 @@ function App() {
                     </div>
                 ))}
             </div>
+
+            {/* Mobile Bottom Navigation */}
+            <MobileNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
 
             {/* Keyboard Shortcut Hint - Hidden on mobile via CSS */}
             <div className="keyboard-hint">

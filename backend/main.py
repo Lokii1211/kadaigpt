@@ -20,6 +20,14 @@ import time
 from app.config import settings
 from app.database import init_db
 from app.routers import auth_router, products_router, bills_router, ocr_router, print_router, customers_router, suppliers_router, whatsapp_router, dashboard_router
+from app.routers.analytics import router as analytics_router
+
+# Import security middleware (optional - can be disabled)
+try:
+    from app.middleware.security import SecurityMiddleware
+    SECURITY_MIDDLEWARE_AVAILABLE = True
+except ImportError:
+    SECURITY_MIDDLEWARE_AVAILABLE = False
 from app.agents import offline_agent
 
 
@@ -141,6 +149,16 @@ app.include_router(customers_router, prefix=settings.api_v1_prefix)
 app.include_router(suppliers_router, prefix=settings.api_v1_prefix)
 app.include_router(whatsapp_router, prefix=settings.api_v1_prefix)
 app.include_router(dashboard_router, prefix=settings.api_v1_prefix)
+app.include_router(analytics_router, prefix=settings.api_v1_prefix)
+
+# Include notifications router
+from app.routers.notifications import router as notifications_router
+app.include_router(notifications_router, prefix=settings.api_v1_prefix)
+
+# Add security middleware if available
+if SECURITY_MIDDLEWARE_AVAILABLE:
+    app.add_middleware(SecurityMiddleware)
+    print("🔒 Security middleware enabled")
 
 
 # Health check endpoint

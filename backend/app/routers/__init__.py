@@ -11,6 +11,8 @@ from app.routers.customers import router as customers_router
 from app.routers.suppliers import router as suppliers_router
 from app.routers.whatsapp import router as whatsapp_router
 from app.routers.dashboard import router as dashboard_router
+from app.routers.analytics import router as analytics_router
+from app.routers.notifications import router as notifications_router
 
 __all__ = [
     "auth_router",
@@ -21,6 +23,9 @@ __all__ = [
     "customers_router",
     "suppliers_router",
     "whatsapp_router",
-    "dashboard_router"
+    "dashboard_router",
+    "analytics_router",
+    "notifications_router"
 ]
+
 
