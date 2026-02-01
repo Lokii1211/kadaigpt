@@ -19,6 +19,7 @@ const moreItems = [
     { id: 'loyalty', label: 'Loyalty' },
     { id: 'expenses', label: 'Expenses' },
     { id: 'whatsapp', label: 'WhatsApp' },
+    { id: 'bulk-operations', label: 'Import/Export' },
     { id: 'settings', label: 'Settings' },
 ]
 
