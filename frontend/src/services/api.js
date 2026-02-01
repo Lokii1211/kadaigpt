@@ -256,6 +256,19 @@ class ApiService {
         localStorage.removeItem('kadai_store_phone')
     }
 
+    // Dashboard endpoints
+    async getDashboardStats() {
+        return this.request('/dashboard/stats')
+    }
+
+    async getDashboardActivity() {
+        return this.request('/dashboard/activity')
+    }
+
+    async getDashboardInsights() {
+        return this.request('/dashboard/insights')
+    }
+
     // Products endpoints
     async getProducts() {
         try {

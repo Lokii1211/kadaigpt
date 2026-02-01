@@ -46,16 +46,18 @@ export default function Dashboard({ addToast, setCurrentPage }) {
     } else {
       // Real user - fetch from API
       try {
-        const [statsData, productsData, billsData] = await Promise.all([
-          api.getDashboardStats?.().catch(() => null),
+        const [statsData, productsData, billsData, activityData] = await Promise.all([
+          api.getDashboardStats().catch(() => null),
           api.getProducts().catch(() => ({ products: [] })),
-          api.getBills?.().catch(() => ({ bills: [] }))
+          api.getBills?.().catch(() => ({ bills: [] })),
+          api.getDashboardActivity().catch(() => [])
         ])
 
         setProducts(productsData?.products || [])
         setBills(billsData?.bills || [])
+        setActivity(Array.isArray(activityData) ? activityData : [])
 
-        if (statsData) {
+        if (statsData && !statsData.error) {
           setStats(statsData)
         } else {
           // Calculate stats from data
@@ -63,11 +65,10 @@ export default function Dashboard({ addToast, setCurrentPage }) {
             todaySales: 0,
             todayBills: billsData?.bills?.length || 0,
             avgBillValue: 0,
-            lowStockCount: productsData?.products?.filter(p => p.stock <= p.minStock).length || 0
+            lowStockCount: productsData?.products?.filter(p => (p.stock || 0) <= (p.minStock || p.min_stock || 10)).length || 0
           })
         }
         setHourlyData([])
-        setActivity([])
       } catch (error) {
         console.error('Failed to load dashboard data:', error)
       }
