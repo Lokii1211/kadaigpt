@@ -16,7 +16,7 @@ import logging
 
 from app.database import get_db
 from app.routers.auth import get_current_user
-from app.models.user import User
+from app.models import User
 
 router = APIRouter(prefix="/bulk", tags=["Bulk Operations"])
 logger = logging.getLogger(__name__)

@@ -302,7 +302,7 @@ def register_default_tasks():
 
 from fastapi import APIRouter, Depends, HTTPException
 from app.routers.auth import get_current_user
-from app.models.user import User
+from app.models import User
 
 router = APIRouter(prefix="/scheduler", tags=["Scheduler"])
 
