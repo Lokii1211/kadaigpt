@@ -8,7 +8,7 @@ export default function Customers({ addToast }) {
     const [search, setSearch] = useState('')
     const [showAddModal, setShowAddModal] = useState(false)
     const [selectedCustomer, setSelectedCustomer] = useState(null)
-    const [newCustomer, setNewCustomer] = useState({ name: '', phone: '' })
+    const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', initialCredit: '' })
     const [paymentAmount, setPaymentAmount] = useState('')
 
     // Load customers from API
@@ -61,9 +61,13 @@ export default function Customers({ addToast }) {
         }
 
         try {
-            const customer = await api.createCustomer(newCustomer)
+            const customerData = {
+                ...newCustomer,
+                credit: parseFloat(newCustomer.initialCredit) || 0
+            }
+            const customer = await api.createCustomer(customerData)
             setCustomers([customer, ...customers])
-            setNewCustomer({ name: '', phone: '' })
+            setNewCustomer({ name: '', phone: '', email: '', address: '', initialCredit: '' })
             setShowAddModal(false)
             addToast('Customer added successfully!', 'success')
         } catch (error) {
@@ -251,15 +255,34 @@ export default function Customers({ addToast }) {
                             <button className="modal-close" onClick={() => setShowAddModal(false)}><X size={20} /></button>
                         </div>
                         <div className="modal-body">
-                            <div className="form-group">
-                                <label className="form-label">Customer Name *</label>
-                                <input type="text" className="form-input" placeholder="Full Name"
-                                    value={newCustomer.name} onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })} />
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label className="form-label">Customer Name *</label>
+                                    <input type="text" className="form-input" placeholder="Full Name"
+                                        value={newCustomer.name} onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Phone Number *</label>
+                                    <input type="tel" className="form-input" placeholder="10-digit mobile"
+                                        value={newCustomer.phone} onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label className="form-label">Email (Optional)</label>
+                                    <input type="email" className="form-input" placeholder="email@example.com"
+                                        value={newCustomer.email} onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Initial Credit (₹)</label>
+                                    <input type="number" className="form-input" placeholder="0"
+                                        value={newCustomer.initialCredit} onChange={(e) => setNewCustomer({ ...newCustomer, initialCredit: e.target.value })} />
+                                </div>
                             </div>
                             <div className="form-group">
-                                <label className="form-label">Phone Number *</label>
-                                <input type="tel" className="form-input" placeholder="10-digit mobile number"
-                                    value={newCustomer.phone} onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
+                                <label className="form-label">Address (Optional)</label>
+                                <textarea className="form-input" placeholder="Customer address" rows="2"
+                                    value={newCustomer.address} onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })} />
                             </div>
                         </div>
                         <div className="modal-footer">
@@ -388,6 +411,9 @@ export default function Customers({ addToast }) {
           transition: all var(--transition-fast); color: var(--text-secondary);
         }
         .quick-amounts button:hover { border-color: var(--primary-400); color: var(--primary-400); }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
       `}</style>
         </div>
     )

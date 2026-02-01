@@ -29,13 +29,38 @@ import './styles/enhancements.css'
 
 
 function App() {
-    const [currentPage, setCurrentPage] = useState('dashboard')
+    // Get initial page from URL hash or default to dashboard
+    const getInitialPage = () => {
+        const hash = window.location.hash.replace('#', '')
+        const validPages = ['dashboard', 'bills', 'create-bill', 'ocr', 'products', 'analytics', 'customers', 'gst', 'whatsapp', 'suppliers', 'loyalty', 'ai-insights', 'expenses', 'daily-summary', 'bulk-operations', 'settings']
+        return validPages.includes(hash) ? hash : 'dashboard'
+    }
+
+    const [currentPage, setCurrentPageState] = useState(getInitialPage)
     const [isOnline, setIsOnline] = useState(navigator.onLine)
     const [toasts, setToasts] = useState([])
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
     const [products] = useState(demoProducts)
     const [sidebarOpen, setSidebarOpen] = useState(false)
+
+    // Custom setCurrentPage that also updates URL hash
+    const setCurrentPage = (page) => {
+        setCurrentPageState(page)
+        window.location.hash = page
+    }
+
+    // Listen for hash changes (back/forward button)
+    useEffect(() => {
+        const handleHashChange = () => {
+            const hash = window.location.hash.replace('#', '')
+            if (hash && hash !== currentPage) {
+                setCurrentPageState(hash)
+            }
+        }
+        window.addEventListener('hashchange', handleHashChange)
+        return () => window.removeEventListener('hashchange', handleHashChange)
+    }, [currentPage])
 
     useEffect(() => {
         // Check for existing session

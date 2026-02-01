@@ -46,7 +46,7 @@ export default function Suppliers({ addToast }) {
     }
 
     // Stats
-    const totalPending = suppliers.reduce((sum, s) => sum + (s.pending_amount || 0), 0)
+    const totalPending = suppliers.reduce((sum, s) => sum + (s.pending_amount || s.pendingAmount || 0), 0) || 0
     const pendingOrders = orders.filter(o => o.status === 'pending').length
     const totalSuppliers = suppliers.length
 
@@ -219,7 +219,7 @@ export default function Suppliers({ addToast }) {
                 <div className="stat-card">
                     <TrendingUp size={24} />
                     <div>
-                        <span className="value">₹{totalPending.toLocaleString()}</span>
+                        <span className="value">₹{(totalPending || 0).toLocaleString()}</span>
                         <span className="label">Payables</span>
                     </div>
                 </div>
