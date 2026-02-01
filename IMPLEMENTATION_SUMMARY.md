@@ -168,6 +168,11 @@ VyaparAI is a comprehensive **Agentic AI-powered retail operations platform** de
 - `POST /api/v1/auth/login` - Login and get JWT token
 - `GET /api/v1/auth/me` - Get current user profile
 
+### Dashboard
+- `GET /api/v1/dashboard/stats` - Get dashboard statistics
+- `GET /api/v1/dashboard/activity` - Get activity feed
+- `GET /api/v1/dashboard/insights` - Get AI insights
+
 ### Products
 - `GET /api/v1/products` - List all products
 - `POST /api/v1/products` - Create product
@@ -179,6 +184,28 @@ VyaparAI is a comprehensive **Agentic AI-powered retail operations platform** de
 - `POST /api/v1/bills` - Create bill
 - `GET /api/v1/bills/{id}` - Get bill details
 - `POST /api/v1/bills/print` - Print bill
+
+### Customers
+- `GET /api/v1/customers` - List all customers
+- `POST /api/v1/customers` - Create customer
+- `GET /api/v1/customers/stats/summary` - Get customer stats
+- `PUT /api/v1/customers/{id}` - Update customer
+- `DELETE /api/v1/customers/{id}` - Delete customer
+
+### Suppliers
+- `GET /api/v1/suppliers` - List all suppliers
+- `POST /api/v1/suppliers` - Create supplier
+- `GET /api/v1/suppliers/stats/summary` - Get supplier stats
+- `GET /api/v1/suppliers/orders/list` - Get purchase orders
+- `POST /api/v1/suppliers/orders` - Create purchase order
+
+### WhatsApp Bot
+- `GET /api/v1/whatsapp/webhook` - Webhook verification
+- `POST /api/v1/whatsapp/webhook` - Receive messages
+- `POST /api/v1/whatsapp/send` - Send message
+- `GET /api/v1/whatsapp/templates` - Get templates
+- `GET /api/v1/whatsapp/stats` - Get bot stats
+- `POST /api/v1/whatsapp/bulk-reminder` - Bulk reminders
 
 ### OCR
 - `POST /api/v1/ocr/process` - Process bill image with Gemini
@@ -208,6 +235,10 @@ VyaparAI/
 │   │   │   ├── auth.py
 │   │   │   ├── products.py
 │   │   │   ├── bills.py
+│   │   │   ├── customers.py
+│   │   │   ├── suppliers.py
+│   │   │   ├── dashboard.py
+│   │   │   ├── whatsapp.py
 │   │   │   ├── ocr.py
 │   │   │   └── print.py
 │   │   ├── services/
@@ -236,9 +267,14 @@ VyaparAI/
 │   │   │   ├── Analytics.jsx
 │   │   │   ├── GSTReports.jsx
 │   │   │   ├── WhatsAppIntegration.jsx
+│   │   │   ├── AIInsights.jsx
+│   │   │   ├── ExpenseTracker.jsx
+│   │   │   ├── DailySummary.jsx
 │   │   │   └── Settings.jsx
 │   │   ├── services/
 │   │   │   ├── api.js
+│   │   │   ├── whatsapp.js
+│   │   │   ├── ocrService.js
 │   │   │   └── demoData.js
 │   │   ├── App.jsx
 │   │   ├── App.css
@@ -247,6 +283,7 @@ VyaparAI/
 │   ├── package.json
 │   └── vite.config.js
 ├── README.md
+├── TESTING_CHECKLIST.md
 ├── PRESENTATION.md
 └── IMPLEMENTATION_SUMMARY.md
 ```
@@ -278,13 +315,17 @@ npm run dev
 - Click "Try Demo Mode" on login page
 - No backend connection required for demo
 
+### Production (Railway)
+- Live at: https://kadaigpt.up.railway.app
+- Auto-deploys on git push
+
 ---
 
 ## 🎯 RH Infos Alignment
 
 | RH Infos Focus | VyaparAI Feature |
 |----------------|------------------|
-| ERP Solutions | Complete retail ERP with 12 modules |
+| ERP Solutions | Complete retail ERP with 15+ modules |
 | Inventory Management | Real-time stock + AI predictions |
 | AI/ML Integration | Gemini Vision OCR + Analytics |
 | SAP Implementation | Enterprise-grade architecture |
@@ -305,14 +346,29 @@ npm run dev
 
 ## 🏆 Hackathon Highlights
 
-1. **13 Complete Pages** - Not a POC, production-ready
+1. **16 Complete Pages** - Not a POC, production-ready
 2. **6 AI Agents** - Autonomous, self-healing
-3. **Offline-First** - Works in Tier-2/3 cities
-4. **India-First** - GST, Khata, UPI, Regional languages
-5. **Premium UI** - Dark theme, micro-animations
-6. **B2B Ready** - Supplier management
+3. **WhatsApp Bot** - Automated business responses
+4. **Offline-First** - Works in Tier-2/3 cities
+5. **India-First** - GST, Khata, UPI, Regional languages
+6. **Premium UI** - Dark theme, micro-animations
+7. **B2B Ready** - Supplier management
+8. **Real-time Dashboard** - Live stats & activity feed
 
 ---
 
-*Document generated: January 30, 2026*
-*VyaparAI - Bill Karo, AI Sambhalo*
+## 🐛 Bug Fixes (Feb 2026)
+
+- Fixed route ordering conflicts in customers/suppliers APIs
+- Fixed demo data appearing for real users
+- Fixed Products page to use API for CRUD operations
+- Fixed Suppliers page crash (lowStockProducts undefined)
+- Fixed GST Reports export functionality
+- Added WhatsApp Bot backend with webhook support
+- Added Dashboard API for real-time stats
+
+---
+
+*Document updated: February 1, 2026*
+*KadaiGPT - Bill Karo, AI Sambhalo*
+
