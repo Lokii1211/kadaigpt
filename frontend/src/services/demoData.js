@@ -106,6 +106,13 @@ export const demoGSTData = {
         { month: "Dec 2025", sales: 228450, gst: 10892.14, filed: true },
         { month: "Nov 2025", sales: 215320, gst: 10253.24, filed: true },
         { month: "Oct 2025", sales: 198760, gst: 9465.16, filed: true },
+    ],
+    invoices: [
+        { invoiceNo: "INV-2026-0047", date: "2026-01-31", customerGstin: "33AABCU9603R1ZM", taxableAmount: 310, cgst: 7.75, sgst: 7.75, total: 325.5 },
+        { invoiceNo: "INV-2026-0046", date: "2026-01-31", customerGstin: null, taxableAmount: 175, cgst: 4.38, sgst: 4.38, total: 183.75 },
+        { invoiceNo: "INV-2026-0045", date: "2026-01-30", customerGstin: null, taxableAmount: 360, cgst: 9, sgst: 9, total: 378 },
+        { invoiceNo: "INV-2026-0044", date: "2026-01-30", customerGstin: "33AABCU9603R1ZN", taxableAmount: 730, cgst: 18.25, sgst: 18.25, total: 766.5 },
+        { invoiceNo: "INV-2026-0043", date: "2026-01-29", customerGstin: null, taxableAmount: 875, cgst: 21.88, sgst: 21.88, total: 918.75 },
     ]
 }
 

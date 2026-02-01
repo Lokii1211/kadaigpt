@@ -9,6 +9,7 @@ from app.routers.ocr import router as ocr_router
 from app.routers.print import router as print_router
 from app.routers.customers import router as customers_router
 from app.routers.suppliers import router as suppliers_router
+from app.routers.whatsapp import router as whatsapp_router
 
 __all__ = [
     "auth_router",
@@ -17,6 +18,7 @@ __all__ = [
     "ocr_router",
     "print_router",
     "customers_router",
-    "suppliers_router"
+    "suppliers_router",
+    "whatsapp_router"
 ]
 
