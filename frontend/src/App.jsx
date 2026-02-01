@@ -18,12 +18,14 @@ import LoyaltyRewards from './pages/LoyaltyRewards'
 import AIInsights from './pages/AIInsights'
 import ExpenseTracker from './pages/ExpenseTracker'
 import DailySummary from './pages/DailySummary'
+import BulkOperations from './pages/BulkOperations'
 import Login from './pages/Login'
 import api from './services/api'
 import { demoProducts } from './services/demoData'
 import './App.css'
 import './styles/mobile.css'
 import './styles/enhancements.css'
+
 
 
 function App() {
@@ -148,6 +150,7 @@ function App() {
             case 'ai-insights': return <AIInsights addToast={addToast} />
             case 'expenses': return <ExpenseTracker addToast={addToast} />
             case 'daily-summary': return <DailySummary addToast={addToast} />
+            case 'bulk-operations': return <BulkOperations addToast={addToast} />
             case 'settings': return <Settings addToast={addToast} />
             default: return <Dashboard addToast={addToast} setCurrentPage={setCurrentPage} />
         }

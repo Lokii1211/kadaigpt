@@ -1,4 +1,4 @@
-import { ShoppingCart, LayoutDashboard, FileText, Camera, Package, Settings, LogOut, PlusCircle, User, BarChart3, Users, Receipt, MessageCircle, Truck, Gift, X, Brain, Wallet, ClipboardList } from 'lucide-react'
+import { ShoppingCart, LayoutDashboard, FileText, Camera, Package, Settings, LogOut, PlusCircle, User, BarChart3, Users, Receipt, MessageCircle, Truck, Gift, X, Brain, Wallet, ClipboardList, Database } from 'lucide-react'
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -15,6 +15,7 @@ const menuItems = [
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'gst', label: 'GST Reports', icon: Receipt },
   { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
+  { id: 'bulk-operations', label: 'Import/Export', icon: Database },
 ]
 
 export default function Sidebar({ currentPage, setCurrentPage, isOnline, user, onLogout, isOpen = false }) {
