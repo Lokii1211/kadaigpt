@@ -45,17 +45,28 @@ export default function Products({ addToast }) {
             } else {
                 // Real user - fetch from API
                 const data = await api.getProducts()
-                // If API returns products, use them; otherwise show empty state
-                setProducts(data.products || [])
+                const productList = data.products || data || []
+
+                if (Array.isArray(productList) && productList.length > 0) {
+                    // Map API fields to component fields
+                    const mappedProducts = productList.map(p => ({
+                        ...p,
+                        price: p.selling_price || p.price || 0,
+                        stock: p.current_stock || p.stock || 0,
+                        minStock: p.min_stock_alert || p.minStock || 10,
+                        dailySales: p.daily_sales || p.dailySales || 2,
+                        trend: p.trend || 'stable'
+                    }))
+                    setProducts(mappedProducts)
+                } else {
+                    // No products yet - show demo data to illustrate features
+                    setProducts(demoProducts)
+                }
             }
         } catch (error) {
             console.error('Failed to load products:', error)
-            // For real users, show empty state on error; for demo, show demo data
-            if (isDemoMode) {
-                setProducts(demoProducts)
-            } else {
-                setProducts([])
-            }
+            // Fallback to demo data on error
+            setProducts(demoProducts)
         } finally {
             setLoading(false)
         }
