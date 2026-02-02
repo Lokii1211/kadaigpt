@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { TrendingUp, ShoppingBag, Users, AlertTriangle, IndianRupee, ArrowUpRight, Clock, Zap, FileText, Package, Plus, Camera, BarChart3, RefreshCw, WifiOff } from 'lucide-react'
 import realDataService from '../services/realDataService'
+import WhatsAppAgentPanel from '../components/WhatsAppAgentPanel'
 import api from '../services/api'
 
 export default function Dashboard({ addToast, setCurrentPage }) {
@@ -177,6 +178,9 @@ export default function Dashboard({ addToast, setCurrentPage }) {
           )}
         </div>
       </div>
+
+      {/* WhatsApp AI Agent Panel */}
+      <WhatsAppAgentPanel addToast={addToast} />
 
       <div className="dashboard-grid">
         {/* Sales Chart */}

@@ -4,59 +4,8 @@ import {
     ShoppingCart, Users, Package, IndianRupee, Sparkles,
     Calendar, RefreshCw, ChevronRight, Zap, Target, Award
 } from 'lucide-react'
+import realDataService from '../services/realDataService'
 import api from '../services/api'
-
-// Simulated AI predictions - In production, this would come from the backend
-const generateAIInsights = () => {
-    const today = new Date()
-    const dayOfWeek = today.getDay()
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-
-    return {
-        demandForecast: {
-            nextWeekSales: Math.floor(Math.random() * 50000) + 80000,
-            growth: (Math.random() * 20 - 5).toFixed(1),
-            confidence: (85 + Math.random() * 10).toFixed(0),
-            topProducts: [
-                { name: 'Basmati Rice', predicted: 45, current: 12 },
-                { name: 'Sugar 1kg', predicted: 38, current: 8 },
-                { name: 'Coconut Oil', predicted: 28, current: 15 },
-            ]
-        },
-        reorderAlerts: [
-            { product: 'Toor Dal', currentStock: 5, minStock: 15, urgency: 'high', daysLeft: 2 },
-            { product: 'Wheat Flour', currentStock: 8, minStock: 20, urgency: 'medium', daysLeft: 4 },
-            { product: 'Sunflower Oil', currentStock: 12, minStock: 25, urgency: 'low', daysLeft: 7 },
-        ],
-        customerInsights: {
-            churnRisk: [
-                { name: 'Ramesh Kumar', lastVisit: '15 days ago', riskScore: 78 },
-                { name: 'Priya Sharma', lastVisit: '12 days ago', riskScore: 65 },
-            ],
-            topCustomers: [
-                { name: 'Ganesh Stores', totalSpent: 45000, visits: 28 },
-                { name: 'Lakshmi Textiles', totalSpent: 38000, visits: 22 },
-            ],
-            newCustomerPrediction: isWeekend ? 8 : 5
-        },
-        pricingSuggestions: [
-            { product: 'Ghee 1L', currentPrice: 550, suggestedPrice: 580, reason: 'High demand, low competition' },
-            { product: 'Biscuits Pack', currentPrice: 45, suggestedPrice: 40, reason: 'Increase volume sales' },
-        ],
-        dailyTips: [
-            isWeekend
-                ? "🎉 Weekend! Expect 40% more footfall. Stock up on beverages and snacks."
-                : "📊 Weekday strategy: Focus on bulk buyers and wholesale orders.",
-            "💡 Customers who buy Rice often buy Dal within 2 days. Bundle offer suggested!",
-            "🎯 Your peak hours are 5-7 PM. Consider extra staff during this time.",
-        ],
-        weatherImpact: {
-            condition: 'Hot & Humid',
-            recommendation: 'Stock more cold drinks, buttermilk, and ice cream',
-            expectedImpact: '+25% beverage sales'
-        }
-    }
-}
 
 export default function AIInsights({ addToast }) {
     const [insights, setInsights] = useState(null)
@@ -67,19 +16,130 @@ export default function AIInsights({ addToast }) {
         setLoading(true)
 
         try {
-            // Try to get insights from API
-            const apiInsights = await api.getDashboardInsights()
-            if (apiInsights && apiInsights.insights) {
-                // Merge API insights with generated ones
-                const generatedInsights = generateAIInsights()
-                generatedInsights.apiInsights = apiInsights.insights
-                setInsights(generatedInsights)
-            } else {
-                setInsights(generateAIInsights())
+            // Fetch real data from all sources
+            const [products, bills, customers, stats] = await Promise.all([
+                realDataService.getProducts(),
+                realDataService.getBills(),
+                realDataService.getCustomers(),
+                realDataService.getDashboardStats()
+            ])
+
+            const today = new Date()
+            const dayOfWeek = today.getDay()
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+
+            // Calculate insights from real data
+            const lowStockProducts = products.filter(p => p.stock <= p.minStock)
+            const outOfStockProducts = products.filter(p => p.stock === 0)
+
+            // Calculate total revenue
+            const totalRevenue = bills.reduce((sum, b) => sum + (b.total || 0), 0)
+            const avgBillValue = bills.length > 0 ? totalRevenue / bills.length : 0
+
+            // Find top products from bills
+            const productSales = {}
+            bills.forEach(bill => {
+                (bill.items || []).forEach(item => {
+                    const name = item.product_name || item.name
+                    productSales[name] = (productSales[name] || 0) + (item.quantity || 1)
+                })
+            })
+            const topProducts = Object.entries(productSales)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([name, quantity]) => ({ name, quantity }))
+
+            // Recent customers (inactive for 7+ days)
+            const now = Date.now()
+            const inactiveCustomers = customers.filter(c => {
+                const lastVisit = new Date(c.lastVisit || c.createdAt)
+                const daysSince = (now - lastVisit.getTime()) / (1000 * 60 * 60 * 24)
+                return daysSince > 7
+            }).slice(0, 5)
+
+            // Build insights from real data
+            const realInsights = {
+                demandForecast: {
+                    nextWeekSales: Math.round(totalRevenue * 1.1), // 10% growth estimate
+                    growth: bills.length > 0 ? ((totalRevenue / (bills.length * 7)) * 100 / totalRevenue - 1).toFixed(1) : '0',
+                    confidence: Math.min(95, 70 + bills.length),
+                    topProducts: topProducts.slice(0, 3).map(p => ({
+                        name: p.name,
+                        predicted: Math.round(p.quantity * 1.2),
+                        current: products.find(pr => pr.name === p.name)?.stock || 0
+                    }))
+                },
+                reorderAlerts: lowStockProducts.slice(0, 5).map(p => ({
+                    product: p.name,
+                    currentStock: p.stock,
+                    minStock: p.minStock,
+                    urgency: p.stock === 0 ? 'high' : p.stock < p.minStock / 2 ? 'medium' : 'low',
+                    daysLeft: p.dailySales > 0 ? Math.round(p.stock / p.dailySales) : 7
+                })),
+                customerInsights: {
+                    churnRisk: inactiveCustomers.map(c => ({
+                        name: c.name,
+                        lastVisit: c.lastVisit ? new Date(c.lastVisit).toLocaleDateString() : 'Unknown',
+                        riskScore: 70 + Math.round(Math.random() * 20)
+                    })),
+                    topCustomers: customers
+                        .sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0))
+                        .slice(0, 3)
+                        .map(c => ({
+                            name: c.name,
+                            totalSpent: c.totalSpent || 0,
+                            visits: c.totalPurchases || 0
+                        })),
+                    newCustomerPrediction: isWeekend ? 8 : 5
+                },
+                pricingSuggestions: products
+                    .filter(p => p.stock > p.minStock * 2)
+                    .slice(0, 2)
+                    .map(p => ({
+                        product: p.name,
+                        currentPrice: p.price,
+                        suggestedPrice: Math.round(p.price * 0.95),
+                        reason: 'High stock, promote sales'
+                    })),
+                dailyTips: [
+                    lowStockProducts.length > 0
+                        ? `⚠️ You have ${lowStockProducts.length} low stock items. Consider restocking soon!`
+                        : "✅ All products are well-stocked!",
+                    isWeekend
+                        ? "🎉 Weekend! Expect higher footfall. Stock up on popular items."
+                        : "📊 Focus on business customers for bulk orders.",
+                    bills.length > 0
+                        ? `💰 Average bill value: ₹${Math.round(avgBillValue)}. Try upselling to increase this.`
+                        : "🚀 Start creating bills to see insights!",
+                ],
+                weatherImpact: {
+                    condition: 'Seasonal',
+                    recommendation: 'Stock seasonal items based on local demand',
+                    expectedImpact: 'Monitor sales patterns'
+                },
+                stats: {
+                    todaySales: stats.todaySales || 0,
+                    totalProducts: products.length,
+                    lowStockCount: lowStockProducts.length,
+                    outOfStockCount: outOfStockProducts.length,
+                    totalCustomers: customers.length,
+                    totalBills: bills.length
+                }
             }
-        } catch {
-            // Fallback to generated insights
-            setInsights(generateAIInsights())
+
+            setInsights(realInsights)
+        } catch (error) {
+            console.error('Failed to fetch insights:', error)
+            addToast?.('Failed to load AI insights', 'error')
+            setInsights({
+                demandForecast: { nextWeekSales: 0, growth: '0', confidence: 0, topProducts: [] },
+                reorderAlerts: [],
+                customerInsights: { churnRisk: [], topCustomers: [], newCustomerPrediction: 0 },
+                pricingSuggestions: [],
+                dailyTips: ['Start adding products and making sales to see AI insights!'],
+                weatherImpact: { condition: 'N/A', recommendation: 'Add data to see recommendations', expectedImpact: 'N/A' },
+                stats: { todaySales: 0, totalProducts: 0, lowStockCount: 0, outOfStockCount: 0, totalCustomers: 0, totalBills: 0 }
+            })
         }
 
         setLastUpdated(new Date())

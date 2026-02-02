@@ -368,10 +368,25 @@ export default function Bills({ addToast, setCurrentPage }) {
                             </div>
 
                             <div className="bill-details-section totals-section">
-                                <div className="total-row"><span>Subtotal</span><span>₹{selectedBill.subtotal?.toFixed(2)}</span></div>
-                                <div className="total-row"><span>GST (5%)</span><span>₹{selectedBill.tax?.toFixed(2)}</span></div>
-                                <div className="total-row grand"><span>Grand Total</span><span>₹{selectedBill.total?.toFixed(2)}</span></div>
-                                <div className="total-row"><span>Payment Mode</span><span className="badge badge-info">{selectedBill.payment_mode}</span></div>
+                                {(() => {
+                                    // Calculate subtotal from items if missing
+                                    const calculatedSubtotal = selectedBill.items?.reduce(
+                                        (sum, item) => sum + (item.quantity * (item.unit_price || item.price || 0)), 0
+                                    ) || 0
+                                    const subtotal = selectedBill.subtotal || calculatedSubtotal
+                                    const gstRate = parseFloat(localStorage.getItem('kadai_default_gst_rate') || '5') / 100
+                                    const tax = selectedBill.tax || (subtotal * gstRate)
+                                    const total = selectedBill.total || (subtotal + tax)
+
+                                    return (
+                                        <>
+                                            <div className="total-row"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
+                                            <div className="total-row"><span>GST ({(gstRate * 100).toFixed(0)}%)</span><span>₹{tax.toFixed(2)}</span></div>
+                                            <div className="total-row grand"><span>Grand Total</span><span>₹{total.toFixed(2)}</span></div>
+                                            <div className="total-row"><span>Payment Mode</span><span className="badge badge-info">{selectedBill.payment_mode}</span></div>
+                                        </>
+                                    )
+                                })()}
                             </div>
 
                             {/* Receipt Preview */}

@@ -2,86 +2,9 @@ import { useState, useEffect } from 'react'
 import {
     FileText, Download, Mail, Share2, Calendar, TrendingUp,
     TrendingDown, IndianRupee, ShoppingCart, Users, Package,
-    Clock, Check, AlertTriangle, Star, Send
+    Clock, Check, AlertTriangle, Star, Send, Loader2
 } from 'lucide-react'
-
-// Generate daily summary data
-const generateDailySummary = () => {
-    const today = new Date()
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-
-    return {
-        date: today.toLocaleDateString('en-IN', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        }),
-        tamilDate: today.toLocaleDateString('ta-IN'),
-        dayType: today.getDay() === 0 || today.getDay() === 6 ? 'Weekend' : 'Weekday',
-
-        sales: {
-            total: 47850,
-            cash: 28500,
-            upi: 15350,
-            credit: 4000,
-            change: 12.5,
-            billCount: 68,
-            avgBillValue: 703
-        },
-
-        topProducts: [
-            { name: 'Basmati Rice 5kg', qty: 24, revenue: 7200 },
-            { name: 'Sugar 1kg', qty: 45, revenue: 2025 },
-            { name: 'Toor Dal 1kg', qty: 18, revenue: 2700 },
-            { name: 'Coconut Oil 1L', qty: 15, revenue: 2250 },
-            { name: 'Wheat Flour 5kg', qty: 12, revenue: 2400 }
-        ],
-
-        inventory: {
-            lowStock: 5,
-            outOfStock: 2,
-            newArrivals: 8,
-            expiringsSoon: 3
-        },
-
-        customers: {
-            total: 52,
-            new: 7,
-            returning: 45,
-            topCustomer: { name: 'Lakshmi Stores', spent: 5400 }
-        },
-
-        expenses: {
-            total: 8500,
-            breakdown: [
-                { category: 'Inventory', amount: 5000 },
-                { category: 'Utilities', amount: 2000 },
-                { category: 'Other', amount: 1500 }
-            ]
-        },
-
-        profit: {
-            gross: 47850,
-            expenses: 8500,
-            net: 39350,
-            margin: 82.2
-        },
-
-        insights: [
-            { type: 'success', message: 'Sales up 12.5% compared to last Thursday!' },
-            { type: 'warning', message: '5 products running low on stock - reorder recommended' },
-            { type: 'info', message: 'Peak hours today: 5-7 PM with 28 transactions' },
-            { type: 'tip', message: 'Customers who bought Rice also bought Dal - consider bundle offer' }
-        ],
-
-        pendingTasks: [
-            { task: 'Collect ₹4,000 credit from Ganesh Stores', priority: 'high' },
-            { task: 'Reorder Toor Dal (only 5 units left)', priority: 'medium' },
-            { task: 'Update prices for oil products', priority: 'low' }
-        ]
-    }
-}
+import realDataService from '../services/realDataService'
 
 export default function DailySummary({ addToast }) {
     const [summary, setSummary] = useState(null)
@@ -89,11 +12,135 @@ export default function DailySummary({ addToast }) {
     const [sendingEmail, setSendingEmail] = useState(false)
 
     useEffect(() => {
-        setTimeout(() => {
-            setSummary(generateDailySummary())
-            setLoading(false)
-        }, 1000)
+        loadDailySummary()
     }, [])
+
+    const loadDailySummary = async () => {
+        setLoading(true)
+        try {
+            // Fetch real data from all sources
+            const [stats, products, bills, customers, expenseData] = await Promise.all([
+                realDataService.getDashboardStats(),
+                realDataService.getProducts(),
+                realDataService.getBills(),
+                realDataService.getCustomers(),
+                realDataService.getExpenseSummary()
+            ])
+
+            const today = new Date()
+            const lowStockProducts = products.filter(p => p.stock <= p.minStock)
+            const outOfStockProducts = products.filter(p => p.stock === 0)
+
+            // Calculate totals from bills
+            const totalRevenue = bills.reduce((sum, b) => sum + (b.total || 0), 0)
+            const avgBillValue = bills.length > 0 ? totalRevenue / bills.length : 0
+
+            // Calculate payment breakdown
+            const paymentBreakdown = { cash: 0, upi: 0, card: 0, credit: 0 }
+            bills.forEach(bill => {
+                const method = (bill.paymentMethod || 'cash').toLowerCase()
+                paymentBreakdown[method] = (paymentBreakdown[method] || 0) + (bill.total || 0)
+            })
+
+            // Find top products from bills
+            const productSales = {}
+            bills.forEach(bill => {
+                (bill.items || []).forEach(item => {
+                    const name = item.product_name || item.name
+                    if (name) {
+                        if (!productSales[name]) productSales[name] = { qty: 0, revenue: 0 }
+                        productSales[name].qty += item.quantity || 1
+                        productSales[name].revenue += (item.quantity || 1) * (item.unit_price || item.price || 0)
+                    }
+                })
+            })
+            const topProducts = Object.entries(productSales)
+                .sort((a, b) => b[1].revenue - a[1].revenue)
+                .slice(0, 5)
+                .map(([name, data]) => ({ name, qty: data.qty, revenue: data.revenue }))
+
+            // Build insights
+            const insights = []
+            if (bills.length > 0) {
+                insights.push({ type: 'success', message: `${bills.length} bills created today with total revenue of ₹${totalRevenue.toLocaleString()}` })
+            } else {
+                insights.push({ type: 'info', message: 'No sales recorded today. Start creating bills!' })
+            }
+            if (lowStockProducts.length > 0) {
+                insights.push({ type: 'warning', message: `${lowStockProducts.length} products running low on stock - reorder recommended` })
+            }
+            if (customers.length > 0) {
+                insights.push({ type: 'info', message: `You have ${customers.length} registered customers` })
+            }
+
+            // Build pending tasks
+            const pendingTasks = []
+            lowStockProducts.slice(0, 3).forEach(p => {
+                pendingTasks.push({ task: `Reorder ${p.name} (only ${p.stock} units left)`, priority: p.stock === 0 ? 'high' : 'medium' })
+            })
+
+            setSummary({
+                date: today.toLocaleDateString('en-IN', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                }),
+                tamilDate: today.toLocaleDateString('ta-IN'),
+                dayType: today.getDay() === 0 || today.getDay() === 6 ? 'Weekend' : 'Weekday',
+
+                sales: {
+                    total: totalRevenue,
+                    cash: paymentBreakdown.cash,
+                    upi: paymentBreakdown.upi,
+                    credit: paymentBreakdown.credit,
+                    change: 0, // Would need historical data
+                    billCount: bills.length,
+                    avgBillValue: Math.round(avgBillValue)
+                },
+
+                topProducts,
+
+                inventory: {
+                    lowStock: lowStockProducts.length,
+                    outOfStock: outOfStockProducts.length,
+                    newArrivals: 0,
+                    expiringsSoon: 0
+                },
+
+                customers: {
+                    total: customers.length,
+                    new: 0, // Would need date filter
+                    returning: customers.length,
+                    topCustomer: customers.length > 0
+                        ? { name: customers[0].name, spent: customers[0].totalSpent || 0 }
+                        : { name: 'N/A', spent: 0 }
+                },
+
+                expenses: {
+                    total: expenseData.total || 0,
+                    breakdown: Object.entries(expenseData.byCategory || {}).map(([category, amount]) => ({
+                        category, amount
+                    }))
+                },
+
+                profit: {
+                    gross: totalRevenue,
+                    expenses: expenseData.total || 0,
+                    net: totalRevenue - (expenseData.total || 0),
+                    margin: totalRevenue > 0 ? ((totalRevenue - (expenseData.total || 0)) / totalRevenue * 100).toFixed(1) : 0
+                },
+
+                insights,
+                pendingTasks
+            })
+        } catch (error) {
+            console.error('Failed to load daily summary:', error)
+            addToast?.('Failed to load daily summary', 'error')
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const handleDownloadPDF = () => {
         addToast('Generating PDF report...', 'info')
