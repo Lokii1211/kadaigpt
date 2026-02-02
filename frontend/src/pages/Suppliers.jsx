@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Truck, Plus, Phone, MapPin, Package, Calendar, Clock, TrendingUp, X, Check, AlertTriangle, Search, Filter, Mail, Star, ShoppingCart, MessageCircle, Loader2 } from 'lucide-react'
+import { Truck, Plus, Phone, MapPin, Package, Calendar, Clock, TrendingUp, X, Check, AlertTriangle, Search, Filter, Mail, Star, ShoppingCart, MessageCircle, Loader2, Edit2, Trash2 } from 'lucide-react'
 import whatsappService from '../services/whatsapp'
 import api from '../services/api'
 
@@ -10,9 +10,11 @@ export default function Suppliers({ addToast }) {
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
     const [showAddModal, setShowAddModal] = useState(false)
+    const [showEditModal, setShowEditModal] = useState(false)
     const [showOrderModal, setShowOrderModal] = useState(false)
     const [showCallModal, setShowCallModal] = useState(false)
     const [selectedSupplier, setSelectedSupplier] = useState(null)
+    const [editSupplier, setEditSupplier] = useState(null)
     const [newSupplier, setNewSupplier] = useState({ name: '', contact: '', phone: '', email: '', address: '', category: 'General' })
     const [orderItems, setOrderItems] = useState([])
 
@@ -71,6 +73,40 @@ export default function Suppliers({ addToast }) {
             addToast('Supplier added successfully!', 'success')
         } catch (error) {
             addToast(error.message || 'Failed to add supplier', 'error')
+        }
+    }
+
+    const handleEditSupplier = (supplier) => {
+        setEditSupplier({ ...supplier })
+        setShowEditModal(true)
+    }
+
+    const handleUpdateSupplier = async () => {
+        if (!editSupplier?.name || !editSupplier?.phone) {
+            addToast('Name and phone are required', 'error')
+            return
+        }
+
+        try {
+            const updated = await api.updateSupplier(editSupplier.id, editSupplier)
+            setSuppliers(suppliers.map(s => s.id === editSupplier.id ? updated : s))
+            setShowEditModal(false)
+            setEditSupplier(null)
+            addToast('Supplier updated successfully!', 'success')
+        } catch (error) {
+            addToast(error.message || 'Failed to update supplier', 'error')
+        }
+    }
+
+    const handleDeleteSupplier = async (supplierId) => {
+        if (!window.confirm('Are you sure you want to delete this supplier?')) return
+
+        try {
+            await api.deleteSupplier(supplierId)
+            setSuppliers(suppliers.filter(s => s.id !== supplierId))
+            addToast('Supplier deleted', 'success')
+        } catch (error) {
+            addToast(error.message || 'Failed to delete supplier', 'error')
         }
     }
 
@@ -283,18 +319,18 @@ export default function Suppliers({ addToast }) {
 
                         <div className="supplier-meta">
                             <div className="meta-item">
-                                <span className="meta-value">{supplier.totalOrders}</span>
+                                <span className="meta-value">{supplier.totalOrders || supplier.total_orders || 0}</span>
                                 <span className="meta-label">Orders</span>
                             </div>
                             <div className="meta-item">
-                                <span className={`meta-value ${supplier.pendingAmount > 0 ? 'pending' : ''}`}>
-                                    ₹{supplier.pendingAmount.toLocaleString()}
+                                <span className={`meta-value ${(supplier.pendingAmount || supplier.pending_amount || 0) > 0 ? 'pending' : ''}`}>
+                                    ₹{(supplier.pendingAmount || supplier.pending_amount || 0).toLocaleString()}
                                 </span>
                                 <span className="meta-label">Pending</span>
                             </div>
-                            {supplier.lastOrder && (
+                            {(supplier.lastOrder || supplier.last_order) && (
                                 <div className="meta-item">
-                                    <span className="meta-value">{new Date(supplier.lastOrder).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                                    <span className="meta-value">{new Date(supplier.lastOrder || supplier.last_order).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
                                     <span className="meta-label">Last Order</span>
                                 </div>
                             )}
@@ -304,8 +340,14 @@ export default function Suppliers({ addToast }) {
                             <button className="btn btn-primary btn-sm" onClick={() => { setSelectedSupplier(supplier); setShowOrderModal(true); }}>
                                 <Package size={14} /> Order
                             </button>
+                            <button className="btn btn-ghost btn-sm" onClick={() => handleEditSupplier(supplier)}>
+                                <Edit2 size={14} /> Edit
+                            </button>
                             <button className="btn btn-ghost btn-sm" onClick={() => handleCall(supplier)}>
-                                <Phone size={14} /> Contact
+                                <Phone size={14} /> Call
+                            </button>
+                            <button className="btn btn-ghost btn-sm text-danger" onClick={() => handleDeleteSupplier(supplier.id)}>
+                                <Trash2 size={14} />
                             </button>
                         </div>
                     </div>
@@ -409,6 +451,66 @@ export default function Suppliers({ addToast }) {
                             <button className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
                             <button className="btn btn-primary" onClick={handleAddSupplier}>
                                 Add Supplier
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Supplier Modal */}
+            {showEditModal && editSupplier && (
+                <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Edit Supplier</h3>
+                            <button className="modal-close" onClick={() => setShowEditModal(false)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label className="form-label">Company Name *</label>
+                                    <input type="text" className="form-input" placeholder="Supplier Company Name"
+                                        value={editSupplier.name} onChange={(e) => setEditSupplier({ ...editSupplier, name: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Contact Person</label>
+                                    <input type="text" className="form-input" placeholder="Contact Name"
+                                        value={editSupplier.contact || ''} onChange={(e) => setEditSupplier({ ...editSupplier, contact: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label className="form-label">Phone *</label>
+                                    <input type="tel" className="form-input" placeholder="10-digit number"
+                                        value={editSupplier.phone} onChange={(e) => setEditSupplier({ ...editSupplier, phone: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Email</label>
+                                    <input type="email" className="form-input" placeholder="supplier@email.com"
+                                        value={editSupplier.email || ''} onChange={(e) => setEditSupplier({ ...editSupplier, email: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Address</label>
+                                <input type="text" className="form-input" placeholder="City, Area"
+                                    value={editSupplier.address || ''} onChange={(e) => setEditSupplier({ ...editSupplier, address: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Category</label>
+                                <select className="form-input" value={editSupplier.category || 'General'} onChange={(e) => setEditSupplier({ ...editSupplier, category: e.target.value })}>
+                                    <option value="General">General</option>
+                                    <option value="Grains">Grains</option>
+                                    <option value="Dairy">Dairy</option>
+                                    <option value="FMCG">FMCG</option>
+                                    <option value="Beverages">Beverages</option>
+                                    <option value="Vegetables">Vegetables</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+                            <button className="btn btn-primary" onClick={handleUpdateSupplier}>
+                                Update Supplier
                             </button>
                         </div>
                     </div>

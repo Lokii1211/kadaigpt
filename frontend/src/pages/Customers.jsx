@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Search, Plus, Phone, IndianRupee, Calendar, X, Send, Check, AlertCircle, Loader2 } from 'lucide-react'
+import { Users, Search, Plus, Phone, IndianRupee, Calendar, X, Send, Check, AlertCircle, Loader2, Edit2, Trash2 } from 'lucide-react'
 import api from '../services/api'
 
 export default function Customers({ addToast }) {
@@ -7,7 +7,9 @@ export default function Customers({ addToast }) {
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
     const [showAddModal, setShowAddModal] = useState(false)
+    const [showEditModal, setShowEditModal] = useState(false)
     const [selectedCustomer, setSelectedCustomer] = useState(null)
+    const [editCustomer, setEditCustomer] = useState(null)
     const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '', address: '', initialCredit: '' })
     const [paymentAmount, setPaymentAmount] = useState('')
 
@@ -104,6 +106,40 @@ export default function Customers({ addToast }) {
             addToast(`Added ₹${amount} to credit`, 'info')
         } catch (error) {
             addToast(error.message || 'Failed to add credit', 'error')
+        }
+    }
+
+    const handleEditCustomer = (customer) => {
+        setEditCustomer({ ...customer })
+        setShowEditModal(true)
+    }
+
+    const handleUpdateCustomer = async () => {
+        if (!editCustomer?.name || !editCustomer?.phone) {
+            addToast('Name and phone are required', 'error')
+            return
+        }
+
+        try {
+            const updated = await api.updateCustomer(editCustomer.id, editCustomer)
+            setCustomers(customers.map(c => c.id === editCustomer.id ? updated : c))
+            setShowEditModal(false)
+            setEditCustomer(null)
+            addToast('Customer updated successfully!', 'success')
+        } catch (error) {
+            addToast(error.message || 'Failed to update customer', 'error')
+        }
+    }
+
+    const handleDeleteCustomer = async (customerId) => {
+        if (!window.confirm('Are you sure you want to delete this customer?')) return
+
+        try {
+            await api.deleteCustomer(customerId)
+            setCustomers(customers.filter(c => c.id !== customerId))
+            addToast('Customer deleted', 'success')
+        } catch (error) {
+            addToast(error.message || 'Failed to delete customer', 'error')
         }
     }
 
@@ -242,6 +278,15 @@ export default function Customers({ addToast }) {
                                 <span>All dues cleared</span>
                             </div>
                         )}
+
+                        <div className="customer-card-actions">
+                            <button className="btn btn-ghost btn-sm" onClick={() => handleEditCustomer(customer)}>
+                                <Edit2 size={14} /> Edit
+                            </button>
+                            <button className="btn btn-ghost btn-sm text-danger" onClick={() => handleDeleteCustomer(customer.id)}>
+                                <Trash2 size={14} /> Delete
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>
@@ -339,6 +384,53 @@ export default function Customers({ addToast }) {
                 </div>
             )}
 
+            {/* Edit Customer Modal */}
+            {showEditModal && editCustomer && (
+                <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Edit Customer</h3>
+                            <button className="modal-close" onClick={() => setShowEditModal(false)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label className="form-label">Customer Name *</label>
+                                    <input type="text" className="form-input" placeholder="Full Name"
+                                        value={editCustomer.name} onChange={(e) => setEditCustomer({ ...editCustomer, name: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Phone Number *</label>
+                                    <input type="tel" className="form-input" placeholder="10-digit mobile"
+                                        value={editCustomer.phone} onChange={(e) => setEditCustomer({ ...editCustomer, phone: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label className="form-label">Email</label>
+                                    <input type="email" className="form-input" placeholder="email@example.com"
+                                        value={editCustomer.email || ''} onChange={(e) => setEditCustomer({ ...editCustomer, email: e.target.value })} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Current Credit (₹)</label>
+                                    <input type="number" className="form-input" placeholder="0"
+                                        value={editCustomer.credit || 0} onChange={(e) => setEditCustomer({ ...editCustomer, credit: parseFloat(e.target.value) || 0 })} />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Address</label>
+                                <textarea className="form-input" placeholder="Customer address" rows="2"
+                                    value={editCustomer.address || ''} onChange={(e) => setEditCustomer({ ...editCustomer, address: e.target.value })} />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+                            <button className="btn btn-primary" onClick={handleUpdateCustomer}>Update Customer</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style>{`
         .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; gap: 16px; }
         .loading-container .spin { animation: spin 1s linear infinite; }
@@ -414,6 +506,13 @@ export default function Customers({ addToast }) {
 
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+
+        .customer-card-actions { 
+          display: flex; gap: 8px; margin-top: 16px; padding-top: 12px; 
+          border-top: 1px solid var(--border-subtle); 
+        }
+        .text-danger { color: var(--error) !important; }
+        .text-danger:hover { background: rgba(239, 68, 68, 0.1); }
       `}</style>
         </div>
     )

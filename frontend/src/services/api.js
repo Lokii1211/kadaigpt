@@ -397,6 +397,15 @@ class ApiService {
         return result
     }
 
+    async updateCustomer(customerId, data) {
+        const result = await this.request(`/customers/${customerId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        })
+        await offlineStorage.save('customers', result)
+        return result
+    }
+
     async recordPayment(customerId, amount) {
         return this.request(`/customers/${customerId}/payment`, {
             method: 'POST',

@@ -168,9 +168,9 @@ class ProductUpdate(BaseModel):
 
 class ProductResponse(ProductBase):
     id: int
-    store_id: int
-    is_active: bool
-    created_at: datetime
+    store_id: Optional[int] = None
+    is_active: bool = True
+    created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
     class Config:
