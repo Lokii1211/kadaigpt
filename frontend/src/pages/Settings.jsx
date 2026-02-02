@@ -3,6 +3,7 @@ import { Settings as SettingsIcon, Printer, RefreshCw, Check, AlertCircle, Wifi,
 import api from '../services/api'
 import gstService from '../services/gstService'
 import { useTheme } from '../contexts/ThemeContext'
+import WhatsAppSettings from '../components/WhatsAppSettings'
 
 export default function Settings({ addToast }) {
     const { theme, toggleTheme } = useTheme()
@@ -238,6 +239,9 @@ export default function Settings({ addToast }) {
                         </button>
                     </div>
                 </div>
+
+                {/* WhatsApp Integration Settings */}
+                <WhatsAppSettings addToast={addToast} />
 
                 {/* Printer Settings */}
                 <div className="card settings-card">
