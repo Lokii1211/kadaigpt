@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ShoppingCart, Mail, Lock, User, ArrowRight, Loader2, Sparkles, Zap, Shield, Wifi, Eye, EyeOff } from 'lucide-react'
+import { ShoppingCart, Mail, Lock, User, ArrowRight, Loader2, Sparkles, Zap, Shield, Wifi, Eye, EyeOff, Check, Square, CheckSquare } from 'lucide-react'
 import api from '../services/api'
 
 export default function Login({ onLogin }) {
@@ -7,6 +7,7 @@ export default function Login({ onLogin }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [form, setForm] = useState({
     username: '',
     email: '',
@@ -235,13 +236,59 @@ export default function Login({ onLogin }) {
                     className="password-toggle"
                     onClick={() => setShowPassword(!showPassword)}
                     tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                {!isLogin && (
+                  <span className="password-hint">Minimum 6 characters</span>
+                )}
               </div>
 
-              <button type="submit" className="btn btn-primary btn-lg w-full" disabled={loading}>
+              {/* Terms Checkbox - Registration only */}
+              {!isLogin && (
+                <div className="terms-checkbox">
+                  <button
+                    type="button"
+                    className={`checkbox-btn ${acceptedTerms ? 'checked' : ''}`}
+                    onClick={() => setAcceptedTerms(!acceptedTerms)}
+                    aria-checked={acceptedTerms}
+                    role="checkbox"
+                  >
+                    {acceptedTerms ? (
+                      <CheckSquare size={20} />
+                    ) : (
+                      <Square size={20} />
+                    )}
+                  </button>
+                  <span className="terms-label">
+                    I agree to the{' '}
+                    <a href="#terms" onClick={(e) => e.preventDefault()}>Terms of Service</a>
+                    {' '}and{' '}
+                    <a href="#privacy" onClick={(e) => e.preventDefault()}>Privacy Policy</a>
+                  </span>
+                </div>
+              )}
+
+              {/* Remember Me - Login only */}
+              {isLogin && (
+                <div className="remember-forgot">
+                  <label className="remember-me">
+                    <input type="checkbox" />
+                    <span>Remember me</span>
+                  </label>
+                  <button type="button" className="forgot-link">
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="btn btn-primary btn-lg w-full"
+                disabled={loading || (!isLogin && !acceptedTerms)}
+              >
                 {loading ? <Loader2 size={20} className="spin" /> : <><span>{isLogin ? 'Sign In' : 'Create Account'}</span><ArrowRight size={18} /></>}
               </button>
             </form>
@@ -260,9 +307,11 @@ export default function Login({ onLogin }) {
               </button>
             </p>
 
-            <p className="terms-text">
-              By continuing, you agree to our Terms of Service and Privacy Policy
-            </p>
+            {isLogin && (
+              <p className="terms-text">
+                By continuing, you agree to our Terms of Service and Privacy Policy
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -514,27 +563,138 @@ export default function Login({ onLogin }) {
         
         .password-toggle {
           position: absolute;
-          right: 12px;
+          right: 4px;
           top: 50%;
           transform: translateY(-50%);
-          background: none;
-          border: none;
-          color: var(--text-tertiary);
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-subtle);
+          border-radius: 8px;
+          color: var(--text-secondary);
           cursor: pointer;
-          padding: 4px;
+          padding: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: color var(--transition-fast);
+          transition: all 0.2s;
           -webkit-tap-highlight-color: transparent;
+          width: 36px;
+          height: 36px;
         }
         
         .password-toggle:hover {
-          color: var(--text-primary);
+          background: var(--bg-tertiary);
+          color: var(--primary-400);
+          border-color: var(--primary-400);
+        }
+        
+        .password-toggle:active {
+          transform: translateY(-50%) scale(0.95);
         }
         
         .password-toggle:focus {
           outline: none;
+          border-color: var(--primary-400);
+        }
+
+        .password-hint {
+          font-size: 0.75rem;
+          color: var(--text-tertiary);
+          margin-top: 6px;
+          display: block;
+        }
+
+        /* Terms Checkbox */
+        .terms-checkbox {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          margin: 20px 0;
+          padding: 12px 14px;
+          background: var(--bg-tertiary);
+          border-radius: 10px;
+          border: 1px solid var(--border-subtle);
+        }
+
+        .checkbox-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 2px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-tertiary);
+          transition: all 0.2s;
+          flex-shrink: 0;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .checkbox-btn:hover {
+          color: var(--primary-400);
+        }
+
+        .checkbox-btn.checked {
+          color: var(--primary-500);
+        }
+
+        .checkbox-btn.checked svg {
+          fill: var(--primary-500);
+        }
+
+        .terms-label {
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+          line-height: 1.5;
+        }
+
+        .terms-label a {
+          color: var(--primary-400);
+          text-decoration: none;
+          font-weight: 500;
+        }
+
+        .terms-label a:hover {
+          text-decoration: underline;
+        }
+
+        /* Remember Me & Forgot Password */
+        .remember-forgot {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin: 16px 0 20px;
+        }
+
+        .remember-me {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+        }
+
+        .remember-me input[type="checkbox"] {
+          width: 18px;
+          height: 18px;
+          accent-color: var(--primary-500);
+          cursor: pointer;
+          border-radius: 4px;
+        }
+
+        .forgot-link {
+          background: none;
+          border: none;
+          color: var(--primary-400);
+          font-size: 0.85rem;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: 6px;
+          transition: all 0.2s;
+        }
+
+        .forgot-link:hover {
+          background: rgba(249, 115, 22, 0.1);
         }
         
         .w-full { 
