@@ -46,33 +46,26 @@ export default function ExpenseTracker({ addToast }) {
 
     const loadExpenses = () => {
         setLoading(true)
-        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
 
-        if (isDemoMode) {
-            setExpenses(demoExpenses)
-        } else {
-            // For real users, check localStorage for saved expenses
-            const savedExpenses = localStorage.getItem('kadai_expenses')
-            if (savedExpenses) {
-                try {
-                    const parsed = JSON.parse(savedExpenses)
-                    // Real users see their actual expenses (or empty if none)
-                    setExpenses(Array.isArray(parsed) ? parsed : [])
-                } catch {
-                    setExpenses([])
-                }
-            } else {
-                // Real user with no expenses - show empty state
+        // Always load from localStorage - no more demo mode
+        const savedExpenses = localStorage.getItem('kadai_expenses')
+        if (savedExpenses) {
+            try {
+                const parsed = JSON.parse(savedExpenses)
+                setExpenses(Array.isArray(parsed) ? parsed : [])
+            } catch {
                 setExpenses([])
             }
+        } else {
+            // No expenses yet - show empty state
+            setExpenses([])
         }
         setLoading(false)
     }
 
-    // Save expenses to localStorage for persistence (for real users)
+    // Save expenses to localStorage for persistence
     useEffect(() => {
-        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
-        if (!isDemoMode && expenses.length > 0) {
+        if (expenses.length > 0) {
             localStorage.setItem('kadai_expenses', JSON.stringify(expenses))
         }
     }, [expenses])
