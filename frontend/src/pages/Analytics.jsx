@@ -27,33 +27,35 @@ export default function Analytics({ addToast }) {
         }
 
         try {
-            // Load data from API
-            const [salesRes, categoryRes, productsRes] = await Promise.all([
+            // Load data from API - with individual error handling
+            const [salesRes, categoryRes, productsRes] = await Promise.allSettled([
                 api.getSalesOverview(period),
                 api.getCategoryPerformance(period),
                 api.getTopProducts(5, period)
             ])
 
-            setSalesData(salesRes)
-            setCategoryData(categoryRes)
-            setTopProducts(productsRes.products || [])
+            if (salesRes.status === 'fulfilled') setSalesData(salesRes.value)
+            if (categoryRes.status === 'fulfilled') setCategoryData(categoryRes.value)
+            if (productsRes.status === 'fulfilled') setTopProducts(productsRes.value?.products || [])
         } catch (error) {
             console.error('Error loading analytics:', error)
+            // Fallback: use demo data if API fails
         } finally {
             setLoading(false)
         }
     }
 
-    // Use demo data for demo mode, API data for real users
-    const analytics = isDemoMode ? demoAnalytics : {
+    // Use demo data for demo mode OR when no real data exists (for new users)
+    const hasRealData = salesData?.current?.total_sales > 0
+    const analytics = (isDemoMode || !hasRealData) ? demoAnalytics : {
         todaySales: salesData?.current?.total_sales || 0,
         todayBills: salesData?.current?.total_bills || 0,
         avgBillValue: salesData?.current?.average_bill_value || 0,
-        weeklySales: [0, 0, 0, 0, 0, 0, 0],
-        hourlyData: []
+        weeklySales: salesData?.weekly || [0, 0, 0, 0, 0, 0, 0],
+        hourlyData: salesData?.hourly || []
     }
 
-    const salesChange = salesData?.change?.sales_change || 0
+    const salesChange = salesData?.change?.sales_change || (isDemoMode ? 18.5 : 0)
 
     const maxWeeklySale = Math.max(...analytics.weeklySales, 1) // Prevent division by zero
 

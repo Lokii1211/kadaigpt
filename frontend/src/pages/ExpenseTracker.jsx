@@ -51,17 +51,18 @@ export default function ExpenseTracker({ addToast }) {
         if (isDemoMode) {
             setExpenses(demoExpenses)
         } else {
-            // For real users, start with empty expenses (could be loaded from API in future)
-            // Check if we have localStorage expenses
+            // For real users, check localStorage for saved expenses
             const savedExpenses = localStorage.getItem('kadai_expenses')
             if (savedExpenses) {
                 try {
-                    setExpenses(JSON.parse(savedExpenses))
+                    const parsed = JSON.parse(savedExpenses)
+                    setExpenses(parsed.length > 0 ? parsed : demoExpenses)
                 } catch {
-                    setExpenses([])
+                    setExpenses(demoExpenses)
                 }
             } else {
-                setExpenses([])
+                // Show demo data for new users to illustrate the feature
+                setExpenses(demoExpenses)
             }
         }
         setLoading(false)

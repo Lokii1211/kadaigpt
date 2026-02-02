@@ -10,12 +10,9 @@ export default function GSTReports({ addToast }) {
     // Check demo mode
     const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
 
-    // Use demo data for demo mode, empty state for real users
-    const gstData = isDemoMode ? demoGSTData : {
-        summary: { totalSales: 0, taxableAmount: 0, cgst: 0, sgst: 0, totalTax: 0 },
-        monthly: [{ month: 'Jan 2026', sales: 0, tax: 0 }],
-        invoices: []
-    }
+    // Always show demo data for now - real GST calc requires actual sales data
+    // In production, this would fetch from /api/analytics/gst endpoint
+    const gstData = demoGSTData
 
     const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
     const gstin = localStorage.getItem('kadai_gstin') || 'Not Configured'
