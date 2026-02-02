@@ -42,51 +42,97 @@ class WelcomeMessageRequest(BaseModel):
     user_name: str
 
 
-# ==================== EVOLUTION API WEBHOOK ====================
+# ==================== WAHA WEBHOOK ====================
 
 @router.post("/webhook")
-async def evolution_webhook(request: Request, background_tasks: BackgroundTasks):
+async def waha_webhook(request: Request, background_tasks: BackgroundTasks):
     """
-    Receive webhook events from Evolution API
-    Events: messages.upsert, connection.update, qrcode.updated, etc.
+    Receive webhook events from WAHA (WhatsApp HTTP API)
+    Events: message, session.status, etc.
     """
     try:
         body = await request.json()
         
         event = body.get("event", "")
-        instance = body.get("instance", "")
-        data = body.get("data", {})
+        session = body.get("session", "default")
         
-        logger.info(f"WhatsApp webhook received: {event} from {instance}")
+        logger.info(f"WhatsApp webhook received: {event} from session {session}")
         
-        # Handle different event types
-        if event == "messages.upsert":
-            # New message received
+        # WAHA message event
+        if event == "message":
+            payload = body.get("payload", {})
+            background_tasks.add_task(handle_waha_message, payload)
+            return {"status": "processing", "event": event}
+        
+        # WAHA session status
+        elif event == "session.status":
+            status = body.get("payload", {}).get("status", "")
+            logger.info(f"WhatsApp session status: {status}")
+            return {"status": "ok", "session_status": status}
+        
+        # Evolution API format (backward compatibility)
+        elif event == "messages.upsert":
+            data = body.get("data", {})
             background_tasks.add_task(handle_evolution_message, data)
             return {"status": "processing", "event": event}
             
         elif event == "connection.update":
-            # Connection status changed
-            state = data.get("state", "")
+            state = body.get("data", {}).get("state", "")
             logger.info(f"WhatsApp connection state: {state}")
             return {"status": "ok", "connection_state": state}
-            
-        elif event == "qrcode.updated":
-            # QR code updated - need to scan
-            logger.info("QR code updated - scan required")
-            return {"status": "ok", "qr_updated": True}
         
         # Legacy WhatsApp Cloud API format support
         elif "entry" in body:
             return await handle_legacy_webhook(body)
             
         else:
+            # Try to process as WAHA message if no event type
+            if "payload" in body and "from" in body.get("payload", {}):
+                background_tasks.add_task(handle_waha_message, body.get("payload", {}))
+                return {"status": "processing"}
+            
             logger.debug(f"Unhandled webhook event: {event}")
             return {"status": "ok", "event": event}
             
     except Exception as e:
         logger.error(f"Webhook error: {e}")
         return {"status": "error", "message": str(e)}
+
+
+async def handle_waha_message(payload: Dict[str, Any]):
+    """Process incoming WAHA WhatsApp message"""
+    try:
+        # Skip if it's our own message
+        if payload.get("fromMe", False):
+            return
+        
+        # Get sender phone number (format: 91xxxxxxxx@c.us)
+        from_id = payload.get("from", "")
+        phone = from_id.replace("@c.us", "").replace("@s.whatsapp.net", "")
+        
+        # Get message text
+        text = ""
+        if payload.get("body"):
+            text = payload.get("body")
+        elif payload.get("text"):
+            text = payload.get("text")
+        
+        if not text:
+            logger.debug("No text content in message")
+            return
+            
+        logger.info(f"Message from {phone}: {text}")
+        
+        # Process message and get response
+        response = await whatsapp_bot.process_incoming_message(phone, text)
+        
+        # Send response
+        if response:
+            await whatsapp_bot.send_message(phone, response)
+            logger.info(f"Response sent to {phone}")
+            
+    except Exception as e:
+        logger.error(f"Error handling WAHA message: {e}")
 
 
 async def handle_evolution_message(data: Dict[str, Any]):

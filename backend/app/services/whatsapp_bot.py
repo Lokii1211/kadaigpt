@@ -1,7 +1,7 @@
 """
 WhatsApp Bot Service for KadaiGPT
 Enhanced version with database integration, order creation, reminders, and more
-Uses Evolution API for WhatsApp integration
+Uses WAHA (WhatsApp HTTP API) for WhatsApp integration
 """
 
 import httpx
@@ -19,36 +19,32 @@ class WhatsAppBotService:
     """Service for handling WhatsApp bot interactions"""
     
     def __init__(self):
-        self.evolution_url = settings.EVOLUTION_API_URL or "http://localhost:8080"
-        self.api_key = settings.EVOLUTION_API_KEY or ""
-        self.instance_name = settings.EVOLUTION_INSTANCE_NAME or "kadaigpt"
+        self.waha_url = settings.EVOLUTION_API_URL or "http://localhost:8080"
+        self.api_key = settings.EVOLUTION_API_KEY or "kadaigpt-wa-secret-2026"
+        self.session_name = "default"  # WAHA Core only supports 'default' session
         self.store_name = "KadaiGPT Store"
         
         # Conversation states for multi-step interactions
         self._conversation_states = {}
         
-    # ==================== EVOLUTION API METHODS ====================
+    # ==================== WAHA API METHODS ====================
     
     async def send_message(self, phone: str, message: str) -> Dict[str, Any]:
-        """Send a WhatsApp message via Evolution API"""
+        """Send a WhatsApp message via WAHA API"""
         try:
             clean_phone = self._format_phone(phone)
             
-            url = f"{self.evolution_url}/message/sendText/{self.instance_name}"
+            # WAHA API format
+            url = f"{self.waha_url}/api/sendText"
             
             payload = {
-                "number": clean_phone,
-                "options": {
-                    "delay": 1200,
-                    "presence": "composing"
-                },
-                "textMessage": {
-                    "text": message
-                }
+                "session": self.session_name,
+                "chatId": f"{clean_phone}@c.us",
+                "text": message
             }
             
             headers = {
-                "apikey": self.api_key,
+                "X-Api-Key": self.api_key,
                 "Content-Type": "application/json"
             }
             
@@ -56,6 +52,7 @@ class WhatsAppBotService:
                 response = await client.post(url, json=payload, headers=headers, timeout=30)
                 
                 if response.status_code == 200 or response.status_code == 201:
+                    logger.info(f"Message sent to {phone}")
                     return {"success": True, "data": response.json()}
                 else:
                     logger.error(f"Failed to send message: {response.text}")
@@ -793,20 +790,21 @@ _Powered by KadaiGPT AI_ 🤖"""
         return digits
     
     async def check_connection(self) -> Dict[str, Any]:
-        """Check Evolution API connection status"""
+        """Check WAHA connection status"""
         try:
-            url = f"{self.evolution_url}/instance/connectionState/{self.instance_name}"
-            headers = {"apikey": self.api_key}
+            url = f"{self.waha_url}/api/sessions/{self.session_name}"
+            headers = {"X-Api-Key": self.api_key}
             
             async with httpx.AsyncClient() as client:
                 response = await client.get(url, headers=headers, timeout=10)
                 
                 if response.status_code == 200:
                     data = response.json()
+                    status = data.get("status", "STOPPED")
                     return {
-                        "connected": data.get("state") == "open",
-                        "state": data.get("state"),
-                        "instance": self.instance_name
+                        "connected": status == "WORKING",
+                        "state": status,
+                        "session": self.session_name
                     }
                 else:
                     return {"connected": False, "error": response.text}
@@ -815,10 +813,10 @@ _Powered by KadaiGPT AI_ 🤖"""
             return {"connected": False, "error": str(e)}
     
     async def get_qr_code(self) -> Dict[str, Any]:
-        """Get QR code for connecting WhatsApp"""
+        """Get QR code for connecting WhatsApp via WAHA"""
         try:
-            url = f"{self.evolution_url}/instance/connect/{self.instance_name}"
-            headers = {"apikey": self.api_key}
+            url = f"{self.waha_url}/api/{self.session_name}/auth/qr?format=raw"
+            headers = {"X-Api-Key": self.api_key}
             
             async with httpx.AsyncClient() as client:
                 response = await client.get(url, headers=headers, timeout=30)
@@ -827,8 +825,8 @@ _Powered by KadaiGPT AI_ 🤖"""
                     data = response.json()
                     return {
                         "success": True,
-                        "qrcode": data.get("base64"),
-                        "code": data.get("code")
+                        "qrcode": data.get("value"),
+                        "code": data.get("value")
                     }
                 else:
                     return {"success": False, "error": response.text}
