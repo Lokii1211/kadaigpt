@@ -54,6 +54,12 @@ class Settings(BaseSettings):
     enable_predictive_analytics: bool = True
     enable_whatsapp_integration: bool = True
     
+    # Evolution API (WhatsApp Bot) Settings
+    EVOLUTION_API_URL: Optional[str] = None  # e.g., https://your-evolution.railway.app
+    EVOLUTION_API_KEY: Optional[str] = None  # Your API key
+    EVOLUTION_INSTANCE_NAME: str = "kadaigpt"  # Instance name
+    WHATSAPP_VERIFY_TOKEN: str = "kadaigpt_verify_token"  # For Meta API verification
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
