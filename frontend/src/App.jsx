@@ -229,7 +229,7 @@ function App() {
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         marginBottom: '8px'
-                    }}>VyaparAI</h1>
+                    }}>KadaiGPT</h1>
                     <p style={{ color: '#666', fontSize: '0.9375rem' }}>AI-Powered Retail Intelligence</p>
                 </div>
                 <div className="loader" style={{
@@ -289,7 +289,7 @@ function App() {
             <header className="mobile-header">
                 <div className="mobile-header-title">
                     <ShoppingCart size={24} />
-                    <span>VyaparAI</span>
+                    <span>KadaiGPT</span>
                 </div>
                 <div className="mobile-header-actions">
                     <button

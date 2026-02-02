@@ -50,7 +50,7 @@ export default function OnboardingWizard({ onComplete }) {
                             <div className="welcome-icon">
                                 <Zap size={48} />
                             </div>
-                            <h2>Welcome to VyaparAI! 🎉</h2>
+                            <h2>Welcome to KadaiGPT! 🎉</h2>
                             <p>India's First AI-Powered Retail Intelligence Platform</p>
 
                             <div className="features-list">
@@ -171,7 +171,7 @@ export default function OnboardingWizard({ onComplete }) {
                             </div>
 
                             <button className="btn btn-primary btn-lg" onClick={handleComplete}>
-                                Start Using VyaparAI <ArrowRight size={18} />
+                                Start Using KadaiGPT <ArrowRight size={18} />
                             </button>
                         </div>
                     )}

@@ -98,7 +98,7 @@ export default function Login({ onLogin }) {
     localStorage.setItem('kadai_demo_mode', 'true')
     onLogin({
       username: 'Demo User',
-      store_name: 'VyaparAI Demo Store',
+      store_name: 'KadaiGPT Demo Store',
       isDemo: true
     })
   }
@@ -119,7 +119,7 @@ export default function Login({ onLogin }) {
             <div className="brand-logo">
               <ShoppingCart size={40} />
             </div>
-            <h1>VyaparAI</h1>
+            <h1>KadaiGPT</h1>
             <p className="tagline">AI-Powered Retail Intelligence</p>
             <p className="description">
               Smart billing, inventory management, and analytics for your retail store.
