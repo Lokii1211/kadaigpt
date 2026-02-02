@@ -322,39 +322,77 @@ export default function VoiceAssistant({ onCommand, onNavigate, products = [], a
             <style>{`
         .voice-fab {
           position: fixed;
-          bottom: 24px;
-          right: 24px;
-          width: 60px;
-          height: 60px;
+          bottom: 100px;
+          right: 20px;
+          width: 64px;
+          height: 64px;
           border-radius: 50%;
-          background: var(--gradient-primary);
-          border: none;
+          background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+          border: 3px solid rgba(255,255,255,0.2);
           color: white;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
+          box-shadow: 0 8px 32px rgba(249, 115, 22, 0.5), 0 0 0 4px rgba(249, 115, 22, 0.2);
           z-index: 1000;
-          transition: transform var(--transition-fast);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .voice-fab:hover { transform: scale(1.1); }
-        .voice-fab.listening { animation: pulse 1.5s infinite; }
+        .voice-fab::before {
+          content: 'AI';
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          background: #22c55e;
+          color: white;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+        }
+        .voice-fab:hover { 
+          transform: scale(1.1) translateY(-4px); 
+          box-shadow: 0 12px 40px rgba(249, 115, 22, 0.6), 0 0 0 6px rgba(249, 115, 22, 0.3);
+        }
+        .voice-fab.listening { 
+          animation: pulse 1.5s infinite;
+          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+          box-shadow: 0 8px 32px rgba(34, 197, 94, 0.5);
+        }
         .pulse-ring {
           position: absolute;
           width: 100%;
           height: 100%;
-          border: 2px solid var(--primary-400);
+          border: 3px solid var(--primary-400);
           border-radius: 50%;
           animation: pulse-ring 1.5s infinite;
         }
         @keyframes pulse-ring {
           0% { transform: scale(1); opacity: 1; }
-          100% { transform: scale(1.5); opacity: 0; }
+          100% { transform: scale(1.8); opacity: 0; }
         }
         @keyframes pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7); }
-          50% { box-shadow: 0 0 0 15px rgba(249, 115, 22, 0); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+          50% { box-shadow: 0 0 0 20px rgba(34, 197, 94, 0); }
+        }
+        
+        /* Mobile specific positioning */
+        @media (max-width: 768px) {
+          .voice-fab {
+            bottom: 140px;
+            right: 16px;
+            width: 60px;
+            height: 60px;
+          }
+        }
+        @media (max-width: 480px) {
+          .voice-fab {
+            bottom: 150px;
+            right: 12px;
+            width: 56px;
+            height: 56px;
+          }
         }
 
         .voice-panel {

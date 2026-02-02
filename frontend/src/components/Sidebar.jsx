@@ -1,4 +1,4 @@
-import { ShoppingCart, LayoutDashboard, FileText, Camera, Package, Settings, LogOut, PlusCircle, User, BarChart3, Users, Receipt, MessageCircle, Truck, Gift, X, Brain, Wallet, ClipboardList, Database } from 'lucide-react'
+import { ShoppingCart, LayoutDashboard, FileText, Camera, Package, Settings, LogOut, PlusCircle, User, BarChart3, Users, Receipt, MessageCircle, Truck, Gift, X, Brain, Wallet, ClipboardList, Database, Shield } from 'lucide-react'
 import NotificationCenter from './NotificationCenter'
 
 const menuItems = [
@@ -17,6 +17,7 @@ const menuItems = [
   { id: 'gst', label: 'GST Reports', icon: Receipt },
   { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
   { id: 'bulk-operations', label: 'Import/Export', icon: Database },
+  { id: 'admin', label: 'Admin Panel', icon: Shield, badge: 'enterprise' },
 ]
 
 export default function Sidebar({ currentPage, setCurrentPage, isOnline, user, onLogout, isOpen = false }) {
@@ -65,6 +66,7 @@ export default function Sidebar({ currentPage, setCurrentPage, isOnline, user, o
               {item.id === 'loyalty' && <span className="nav-badge orange">New</span>}
               {item.id === 'ai-insights' && <span className="nav-badge hot">🔥 Hot</span>}
               {item.id === 'daily-summary' && <span className="nav-badge blue">New</span>}
+              {item.id === 'admin' && <span className="nav-badge purple">Pro</span>}
             </button>
           ))}
         </nav>
@@ -276,6 +278,10 @@ export default function Sidebar({ currentPage, setCurrentPage, isOnline, user, o
           50% { opacity: 0.7; }
         }
         .nav-badge.blue { background: #3B82F6; }
+        .nav-badge.purple { 
+          background: linear-gradient(135deg, #8b5cf6, #7c3aed); 
+          box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+        }
         .sidebar-footer {
           margin-top: auto;
           padding-top: 16px;

@@ -21,6 +21,7 @@ import AIInsights from './pages/AIInsights'
 import ExpenseTracker from './pages/ExpenseTracker'
 import DailySummary from './pages/DailySummary'
 import BulkOperations from './pages/BulkOperations'
+import AdminPanel from './pages/AdminPanel'
 import Login from './pages/Login'
 import api from './services/api'
 import { demoProducts } from './services/demoData'
@@ -33,7 +34,7 @@ function App() {
     // Get initial page from URL hash or default to dashboard
     const getInitialPage = () => {
         const hash = window.location.hash.replace('#', '')
-        const validPages = ['dashboard', 'bills', 'create-bill', 'ocr', 'products', 'analytics', 'customers', 'gst', 'whatsapp', 'suppliers', 'loyalty', 'ai-insights', 'expenses', 'daily-summary', 'bulk-operations', 'settings']
+        const validPages = ['dashboard', 'bills', 'create-bill', 'ocr', 'products', 'analytics', 'customers', 'gst', 'whatsapp', 'suppliers', 'loyalty', 'ai-insights', 'expenses', 'daily-summary', 'bulk-operations', 'admin', 'settings']
         return validPages.includes(hash) ? hash : 'dashboard'
     }
 
@@ -192,6 +193,7 @@ function App() {
             case 'expenses': return <ExpenseTracker addToast={addToast} />
             case 'daily-summary': return <DailySummary addToast={addToast} />
             case 'bulk-operations': return <BulkOperations addToast={addToast} />
+            case 'admin': return <AdminPanel addToast={addToast} />
             case 'settings': return <Settings addToast={addToast} />
             default: return <Dashboard addToast={addToast} setCurrentPage={setCurrentPage} />
         }
