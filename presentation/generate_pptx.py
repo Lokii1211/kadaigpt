@@ -47,7 +47,7 @@ def create_presentation():
     tagline_box = slide1.shapes.add_textbox(Inches(0), Inches(3.2), prs.slide_width, Inches(0.6))
     tf = tagline_box.text_frame
     p = tf.paragraphs[0]
-    p.text = '"Bill Karo, AI Sambhalo" 🛒'
+    p.text = '"Smart Billing, AI Powered" 🛒'
     p.font.size = Pt(28)
     p.font.color.rgb = ORANGE
     p.font.bold = True
@@ -57,7 +57,7 @@ def create_presentation():
     sub_box = slide1.shapes.add_textbox(Inches(2), Inches(4), Inches(9.333), Inches(1))
     tf = sub_box.text_frame
     p = tf.paragraphs[0]
-    p.text = "India's First Agentic AI-Powered Retail Operations Platform\nfor 12 Million+ Kirana Stores"
+    p.text = "India's First Agentic AI-Powered Retail Operations Platform\nfor 12 Million+ Small Retail Stores"
     p.font.size = Pt(20)
     p.font.color.rgb = GRAY
     p.alignment = PP_ALIGN.CENTER
@@ -98,10 +98,9 @@ def create_presentation():
     p.font.color.rgb = WHITE
     
     # Problem cards
-    problems = [
         ("📝 Manual Billing Chaos", "Store owners spend 3+ hours daily on manual billing, handwritten records, and error-prone calculations."),
         ("📦 Inventory Nightmares", "Stock-outs cost ₹2.5 lakh/year per store. 40% of products expire due to poor tracking."),
-        ("💰 Credit Recovery Issues", "₹50,000+ stuck in 'udhari' (credit) per store. No systematic tracking or reminders."),
+        ("💰 Credit Recovery Issues", "₹50,000+ stuck in customer credit per store. No systematic tracking or reminders."),
         ("📊 Zero Business Insights", "No data on best sellers, peak hours, or customer preferences. Gut-feeling decisions.")
     ]
     
@@ -130,7 +129,7 @@ def create_presentation():
         p.font.color.rgb = GRAY
     
     # Stats
-    stats = [("12M+", "Kirana Stores"), ("80%", "Use Paper Records"), ("₹3L", "Annual Loss/Store")]
+    stats = [("12M+", "Small Retail Stores"), ("80%", "Use Paper Records"), ("₹3L", "Annual Loss/Store")]
     for i, (num, label) in enumerate(stats):
         x = Inches(2 + i * 3.5)
         stat_box = slide2.shapes.add_textbox(x, Inches(6.5), Inches(3), Inches(0.8))
@@ -174,12 +173,12 @@ def create_presentation():
     desc = slide3.shapes.add_textbox(Inches(0.5), Inches(1.8), Inches(6), Inches(1))
     tf = desc.text_frame
     p = tf.paragraphs[0]
-    p.text = "An AI-first, voice-enabled, offline-capable retail assistant that transforms every Kirana store into a smart store."
+    p.text = "An AI-first, voice-enabled, offline-capable retail assistant that transforms every small retail store into a smart store."
     p.font.size = Pt(16)
     p.font.color.rgb = GRAY
     
     features = [
-        "✓ Voice Commands in Hindi, Tamil & English",
+        "✓ Voice Commands in Multiple Languages",
         "✓ Smart OCR - Scan any bill in seconds",
         "✓ AI-Powered Demand Prediction",
         "✓ WhatsApp Bot for Anywhere Access",
@@ -294,10 +293,10 @@ def create_presentation():
     p.font.color.rgb = WHITE
     
     ai_features = [
-        ("🗣️ Natural Language Processing", "AI Agent", "User: \"Ramesh ko kal ki bill bhejo\"\n✓ Sent bill to Ramesh via WhatsApp"),
-        ("📈 Predictive Analytics", "ML Model", "System: \"Holi in 5 days\"\n📦 Stock 50kg colors, 100 pichkaris"),
-        ("💬 Conversational Commerce", "LLM Powered", "Customer: \"Aata hai kya?\"\n✓ \"Haan, 5kg - ₹285. Order karu?\""),
-        ("🔔 Smart Notifications", "Proactive", "Auto-Alert: \"Dal 3 days left\"\n⚠️ Order now - price up tomorrow")
+        ("🗣️ Natural Language Processing", "AI Agent", "User: \"Send yesterday's bill to Ramesh\"\n✓ Sent bill to Ramesh via WhatsApp"),
+        ("📈 Predictive Analytics", "ML Model", "System: \"Festival in 5 days\"\n📦 Stock festival items, sweets, decorations"),
+        ("💬 Conversational Commerce", "LLM Powered", "Customer: \"Do you have flour?\"\n✓ \"Yes, 5kg - ₹285. Place order?\""),
+        ("🔔 Smart Notifications", "Proactive", "Auto-Alert: \"Stock 3 days left\"\n⚠️ Order now - price up tomorrow")
     ]
     
     for i, (title_text, badge, demo) in enumerate(ai_features):
