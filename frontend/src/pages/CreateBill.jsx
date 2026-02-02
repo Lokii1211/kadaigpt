@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Search, Plus, Minus, Trash2, Printer, Save, ShoppingCart, X, Eye, Loader2 } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, Printer, Save, ShoppingCart, X, Eye, Loader2, MessageSquare, Send } from 'lucide-react'
 import realDataService from '../services/realDataService'
+import whatsappService from '../services/whatsapp'
 import api from '../services/api'
 
 export default function CreateBill({ addToast, setCurrentPage }) {
@@ -202,6 +203,35 @@ export default function CreateBill({ addToast, setCurrentPage }) {
             setShowPayment(false)
             setCurrentPage('bills')
         }
+    }
+
+    // Send bill via WhatsApp
+    const handleSendWhatsApp = () => {
+        if (!customer.phone) {
+            addToast('Please enter customer phone number', 'error')
+            return
+        }
+
+        const billData = getBillData()
+        const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
+
+        // Build bill object for WhatsApp
+        const bill = {
+            bill_number: billNumber || billData.bill_number,
+            created_at: new Date().toISOString(),
+            items: cart.map(item => ({
+                product_name: item.name,
+                quantity: item.quantity,
+                unit_price: item.price
+            })),
+            subtotal: subtotal,
+            tax: tax,
+            total: total,
+            payment_mode: paymentMode
+        }
+
+        whatsappService.sendBill(bill, customer.phone, storeName)
+        addToast('Opening WhatsApp...', 'success')
     }
 
     return (
@@ -445,6 +475,14 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                         <div className="modal-footer">
                             <button className="btn btn-secondary" onClick={() => { setShowPayment(false); clearCart(); }}>
                                 New Bill
+                            </button>
+                            <button
+                                className="btn btn-success"
+                                onClick={handleSendWhatsApp}
+                                disabled={!customer.phone}
+                                title={!customer.phone ? 'Add customer phone to send via WhatsApp' : 'Send bill via WhatsApp'}
+                            >
+                                <MessageSquare size={18} /> WhatsApp
                             </button>
                             <button className="btn btn-primary" onClick={handlePrint} disabled={printing}>
                                 {printing ? <><Loader2 size={18} className="spin" /> Printing...</> : <><Printer size={18} /> Print Receipt</>}

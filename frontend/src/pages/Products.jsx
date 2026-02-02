@@ -87,61 +87,48 @@ export default function Products({ addToast }) {
             return
         }
 
-        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
-
         const productData = {
-            id: Date.now(),
             name: newProduct.name,
             sku: newProduct.sku || `SKU${Date.now()}`,
-            // Frontend display fields
-            price: parseFloat(newProduct.price),
-            stock: parseInt(newProduct.stock),
-            minStock: parseInt(newProduct.minStock) || 10,
-            // Backend API fields
+            // Backend API fields (primary)
             selling_price: parseFloat(newProduct.price),
+            cost_price: parseFloat(newProduct.price) * 0.8,
             current_stock: parseInt(newProduct.stock),
             min_stock_alert: parseInt(newProduct.minStock) || 10,
             unit: newProduct.unit || 'kg',
             category: newProduct.category || 'Essentials',
             category_id: null,
-            description: '',
-            cost_price: parseFloat(newProduct.price) * 0.8,
-            dailySales: 2,
-            trend: 'stable'
+            description: newProduct.description || '',
         }
 
         try {
-            if (isDemoMode) {
-                // Demo mode - add to local state only
-                setProducts(prevProducts => [productData, ...prevProducts])
-                addToast('✅ Product added successfully!', 'success')
-            } else {
-                // Real mode - call API
-                const result = await api.createProduct(productData)
-                const mappedResult = {
-                    ...result,
-                    price: result.selling_price || result.price || productData.price,
-                    stock: result.current_stock || result.stock || productData.stock,
-                    minStock: result.min_stock_alert || result.minStock || productData.minStock,
-                    dailySales: 2,
-                    trend: 'stable'
-                }
-                setProducts(prevProducts => [mappedResult, ...prevProducts])
-                addToast('✅ Product added successfully!', 'success')
+            // Always use real API - no more demo mode
+            const result = await api.createProduct(productData)
+
+            // Map the result to our frontend format
+            const mappedResult = {
+                ...result,
+                id: result.id,
+                price: result.selling_price || parseFloat(newProduct.price),
+                stock: result.current_stock ?? parseInt(newProduct.stock),
+                minStock: result.min_stock_alert || parseInt(newProduct.minStock) || 10,
+                category: result.category?.name || newProduct.category || 'General',
+                dailySales: 2,
+                trend: 'stable'
             }
+
+            // Add to local state immediately for instant feedback
+            setProducts(prevProducts => [mappedResult, ...prevProducts])
+            addToast('✅ Product added successfully!', 'success')
 
             setShowAddModal(false)
             setNewProduct({ name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'Essentials' })
+
+            // Refresh products list to ensure sync with backend
+            setTimeout(() => loadProducts(), 500)
         } catch (error) {
-            // If API fails, still add locally in demo mode
-            if (isDemoMode) {
-                setProducts(prevProducts => [productData, ...prevProducts])
-                setShowAddModal(false)
-                setNewProduct({ name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'Essentials' })
-                addToast('✅ Product added (demo mode)', 'success')
-            } else {
-                addToast(error.message || 'Failed to add product', 'error')
-            }
+            console.error('Failed to add product:', error)
+            addToast(error.message || 'Failed to add product. Please try again.', 'error')
         }
     }
 
@@ -279,21 +266,27 @@ export default function Products({ addToast }) {
                                     <div className="stock-bar-container">
                                         <div
                                             className={`stock-bar ${stockStatus.color}`}
-                                            style={{ width: `${Math.min(100, (product.stock / product.minStock) * 50)}%` }}
+                                            style={{ width: `${Math.min(100, (product.stock / (product.minStock || 10)) * 50)}%` }}
                                         ></div>
                                     </div>
                                     <div className="stock-numbers">
-                                        <span className="current">{product.stock} {product.unit}</span>
-                                        <span className="min">Min: {product.minStock}</span>
+                                        <span className={`current ${product.stock === 0 ? 'out-of-stock' : product.stock <= product.minStock ? 'low-stock' : ''}`}>
+                                            {product.stock} {product.unit}
+                                            {product.stock <= product.minStock && product.stock > 0 && ' ⚠️'}
+                                            {product.stock === 0 && ' ❌'}
+                                        </span>
+                                        <span className={`min ${product.stock <= product.minStock ? 'critical' : ''}`}>
+                                            Min: {product.minStock || 10}
+                                        </span>
                                     </div>
                                 </div>
 
                                 <div className="product-prediction">
                                     <div className={`trend ${product.trend}`}>
                                         {product.trend === 'up' ? <TrendingUp size={14} /> : product.trend === 'down' ? <TrendingDown size={14} /> : '→'}
-                                        <span>{product.dailySales}/day</span>
+                                        <span>{product.dailySales || 0}/day</span>
                                     </div>
-                                    <div className="days-left">
+                                    <div className={`days-left ${daysLeft !== '∞' && parseInt(daysLeft) <= 7 ? 'critical' : ''}`}>
                                         {daysLeft === '∞' ? 'No sales data' : `${daysLeft} days left`}
                                     </div>
                                 </div>
@@ -458,16 +451,28 @@ export default function Products({ addToast }) {
         .stock-bar { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
         .stock-bar.success { background: var(--success); }
         .stock-bar.warning { background: var(--warning); }
-        .stock-bar.error { background: var(--error); }
+        .stock-bar.error { background: var(--error); animation: pulse-error 1.5s infinite; }
+        @keyframes pulse-error {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
         .stock-numbers { display: flex; justify-content: space-between; font-size: 0.8125rem; }
         .stock-numbers .current { font-weight: 600; }
+        .stock-numbers .current.low-stock { color: var(--warning); font-weight: 700; }
+        .stock-numbers .current.out-of-stock { color: var(--error); font-weight: 700; animation: blink 1s infinite; }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
         .stock-numbers .min { color: var(--text-tertiary); }
+        .stock-numbers .min.critical { color: var(--error); font-weight: 600; }
 
         .product-prediction { display: flex; justify-content: space-between; margin-bottom: 16px; padding: 10px; background: var(--bg-tertiary); border-radius: var(--radius-md); font-size: 0.8125rem; }
         .trend { display: flex; align-items: center; gap: 4px; }
         .trend.up { color: var(--success); }
         .trend.down { color: var(--error); }
         .days-left { color: var(--text-secondary); }
+        .days-left.critical { color: var(--error); font-weight: 600; }
 
         .product-actions { display: flex; justify-content: space-between; align-items: center; }
         .quick-stock { display: flex; align-items: center; gap: 8px; }
@@ -485,6 +490,18 @@ export default function Products({ addToast }) {
         .empty-state svg { opacity: 0.3; margin-bottom: 16px; }
 
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        
+        /* Low stock notification badge */
+        .low-stock-indicator {
+          position: absolute;
+          top: -6px;
+          right: -6px;
+          width: 12px;
+          height: 12px;
+          background: var(--error);
+          border-radius: 50%;
+          animation: pulse-error 1.5s infinite;
+        }
       `}</style>
         </div>
     )

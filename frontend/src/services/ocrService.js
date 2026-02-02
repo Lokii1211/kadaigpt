@@ -14,7 +14,9 @@ class OCRService {
 
         try {
             const token = localStorage.getItem('kadai_token')
-            const response = await fetch(`${this.baseUrl}/ocr/extract`, {
+
+            // Call the correct backend endpoint: /ocr/process
+            const response = await fetch(`${this.baseUrl}/ocr/process`, {
                 method: 'POST',
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {},
                 body: formData
@@ -23,34 +25,43 @@ class OCRService {
             if (response.ok) {
                 const data = await response.json()
                 return this.processAPIResponse(data)
+            } else {
+                const errorData = await response.json().catch(() => ({}))
+                console.error('OCR API error:', errorData)
+                throw new Error(errorData.detail || 'OCR processing failed')
             }
         } catch (error) {
-            console.log('API OCR failed, using fallback extraction:', error)
+            console.error('OCR service error:', error)
+            throw error // Don't use fallback - let user know there was an error
         }
-
-        // Fallback: Local extraction simulation with smarter logic
-        return this.localExtraction(imageFile)
     }
 
     // Process API response into usable format
     processAPIResponse(data) {
+        // Backend returns items with: name, quantity, unit_price, total, confidence, needs_review
         if (data.items && data.items.length > 0) {
             return {
-                success: true,
-                confidence: data.confidence || 85,
+                success: data.success !== false,
+                confidence: Math.round((data.overall_confidence || 0.85) * 100),
+                ocrId: data.ocr_id, // For later verification
                 items: data.items.map((item, idx) => ({
                     id: idx + 1,
-                    name: this.cleanProductName(item.name || item.description),
+                    name: this.cleanProductName(item.name),
                     quantity: parseFloat(item.quantity) || 1,
                     unit: item.unit || 'pcs',
-                    price: parseFloat(item.price) || 0,
-                    confidence: item.confidence || 80
+                    price: parseFloat(item.unit_price) || parseFloat(item.price) || 0,
+                    total: parseFloat(item.total) || 0,
+                    confidence: Math.round((item.confidence || 0.8) * 100),
+                    needsReview: item.needs_review || false,
+                    originalText: item.original_text || ''
                 })),
                 customerName: data.customerName || data.customer_name || '',
                 customerPhone: data.customerPhone || data.phone || '',
-                date: data.date || new Date().toISOString().split('T')[0],
-                total: data.total || this.calculateTotal(data.items),
-                rawText: data.rawText || ''
+                date: data.extracted_date || data.date || new Date().toISOString().split('T')[0],
+                total: data.extracted_total || data.total || this.calculateTotal(data.items),
+                rawText: data.raw_text || '',
+                suggestions: data.suggestions || [],
+                processingTimeMs: data.processing_time_ms
             }
         }
 
