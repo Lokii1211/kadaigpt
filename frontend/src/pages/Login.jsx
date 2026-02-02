@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ShoppingCart, Mail, Lock, User, ArrowRight, Loader2, Sparkles, Zap, Shield, Wifi, Eye, EyeOff, Check, Square, CheckSquare } from 'lucide-react'
+import { ShoppingCart, Mail, Lock, User, ArrowRight, Loader2, Sparkles, Zap, Shield, Wifi, Eye, EyeOff, Square, CheckSquare, Building, Users } from 'lucide-react'
 import api from '../services/api'
 
 export default function Login({ onLogin }) {
@@ -8,11 +8,13 @@ export default function Login({ onLogin }) {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [registerType, setRegisterType] = useState('owner') // 'owner' or 'staff'
   const [form, setForm] = useState({
     username: '',
     email: '',
     password: '',
     storeName: '',
+    storeCode: '', // For staff joining existing store
   })
 
   // Clear error when switching between login/register
@@ -27,52 +29,79 @@ export default function Login({ onLogin }) {
     setError('') // Clear any previous error
 
     try {
-      // Clear demo mode - user is using real credentials
-      localStorage.removeItem('kadai_demo_mode')
-
       if (isLogin) {
         // Login uses email
         console.log('Attempting login with email:', form.email)
         await api.login(form.email, form.password)
         const user = await api.getProfile()
+        localStorage.setItem('kadai_user_role', user.role || 'owner')
         onLogin(user)
       } else {
-        // Register with full_name
-        console.log('Attempting registration with:', {
-          full_name: form.username,
-          email: form.email,
-          store_name: form.storeName
-        })
+        // Register - differentiate between owner and staff
+        console.log('Attempting registration as:', registerType)
 
-        const registerResult = await api.register({
-          full_name: form.username,
-          email: form.email,
-          password: form.password,
-          store_name: form.storeName,
-        })
-        console.log('Registration successful:', registerResult)
+        if (registerType === 'owner') {
+          // Store owner registration
+          const registerResult = await api.register({
+            full_name: form.username,
+            email: form.email,
+            password: form.password,
+            store_name: form.storeName,
+            role: 'owner'
+          })
 
-        // Registration already returns a token - use it directly!
-        if (registerResult.access_token) {
-          api.setToken(registerResult.access_token)
-          // Store the store name for display
-          if (registerResult.store?.name) {
-            localStorage.setItem('kadai_store_name', registerResult.store.name)
+          if (registerResult.access_token) {
+            api.setToken(registerResult.access_token)
+            if (registerResult.store?.name) {
+              localStorage.setItem('kadai_store_name', registerResult.store.name)
+            }
+            localStorage.setItem('kadai_user_role', 'owner')
+
+            const user = {
+              id: registerResult.user?.id,
+              email: registerResult.user?.email,
+              full_name: registerResult.user?.full_name,
+              username: registerResult.user?.full_name || form.username,
+              store_name: registerResult.store?.name || form.storeName,
+              role: 'owner'
+            }
+            onLogin(user)
           }
-          // Create user object from registration response
-          const user = {
-            id: registerResult.user?.id,
-            email: registerResult.user?.email,
-            full_name: registerResult.user?.full_name,
-            username: registerResult.user?.full_name || form.username,
-            store_name: registerResult.store?.name || form.storeName,
-          }
-          onLogin(user)
         } else {
-          // Fallback: try to login if no token in response
-          await api.login(form.email, form.password)
-          const user = await api.getProfile()
-          onLogin(user)
+          // Staff registration - join existing store
+          const registerResult = await api.registerStaff?.({
+            full_name: form.username,
+            email: form.email,
+            password: form.password,
+            store_code: form.storeCode,
+            role: 'staff'
+          }) || await api.register({
+            full_name: form.username,
+            email: form.email,
+            password: form.password,
+            store_code: form.storeCode,
+            role: 'cashier' // Default staff role
+          })
+
+          if (registerResult.access_token) {
+            api.setToken(registerResult.access_token)
+            localStorage.setItem('kadai_user_role', registerResult.user?.role || 'cashier')
+
+            const user = {
+              id: registerResult.user?.id,
+              email: registerResult.user?.email,
+              full_name: registerResult.user?.full_name,
+              username: registerResult.user?.full_name || form.username,
+              store_name: registerResult.store?.name,
+              role: registerResult.user?.role || 'cashier'
+            }
+            onLogin(user)
+          } else {
+            // Fallback login
+            await api.login(form.email, form.password)
+            const user = await api.getProfile()
+            onLogin(user)
+          }
         }
       }
     } catch (err) {
@@ -94,15 +123,8 @@ export default function Login({ onLogin }) {
     }
   }
 
-  const handleDemo = () => {
-    // Mark as demo mode in localStorage
-    localStorage.setItem('kadai_demo_mode', 'true')
-    onLogin({
-      username: 'Demo User',
-      store_name: 'KadaiGPT Demo Store',
-      isDemo: true
-    })
-  }
+
+  // No demo mode - real authentication only
 
   const features = [
     { icon: Sparkles, text: 'AI-Powered Bill Scanning' },
@@ -164,6 +186,30 @@ export default function Login({ onLogin }) {
             {error && <div className="error-alert">{error}</div>}
 
             <form onSubmit={handleSubmit}>
+              {/* Role Selector for Registration */}
+              {!isLogin && (
+                <div className="role-selector">
+                  <button
+                    type="button"
+                    className={`role-btn ${registerType === 'owner' ? 'active' : ''}`}
+                    onClick={() => setRegisterType('owner')}
+                  >
+                    <Building size={18} />
+                    <span>Store Owner</span>
+                    <small>Create a new store</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={`role-btn ${registerType === 'staff' ? 'active' : ''}`}
+                    onClick={() => setRegisterType('staff')}
+                  >
+                    <Users size={18} />
+                    <span>Staff Member</span>
+                    <small>Join existing store</small>
+                  </button>
+                </div>
+              )}
+
               {/* For Registration - Show Full Name first */}
               {!isLogin && (
                 <div className="form-group">
@@ -199,8 +245,9 @@ export default function Login({ onLogin }) {
                 </div>
               </div>
 
-              {/* Store Name - Registration only */}
-              {!isLogin && (
+
+              {/* Store Name - For Store Owners only */}
+              {!isLogin && registerType === 'owner' && (
                 <div className="form-group">
                   <label className="form-label">Store Name</label>
                   <div className="input-icon">
@@ -215,6 +262,26 @@ export default function Login({ onLogin }) {
                       minLength={2}
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Store Code - For Staff joining existing store */}
+              {!isLogin && registerType === 'staff' && (
+                <div className="form-group">
+                  <label className="form-label">Store Code</label>
+                  <div className="input-icon">
+                    <Building size={18} />
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Enter store code (from owner)"
+                      value={form.storeCode}
+                      onChange={(e) => setForm({ ...form, storeCode: e.target.value.toUpperCase() })}
+                      required
+                      maxLength={8}
+                    />
+                  </div>
+                  <span className="password-hint">Ask your store owner for the code</span>
                 </div>
               )}
 
@@ -293,19 +360,20 @@ export default function Login({ onLogin }) {
               </button>
             </form>
 
-            <div className="divider"><span>or continue with</span></div>
-
-            <button className="btn btn-demo btn-lg w-full" onClick={handleDemo}>
-              <Sparkles size={18} />
-              Try Demo Mode - No Login Required
-            </button>
-
             <p className="switch-mode">
               {isLogin ? "Don't have an account? " : "Already have an account? "}
               <button onClick={toggleMode}>
                 {isLogin ? 'Sign Up Free' : 'Sign In'}
               </button>
             </p>
+
+            {isLogin && (
+              <div className="admin-login-link">
+                <a href="#admin-login" onClick={(e) => { e.preventDefault(); window.location.hash = 'admin-login' }}>
+                  Admin Login →
+                </a>
+              </div>
+            )}
 
             {isLogin && (
               <p className="terms-text">
@@ -699,6 +767,74 @@ export default function Login({ onLogin }) {
         
         .w-full { 
           width: 100%; 
+        }
+
+        /* Role Selector */
+        .role-selector {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+
+        .role-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          padding: 16px 12px;
+          background: var(--bg-tertiary);
+          border: 2px solid var(--border-subtle);
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-align: center;
+        }
+
+        .role-btn:hover {
+          border-color: var(--primary-300);
+          background: var(--bg-secondary);
+        }
+
+        .role-btn.active {
+          border-color: var(--primary-500);
+          background: rgba(249, 115, 22, 0.1);
+        }
+
+        .role-btn svg {
+          color: var(--text-secondary);
+        }
+
+        .role-btn.active svg {
+          color: var(--primary-500);
+        }
+
+        .role-btn span {
+          font-weight: 600;
+          font-size: 0.9rem;
+          color: var(--text-primary);
+        }
+
+        .role-btn small {
+          font-size: 0.75rem;
+          color: var(--text-tertiary);
+        }
+
+        /* Admin Login Link */
+        .admin-login-link {
+          text-align: center;
+          margin-top: 16px;
+        }
+
+        .admin-login-link a {
+          color: var(--text-tertiary);
+          font-size: 0.8rem;
+          text-decoration: none;
+          transition: color 0.2s;
+        }
+
+        .admin-login-link a:hover {
+          color: var(--primary-400);
         }
         
         /* Error Alert */

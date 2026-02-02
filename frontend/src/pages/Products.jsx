@@ -1,23 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Search, Plus, Package, AlertTriangle, TrendingUp, TrendingDown, Edit2, Trash2, X, Save, BarChart3, RefreshCw } from 'lucide-react'
+import realDataService from '../services/realDataService'
 import api from '../services/api'
 import EmptyState from '../components/EmptyState'
 
-// Demo products with stock levels and predictions
-const demoProducts = [
-    { id: 1, name: "Basmati Rice", sku: "SKU001", price: 85, unit: "kg", stock: 45, minStock: 20, category: "Grains", dailySales: 5, trend: "up" },
-    { id: 2, name: "Toor Dal", sku: "SKU002", price: 140, unit: "kg", stock: 8, minStock: 15, category: "Pulses", dailySales: 3, trend: "stable" },
-    { id: 3, name: "Sugar", sku: "SKU003", price: 45, unit: "kg", stock: 120, minStock: 50, category: "Essentials", dailySales: 8, trend: "up" },
-    { id: 4, name: "Sunflower Oil", sku: "SKU004", price: 180, unit: "L", stock: 25, minStock: 15, category: "Oils", dailySales: 4, trend: "up" },
-    { id: 5, name: "Salt", sku: "SKU005", price: 20, unit: "kg", stock: 5, minStock: 20, category: "Essentials", dailySales: 2, trend: "down" },
-    { id: 6, name: "Wheat Flour", sku: "SKU006", price: 55, unit: "kg", stock: 60, minStock: 30, category: "Grains", dailySales: 6, trend: "stable" },
-    { id: 7, name: "Tea Powder", sku: "SKU007", price: 280, unit: "kg", stock: 15, minStock: 10, category: "Beverages", dailySales: 2, trend: "up" },
-    { id: 8, name: "Coffee", sku: "SKU008", price: 450, unit: "kg", stock: 10, minStock: 8, category: "Beverages", dailySales: 1, trend: "stable" },
-    { id: 9, name: "Milk", sku: "SKU009", price: 60, unit: "L", stock: 100, minStock: 50, category: "Dairy", dailySales: 20, trend: "up" },
-    { id: 10, name: "Butter", sku: "SKU010", price: 55, unit: "pcs", stock: 40, minStock: 20, category: "Dairy", dailySales: 3, trend: "stable" },
-]
-
-const categories = ["All", "Grains", "Pulses", "Essentials", "Oils", "Beverages", "Dairy"]
+const categories = ["All", "Grains", "Pulses", "Essentials", "Oils", "Beverages", "Dairy", "General"]
 
 export default function Products({ addToast }) {
     const [products, setProducts] = useState([])
@@ -37,37 +24,30 @@ export default function Products({ addToast }) {
 
     const loadProducts = async () => {
         setLoading(true)
-        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
 
         try {
-            if (isDemoMode) {
-                // Demo mode - use demo data
-                setProducts(demoProducts)
-            } else {
-                // Real user - fetch from API
-                const data = await api.getProducts()
-                const productList = data.products || data || []
+            // Always fetch from real API - no more demo mode
+            const productList = await realDataService.getProducts()
 
-                if (Array.isArray(productList) && productList.length > 0) {
-                    // Map API fields to component fields
-                    const mappedProducts = productList.map(p => ({
-                        ...p,
-                        price: p.selling_price || p.price || 0,
-                        stock: p.current_stock || p.stock || 0,
-                        minStock: p.min_stock_alert || p.minStock || 10,
-                        dailySales: p.daily_sales || p.dailySales || 2,
-                        trend: p.trend || 'stable'
-                    }))
-                    setProducts(mappedProducts)
-                } else {
-                    // Real user with no products - show empty state
-                    setProducts([])
-                }
+            if (Array.isArray(productList) && productList.length > 0) {
+                // Map API fields to component fields
+                const mappedProducts = productList.map(p => ({
+                    ...p,
+                    price: p.price || p.selling_price || 0,
+                    stock: p.stock || p.current_stock || 0,
+                    minStock: p.minStock || p.min_stock_alert || 10,
+                    dailySales: p.dailySales || p.daily_sales || 2,
+                    trend: p.trend || 'stable'
+                }))
+                setProducts(mappedProducts)
+            } else {
+                // No products - show empty state
+                setProducts([])
             }
         } catch (error) {
             console.error('Failed to load products:', error)
-            // On error, show empty for real users, demo for demo mode
-            setProducts(isDemoMode ? demoProducts : [])
+            addToast?.('Failed to load products', 'error')
+            setProducts([])
         } finally {
             setLoading(false)
         }

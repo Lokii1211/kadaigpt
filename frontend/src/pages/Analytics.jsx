@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, ShoppingBag, Users, IndianRupee, ArrowUpRight, ArrowDownRight, Minus, Zap, BarChart3, PieChart, Loader2, Sparkles, Calendar } from 'lucide-react'
-import { demoAnalytics, demoProducts } from '../services/demoData'
+import { TrendingUp, ShoppingBag, Users, IndianRupee, ArrowUpRight, ArrowDownRight, Minus, Zap, BarChart3, PieChart, Loader2, Sparkles, Calendar, WifiOff } from 'lucide-react'
+import realDataService from '../services/realDataService'
 import api from '../services/api'
 import DateRangeFilter from '../components/DateRangeFilter'
 import PricePredictions from '../components/PricePredictions'
@@ -8,12 +8,17 @@ import PricePredictions from '../components/PricePredictions'
 export default function Analytics({ addToast }) {
     const [period, setPeriod] = useState('week')
     const [loading, setLoading] = useState(true)
-    const [salesData, setSalesData] = useState(null)
-    const [categoryData, setCategoryData] = useState(null)
-    const [topProducts, setTopProducts] = useState([])
-
-    // Check demo mode
-    const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+    const [analytics, setAnalytics] = useState({
+        totalSales: 0,
+        totalBills: 0,
+        avgBillValue: 0,
+        growth: 0,
+        topProducts: [],
+        salesByDay: [],
+        salesByHour: [],
+        paymentBreakdown: { cash: 0, upi: 0, card: 0, credit: 0 }
+    })
+    const [products, setProducts] = useState([])
 
     useEffect(() => {
         loadAnalytics()
@@ -22,58 +27,57 @@ export default function Analytics({ addToast }) {
     const loadAnalytics = async () => {
         setLoading(true)
 
-        if (isDemoMode) {
-            // Use demo data
-            setTimeout(() => setLoading(false), 500)
-            return
-        }
-
         try {
-            // Load data from API - with individual error handling
-            const [salesRes, categoryRes, productsRes] = await Promise.allSettled([
-                api.getSalesOverview(period),
-                api.getCategoryPerformance(period),
-                api.getTopProducts(5, period)
+            // Load all data from real APIs
+            const [analyticsData, productsData] = await Promise.all([
+                realDataService.getAnalytics(period),
+                realDataService.getProducts()
             ])
 
-            if (salesRes.status === 'fulfilled') setSalesData(salesRes.value)
-            if (categoryRes.status === 'fulfilled') setCategoryData(categoryRes.value)
-            if (productsRes.status === 'fulfilled') setTopProducts(productsRes.value?.products || [])
+            setAnalytics({
+                totalSales: analyticsData.totalSales || 0,
+                totalBills: analyticsData.totalBills || 0,
+                avgBillValue: analyticsData.avgBillValue || 0,
+                growth: analyticsData.growth || 0,
+                topProducts: analyticsData.topProducts || [],
+                salesByDay: analyticsData.salesByDay || [],
+                salesByHour: analyticsData.salesByHour || [],
+                paymentBreakdown: analyticsData.paymentBreakdown || { cash: 0, upi: 0, card: 0, credit: 0 }
+            })
+
+            setProducts(productsData)
         } catch (error) {
             console.error('Error loading analytics:', error)
-            // Fallback: use demo data if API fails
+            addToast?.('Failed to load analytics data', 'error')
         } finally {
             setLoading(false)
         }
     }
 
-    // Use demo data ONLY for demo mode, real users see their actual data
-    const analytics = isDemoMode ? demoAnalytics : {
-        todaySales: salesData?.current?.total_sales || 0,
-        todayBills: salesData?.current?.total_bills || 0,
-        avgBillValue: salesData?.current?.average_bill_value || 0,
-        weeklySales: salesData?.weekly || [0, 0, 0, 0, 0, 0, 0],
-        hourlyData: salesData?.hourly || []
-    }
+    // Calculate derived values
+    const hasData = analytics.totalSales > 0 || analytics.totalBills > 0
+    const salesChange = analytics.growth || 0
 
-    const hasData = analytics.todaySales > 0 || analytics.todayBills > 0
-    const salesChange = salesData?.change?.sales_change || (isDemoMode ? 18.5 : 0)
-
-    const maxWeeklySale = Math.max(...analytics.weeklySales, 1) // Prevent division by zero
+    // Weekly sales array for chart
+    const weeklySales = analytics.salesByDay.length > 0
+        ? analytics.salesByDay.map(d => d.sales || 0)
+        : [0, 0, 0, 0, 0, 0, 0]
+    const maxWeeklySale = Math.max(...weeklySales, 1)
 
     const kpis = [
-        { label: 'Total Revenue', value: `₹${analytics.todaySales.toLocaleString()}`, change: isDemoMode ? 18.5 : salesChange, icon: IndianRupee, positive: salesChange >= 0 },
-        { label: 'Total Orders', value: analytics.todayBills, change: isDemoMode ? 12 : Math.abs(salesChange * 0.7), icon: ShoppingBag, positive: true },
-        { label: 'New Customers', value: salesData?.current?.unique_customers || (isDemoMode ? 23 : 0), change: isDemoMode ? 8.2 : 5, icon: Users, positive: true },
-        { label: 'Avg Order Value', value: `₹${analytics.avgBillValue}`, change: isDemoMode ? 5.7 : 3.2, icon: TrendingUp, positive: true },
+        { label: 'Total Revenue', value: `₹${analytics.totalSales.toLocaleString()}`, change: salesChange, icon: IndianRupee, positive: salesChange >= 0 },
+        { label: 'Total Orders', value: analytics.totalBills, change: Math.abs(salesChange * 0.7).toFixed(1), icon: ShoppingBag, positive: true },
+        { label: 'New Customers', value: analytics.paymentBreakdown?.customers || 0, change: 5, icon: Users, positive: true },
+        { label: 'Avg Order Value', value: `₹${analytics.avgBillValue.toFixed(0)}`, change: 3.2, icon: TrendingUp, positive: true },
     ]
 
     const aiInsights = [
-        { icon: '📈', title: 'Sales Trend', text: 'Your Saturday sales are 32% higher than weekdays. Consider extended hours on weekends.' },
-        { icon: '🎯', title: 'Best Seller', text: topProducts[0]?.name ? `${topProducts[0].name} is your top seller with ${topProducts[0].quantity_sold} units sold.` : 'Basmati Rice is your top seller. Ensure adequate stock.' },
-        { icon: '⏰', title: 'Peak Hours', text: '11AM-12PM sees maximum footfall. Schedule staff breaks outside this window.' },
-        { icon: '💡', title: 'Opportunity', text: 'Dairy products show 15% week-over-week growth. Consider expanding this category.' },
+        { icon: '📈', title: 'Sales Trend', text: hasData ? `Your sales ${salesChange >= 0 ? 'increased' : 'decreased'} by ${Math.abs(salesChange).toFixed(1)}% compared to last period.` : 'Start making sales to see trends.' },
+        { icon: '🎯', title: 'Best Seller', text: analytics.topProducts[0]?.name ? `${analytics.topProducts[0].name} is your top seller.` : 'No sales data yet.' },
+        { icon: '⏰', title: 'Peak Hours', text: analytics.salesByHour.length > 0 ? 'Peak hours identified from your sales data.' : 'More sales needed for peak hour analysis.' },
+        { icon: '💡', title: 'Opportunity', text: products.length > 0 ? `You have ${products.filter(p => p.stock <= p.minStock).length} products low on stock.` : 'Add products to see opportunities.' },
     ]
+
 
     return (
         <div className="analytics-page">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, ShoppingBag, Users, AlertTriangle, IndianRupee, ArrowUpRight, Clock, Zap, FileText, Package, Plus, Camera, BarChart3, RefreshCw } from 'lucide-react'
-import { demoAnalytics, demoBills, demoActivity, demoProducts } from '../services/demoData'
+import { TrendingUp, ShoppingBag, Users, AlertTriangle, IndianRupee, ArrowUpRight, Clock, Zap, FileText, Package, Plus, Camera, BarChart3, RefreshCw, WifiOff } from 'lucide-react'
+import realDataService from '../services/realDataService'
 import api from '../services/api'
 
 export default function Dashboard({ addToast, setCurrentPage }) {
@@ -16,7 +16,8 @@ export default function Dashboard({ addToast, setCurrentPage }) {
   const [hourlyData, setHourlyData] = useState([])
   const [currentTime, setCurrentTime] = useState(new Date())
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [isDemoMode, setIsDemoMode] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [dataError, setDataError] = useState(null)
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -28,52 +29,52 @@ export default function Dashboard({ addToast, setCurrentPage }) {
   }, [])
 
   const loadDashboardData = async () => {
-    const demoMode = localStorage.getItem('kadai_demo_mode') === 'true'
-    setIsDemoMode(demoMode)
+    setIsLoading(true)
+    setDataError(null)
 
-    if (demoMode) {
-      // Demo mode - use demo data
+    try {
+      // Fetch all data from real backend APIs
+      const [statsData, productsData, billsData, activityData] = await Promise.all([
+        realDataService.getDashboardStats(),
+        realDataService.getProducts(),
+        realDataService.getBills({ limit: 10 }),
+        realDataService.getDashboardActivity()
+      ])
+
       setStats({
-        todaySales: 24580,
-        todayBills: 47,
-        avgBillValue: 523,
-        lowStockCount: 5
+        todaySales: statsData.todaySales || 0,
+        todayBills: statsData.todayBills || billsData.length || 0,
+        avgBillValue: statsData.avgBillValue || 0,
+        lowStockCount: statsData.lowStockCount || productsData.filter(p => p.stock <= p.minStock).length || 0
       })
-      setProducts(demoProducts)
-      setBills(demoBills)
-      setActivity(demoActivity)
-      setHourlyData(demoAnalytics.hourlyData)
-    } else {
-      // Real user - fetch from API
-      try {
-        const [statsData, productsData, billsData, activityData] = await Promise.all([
-          api.getDashboardStats().catch(() => null),
-          api.getProducts().catch(() => ({ products: [] })),
-          api.getBills?.().catch(() => ({ bills: [] })),
-          api.getDashboardActivity().catch(() => [])
-        ])
 
-        setProducts(productsData?.products || [])
-        setBills(billsData?.bills || [])
-        setActivity(Array.isArray(activityData) ? activityData : [])
+      setProducts(productsData)
+      setBills(billsData)
+      setActivity(activityData)
 
-        if (statsData && !statsData.error) {
-          setStats(statsData)
-        } else {
-          // Calculate stats from data
-          setStats({
-            todaySales: 0,
-            todayBills: billsData?.bills?.length || 0,
-            avgBillValue: 0,
-            lowStockCount: productsData?.products?.filter(p => (p.stock || 0) <= (p.minStock || p.min_stock || 10)).length || 0
-          })
-        }
-        setHourlyData([])
-      } catch (error) {
-        console.error('Failed to load dashboard data:', error)
+      // Calculate hourly data from bills if not provided
+      if (billsData.length > 0) {
+        const hourlyMap = {}
+        billsData.forEach(bill => {
+          const hour = new Date(bill.createdAt).getHours()
+          hourlyMap[hour] = (hourlyMap[hour] || 0) + bill.total
+        })
+        const hourlyArr = Object.entries(hourlyMap).map(([hour, sales]) => ({
+          hour: `${hour}:00`,
+          sales
+        }))
+        setHourlyData(hourlyArr)
       }
+
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error)
+      setDataError('Failed to load data. Please check your connection.')
+      addToast?.('Failed to load dashboard data', 'error')
+    } finally {
+      setIsLoading(false)
     }
   }
+
 
   const formatCurrency = (n) => `₹${n.toLocaleString('en-IN')}`
   const formatTime = (date) => date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
