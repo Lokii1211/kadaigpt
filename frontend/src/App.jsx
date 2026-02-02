@@ -6,6 +6,7 @@ import MobileNav from './components/MobileNav'
 import OnboardingWizard from './components/OnboardingWizard'
 import CommandPalette from './components/CommandPalette'
 import GlobalFAB from './components/GlobalFAB'
+import AIChatBot from './components/AIChatBot'
 import Dashboard from './pages/Dashboard'
 import Bills from './pages/Bills'
 import OCRCapture from './pages/OCRCapture'
@@ -24,6 +25,7 @@ import DailySummary from './pages/DailySummary'
 import BulkOperations from './pages/BulkOperations'
 import AdminPanel from './pages/AdminPanel'
 import Login from './pages/Login'
+import AdminLogin from './pages/AdminLogin'
 import api from './services/api'
 import { demoProducts } from './services/demoData'
 import './App.css'
@@ -35,7 +37,7 @@ function App() {
     // Get initial page from URL hash or default to dashboard
     const getInitialPage = () => {
         const hash = window.location.hash.replace('#', '')
-        const validPages = ['dashboard', 'bills', 'create-bill', 'ocr', 'products', 'analytics', 'customers', 'gst', 'whatsapp', 'suppliers', 'loyalty', 'ai-insights', 'expenses', 'daily-summary', 'bulk-operations', 'admin', 'settings']
+        const validPages = ['dashboard', 'bills', 'create-bill', 'ocr', 'products', 'analytics', 'customers', 'gst', 'whatsapp', 'suppliers', 'loyalty', 'ai-insights', 'expenses', 'daily-summary', 'bulk-operations', 'admin', 'settings', 'admin-login']
         return validPages.includes(hash) ? hash : 'dashboard'
     }
 
@@ -43,6 +45,7 @@ function App() {
     const [isOnline, setIsOnline] = useState(navigator.onLine)
     const [toasts, setToasts] = useState([])
     const [user, setUser] = useState(null)
+    const [userRole, setUserRole] = useState(localStorage.getItem('kadai_user_role') || 'owner') // admin, owner, staff
     const [loading, setLoading] = useState(true)
     const [products] = useState(demoProducts)
     const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -388,6 +391,12 @@ function App() {
                 currentPage={currentPage}
                 setCurrentPage={setCurrentPage}
                 addToast={addToast}
+            />
+
+            {/* AI ChatBot */}
+            <AIChatBot
+                addToast={addToast}
+                setCurrentPage={setCurrentPage}
             />
 
             {/* Toast Notifications */}

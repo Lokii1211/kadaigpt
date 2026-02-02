@@ -365,3 +365,270 @@
         top: 0;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   iOS Specific Enhancements - Safe Areas & Native Feel
+═══════════════════════════════════════════════════════════════════ */
+
+/* iOS Safe Area Support */
+@supports(padding: max(0px)) {
+    .mobile-nav {
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+
+    .main-content {
+        padding-bottom: max(80px, calc(80px + env(safe-area-inset-bottom)));
+    }
+
+    .fab,
+    .global-fab,
+    .ai-chat-fab {
+        bottom: max(90px, calc(90px + env(safe-area-inset-bottom)));
+    }
+
+    .page-header {
+        padding-left: max(16px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right));
+    }
+}
+
+/* iOS-style elastic scroll feel */
+.main-content {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+}
+
+/* Prevent text selection on interactive elements */
+.btn,
+.card,
+.nav-item,
+.mobile-nav-item {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* iOS tap highlight removal */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth momentum scrolling for all scrollable areas */
+.scroll-container,
+.product-grid,
+.cart-items,
+.chat-messages,
+.modal-body {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Small Phone Optimizations (320px-375px)
+═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 375px) {
+
+    /* Reduce padding on very small screens */
+    .main-content {
+        padding: 12px !important;
+    }
+
+    .page-header {
+        padding: 12px 0;
+    }
+
+    .page-title {
+        font-size: 1.25rem !important;
+    }
+
+    .page-subtitle {
+        font-size: 0.75rem !important;
+    }
+
+    /* Stats grid single column */
+    .stats-grid,
+    .quick-stats,
+    .loyalty-stats {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Smaller stat cards */
+    .stat-card {
+        padding: 12px !important;
+    }
+
+    .stat-value {
+        font-size: 1.25rem !important;
+    }
+
+    /* Compact buttons */
+    .btn {
+        padding: 8px 12px !important;
+        font-size: 0.75rem !important;
+    }
+
+    .btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Modal takes full screen */
+    .modal {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Form inputs */
+    .form-input {
+        padding: 10px 12px !important;
+        font-size: 16px !important;
+        /* Prevent iOS zoom */
+    }
+
+    /* Product grid single column */
+    .product-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Cart adjustments */
+    .cart-item {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .cart-totals .total-row {
+        font-size: 0.8125rem;
+    }
+
+    /* Mobile nav */
+    .mobile-nav-item {
+        padding: 8px 8px;
+    }
+
+    .mobile-nav-item svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .mobile-nav-item span {
+        font-size: 0.5625rem;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Large Phone / Small Tablet (376px - 480px)
+═══════════════════════════════════════════════════════════════════ */
+@media (min-width: 376px) and (max-width: 480px) {
+
+    .stats-grid,
+    .quick-stats {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .modal {
+        width: 95% !important;
+        max-height: 90vh !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Touch Enhancements - Larger Touch Targets
+═══════════════════════════════════════════════════════════════════ */
+@media (pointer: coarse) {
+
+    /* Minimum 44px touch targets (Apple HIG) */
+    .btn,
+    .nav-item,
+    .mobile-nav-item,
+    .product-card,
+    .qty-btn {
+        min-height: 44px;
+    }
+
+    /* Larger clickable areas for table rows */
+    .table-row,
+    .list-item {
+        padding: 12px 16px;
+    }
+
+    /* Bigger checkboxes and radio buttons */
+    input[type="checkbox"],
+    input[type="radio"] {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Larger close buttons */
+    .modal-close {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Pull to Refresh Simulation
+═══════════════════════════════════════════════════════════════════ */
+.ptr-indicator {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100%);
+    background: var(--primary-500);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    font-size: 0.75rem;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+}
+
+.ptr-indicator.visible {
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Landscape Mode Optimizations
+═══════════════════════════════════════════════════════════════════ */
+@media (max-height: 500px) and (orientation: landscape) {
+    .mobile-nav {
+        flex-direction: column;
+        height: 100%;
+        width: 60px;
+        right: auto;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        border-top: none;
+        border-right: 1px solid var(--border-subtle);
+    }
+
+    .main-content {
+        margin-left: 60px !important;
+        padding-bottom: 16px !important;
+    }
+
+    .page-header {
+        flex-direction: row !important;
+        align-items: center !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Dark Mode Improvements for Mobile
+═══════════════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: dark) {
+    .mobile-nav {
+        background: rgba(30, 30, 30, 0.95);
+    }
+
+    .modal {
+        background: var(--bg-card);
+    }
+}

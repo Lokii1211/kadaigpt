@@ -1,58 +1,67 @@
-# KadaiGPT Bug Fixes & Feature Implementation Plan
+# KadaiGPT - Comprehensive Bug Fixes & Enhancement Plan
 
-## 🐛 Critical Bugs to Fix
+## Priority 1: Critical Bug Fixes
 
-### 1. Login Fails After Logout
-- **Issue**: User logs out, then tries to login with same credentials - shows "Invalid credentials"
-- **Root Cause**: Token might not be properly cleared or backend session issue
-- **Fix**: Ensure logout properly clears all tokens and session data
+### 1.1 Fix 422 Error on /products
+- The API returns 422 when validation fails
+- Need to ensure proper error handling in frontend
 
-### 2. Products/Bills Not Showing
-- **Issue**: When user adds products or bills, they don't appear
-- **Root Cause**: Demo data being used instead of real API data
-- **Fix**: Implement proper API calls for CRUD operations, separate demo mode logic
+### 1.2 Remove Demo Data for Real Users
+- Check `isDemoMode` in all pages
+- Only show demo data when explicitly in demo mode
 
-### 3. "Vyapar" Branding → "KadaiGPT"
-- **Files to update**: whatsapp.js, demoData.js, api.js, multiple pages
-- **Fix**: Global find/replace VyaparAI → KadaiGPT
+### 1.3 Fix Analytics Page Not Opening
+- Check routing and component errors
+- Ensure proper data loading
 
-### 4. OCR Not Extracting Correct Details
-- **Issue**: Bill upload not working properly
-- **Fix**: Improve OCR processing and extraction logic
+## Priority 2: Role-Based Authentication
 
-### 5. Dummy Data for Real Users
-- **Issue**: Registered users see dummy data instead of their real data
-- **Fix**: Check if user is in demo mode, only show demo data for demo users
+### 2.1 User Roles
+- **Super Admin**: Full system access, manage all stores
+- **Store Owner**: Full access to their store
+- **Manager**: Limited admin access
+- **Staff/Cashier**: Basic operations (billing, view products)
 
-## ✨ Features to Add
+### 2.2 Separate Login Flows
+- Admin Panel: /admin-login route
+- Store Login: /login (default)
+- Role stored in JWT token
 
-### 1. Show Password Toggle
-- Add eye icon to password fields in Login/Register forms
+## Priority 3: UI/UX Fixes
 
-### 2. Real-time GST Verification
-- Integrate GST API to verify GSTIN numbers
+### 3.1 Mobile Responsiveness
+- Fix layouts for 320px-480px screens
+- Touch-friendly buttons
+- Bottom navigation improvements
 
-### 3. Email Verification on Registration
-- Send OTP/verification link to email
+### 3.2 iOS Specific
+- Safe area insets
+- Pull to refresh
+- Haptic feedback simulation
 
-### 4. WhatsApp Notifications
-- Order confirmations
+### 3.3 Desktop/Laptop
+- Keyboard shortcuts
+- Larger click targets
+- Hover states
+
+## Priority 4: WhatsApp Bot Integration
+
+### 4.1 Features
+- Order notifications
 - Stock alerts
-- Bill receipts
-- Payment reminders
+- Customer reminders
+- Bill sharing
 
-### 5. Remove Hindi/Tamil Text
-- Keep only English for clean UI
+## Priority 5: AI/NLP Features
 
-## 📋 Implementation Order
+### 5.1 In-App AI Chat
+- Natural language queries
+- Voice command processing
+- Smart suggestions
 
-1. Fix branding (Vyapar → KadaiGPT)
-2. Add show password toggle
-3. Fix demo data vs real data logic
-4. Fix login/logout flow
-5. Remove Hindi text
-6. Add WhatsApp notification features
-7. Improve OCR
-8. Add GST verification
-9. Add email verification
-
+## Files to Modify
+1. Login.jsx - Role-based login
+2. App.jsx - Route protection
+3. api.js - Role handling
+4. All pages - Demo mode fix
+5. mobile.css - Responsive fixes
