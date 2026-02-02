@@ -1,4 +1,5 @@
 import { ShoppingCart, LayoutDashboard, FileText, Camera, Package, Settings, LogOut, PlusCircle, User, BarChart3, Users, Receipt, MessageCircle, Truck, Gift, X, Brain, Wallet, ClipboardList, Database } from 'lucide-react'
+import NotificationCenter from './NotificationCenter'
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -39,10 +40,15 @@ export default function Sidebar({ currentPage, setCurrentPage, isOnline, user, o
           </div>
         </div>
 
-        {/* Network Status */}
-        <div className={`network-indicator ${isOnline ? 'online' : 'offline'}`}>
-          <span className="dot"></span>
-          <span>{isOnline ? 'Online' : 'Offline Mode'}</span>
+        {/* Status Bar */}
+        <div className="sidebar-status-bar">
+          <div className={`network-indicator ${isOnline ? 'online' : 'offline'}`}>
+            <span className="dot"></span>
+            <span>{isOnline ? 'Online' : 'Offline'}</span>
+          </div>
+          <div style={{ position: 'relative' }}>
+            <NotificationCenter />
+          </div>
         </div>
 
         {/* Navigation */}
@@ -88,6 +94,14 @@ export default function Sidebar({ currentPage, setCurrentPage, isOnline, user, o
         </div>
 
         <style>{`
+        /* Status Bar */
+        .sidebar-status-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px 16px;
+          margin-bottom: 8px;
+        }
         /* Mobile Header */
         .mobile-header {
           display: none;
