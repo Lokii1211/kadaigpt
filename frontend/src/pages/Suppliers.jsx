@@ -17,6 +17,7 @@ export default function Suppliers({ addToast }) {
     const [editSupplier, setEditSupplier] = useState(null)
     const [newSupplier, setNewSupplier] = useState({ name: '', contact: '', phone: '', email: '', address: '', category: 'General' })
     const [orderItems, setOrderItems] = useState([])
+    const [supplierProducts, setSupplierProducts] = useState([{ name: '', quantity: '', price: '' }])
 
     const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
 
@@ -445,6 +446,68 @@ export default function Suppliers({ addToast }) {
                                     <option value="Beverages">Beverages</option>
                                     <option value="Vegetables">Vegetables</option>
                                 </select>
+                            </div>
+
+                            {/* Products Section */}
+                            <div className="form-section">
+                                <div className="section-header">
+                                    <label className="form-label">Products Supplied (Optional)</label>
+                                    <button
+                                        type="button"
+                                        className="btn btn-ghost btn-sm"
+                                        onClick={() => setSupplierProducts([...supplierProducts, { name: '', quantity: '', price: '' }])}
+                                    >
+                                        <Plus size={14} /> Add Product
+                                    </button>
+                                </div>
+                                {supplierProducts.map((product, index) => (
+                                    <div key={index} className="product-row">
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            placeholder="Product name"
+                                            value={product.name}
+                                            onChange={(e) => {
+                                                const updated = [...supplierProducts]
+                                                updated[index].name = e.target.value
+                                                setSupplierProducts(updated)
+                                            }}
+                                        />
+                                        <input
+                                            type="number"
+                                            className="form-input small"
+                                            placeholder="Qty"
+                                            value={product.quantity}
+                                            onChange={(e) => {
+                                                const updated = [...supplierProducts]
+                                                updated[index].quantity = e.target.value
+                                                setSupplierProducts(updated)
+                                            }}
+                                        />
+                                        <input
+                                            type="number"
+                                            className="form-input small"
+                                            placeholder="Price ₹"
+                                            value={product.price}
+                                            onChange={(e) => {
+                                                const updated = [...supplierProducts]
+                                                updated[index].price = e.target.value
+                                                setSupplierProducts(updated)
+                                            }}
+                                        />
+                                        {supplierProducts.length > 1 && (
+                                            <button
+                                                type="button"
+                                                className="btn btn-ghost btn-sm text-danger"
+                                                onClick={() => {
+                                                    setSupplierProducts(supplierProducts.filter((_, i) => i !== index))
+                                                }}
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         </div>
                         <div className="modal-footer">

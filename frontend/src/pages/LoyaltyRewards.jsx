@@ -31,6 +31,10 @@ export default function LoyaltyRewards({ addToast }) {
     const [loading, setLoading] = useState(true)
     const [selectedCustomer, setSelectedCustomer] = useState(null)
     const [showRedeemModal, setShowRedeemModal] = useState(false)
+    const [showAddPointsModal, setShowAddPointsModal] = useState(false)
+    const [selectedCustomerForPoints, setSelectedCustomerForPoints] = useState(null)
+    const [pointsToAdd, setPointsToAdd] = useState('')
+    const [pointsReason, setPointsReason] = useState('purchase')
 
     useEffect(() => {
         loadCustomers()
@@ -100,6 +104,41 @@ export default function LoyaltyRewards({ addToast }) {
         }
     }
 
+    const handleAddPoints = () => {
+        if (!selectedCustomerForPoints) {
+            addToast('Please select a customer', 'error')
+            return
+        }
+        if (!pointsToAdd || parseInt(pointsToAdd) <= 0) {
+            addToast('Please enter valid points', 'error')
+            return
+        }
+
+        const points = parseInt(pointsToAdd)
+        setCustomers(customers.map(c => {
+            if (c.id === selectedCustomerForPoints.id) {
+                const newPoints = c.points + points
+                return {
+                    ...c,
+                    points: newPoints,
+                    tier: getTierFromPoints(newPoints)
+                }
+            }
+            return c
+        }))
+
+        addToast(`Added ${points} points to ${selectedCustomerForPoints.name}!`, 'success')
+        setShowAddPointsModal(false)
+        setSelectedCustomerForPoints(null)
+        setPointsToAdd('')
+        setPointsReason('purchase')
+    }
+
+    const openAddPointsForCustomer = (customer) => {
+        setSelectedCustomerForPoints(customer)
+        setShowAddPointsModal(true)
+    }
+
     return (
         <div className="loyalty-page">
             <div className="page-header">
@@ -107,7 +146,7 @@ export default function LoyaltyRewards({ addToast }) {
                     <h1 className="page-title">🎁 Loyalty & Rewards</h1>
                     <p className="page-subtitle">Retain customers with points and rewards</p>
                 </div>
-                <button className="btn btn-primary">
+                <button className="btn btn-primary" onClick={() => setShowAddPointsModal(true)}>
                     <Plus size={18} /> Add Points
                 </button>
             </div>
@@ -263,6 +302,75 @@ export default function LoyaltyRewards({ addToast }) {
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Points Modal */}
+            {showAddPointsModal && (
+                <div className="modal-overlay" onClick={() => setShowAddPointsModal(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Add Loyalty Points</h3>
+                            <button className="modal-close" onClick={() => setShowAddPointsModal(false)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label className="form-label">Select Customer *</label>
+                                <select
+                                    className="form-input"
+                                    value={selectedCustomerForPoints?.id || ''}
+                                    onChange={(e) => {
+                                        const cust = customers.find(c => c.id === parseInt(e.target.value))
+                                        setSelectedCustomerForPoints(cust)
+                                    }}
+                                >
+                                    <option value="">Choose a customer...</option>
+                                    {customers.map(c => (
+                                        <option key={c.id} value={c.id}>{c.name} - {c.phone} ({c.points} pts)</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Points to Add *</label>
+                                <input
+                                    type="number"
+                                    className="form-input"
+                                    placeholder="e.g., 100"
+                                    value={pointsToAdd}
+                                    onChange={(e) => setPointsToAdd(e.target.value)}
+                                    min="1"
+                                />
+                                <span className="form-hint">1 point = ₹1 spent</span>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Reason</label>
+                                <select
+                                    className="form-input"
+                                    value={pointsReason}
+                                    onChange={(e) => setPointsReason(e.target.value)}
+                                >
+                                    <option value="purchase">Purchase</option>
+                                    <option value="bonus">Bonus Points</option>
+                                    <option value="referral">Referral Bonus</option>
+                                    <option value="birthday">Birthday Bonus</option>
+                                    <option value="festival">Festival Bonus</option>
+                                    <option value="adjustment">Manual Adjustment</option>
+                                </select>
+                            </div>
+                            {selectedCustomerForPoints && pointsToAdd && (
+                                <div className="points-preview">
+                                    <span>New Balance: </span>
+                                    <strong>{selectedCustomerForPoints.points + parseInt(pointsToAdd || 0)} points</strong>
+                                </div>
+                            )}
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowAddPointsModal(false)}>Cancel</button>
+                            <button className="btn btn-primary" onClick={handleAddPoints}>
+                                <Plus size={16} /> Add Points
+                            </button>
                         </div>
                     </div>
                 </div>

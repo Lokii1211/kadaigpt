@@ -5,6 +5,7 @@ import VoiceAssistant from './components/VoiceAssistant'
 import MobileNav from './components/MobileNav'
 import OnboardingWizard from './components/OnboardingWizard'
 import CommandPalette from './components/CommandPalette'
+import GlobalFAB from './components/GlobalFAB'
 import Dashboard from './pages/Dashboard'
 import Bills from './pages/Bills'
 import OCRCapture from './pages/OCRCapture'
@@ -379,6 +380,13 @@ function App() {
                 onCommand={handleVoiceCommand}
                 onNavigate={setCurrentPage}
                 products={products}
+                addToast={addToast}
+            />
+
+            {/* Global FAB for Quick Actions */}
+            <GlobalFAB
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
                 addToast={addToast}
             />
 

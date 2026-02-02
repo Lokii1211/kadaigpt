@@ -28,6 +28,9 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     const [billNumber, setBillNumber] = useState('')
     const [printing, setPrinting] = useState(false)
     const [paymentMode, setPaymentMode] = useState('Cash')
+    const [discount, setDiscount] = useState(0)
+    const [discountType, setDiscountType] = useState('percentage') // 'percentage' or 'fixed'
+    const [gstRate, setGstRate] = useState(5) // Default 5% GST
 
     useEffect(() => {
         loadProducts()
@@ -89,11 +92,19 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         setCart([])
         setCustomer({ name: '', phone: '' })
         setBillNumber('')
+        setDiscount(0)
     }
 
+    // Proper billing calculations
     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const tax = Math.round(subtotal * 0.05) // 5% GST
-    const total = subtotal + tax
+    const discountAmount = discountType === 'percentage'
+        ? Math.round((subtotal * discount) / 100)
+        : Math.min(discount, subtotal)
+    const taxableAmount = subtotal - discountAmount
+    const cgst = Math.round((taxableAmount * gstRate) / 200) // Half of GST rate for CGST
+    const sgst = Math.round((taxableAmount * gstRate) / 200) // Half of GST rate for SGST
+    const tax = cgst + sgst
+    const total = taxableAmount + tax
     const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
 
     const getBillData = () => ({
@@ -103,14 +114,22 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         store_phone: localStorage.getItem('kadai_store_phone') || '',
         gstin: localStorage.getItem('kadai_gstin') || '',
         customer_name: customer.name || 'Walk-in Customer',
+        customer_phone: customer.phone || '',
         items: cart.map(item => ({
             product_name: item.name,
             quantity: item.quantity,
-            unit_price: item.price
+            unit_price: item.price,
+            total: item.price * item.quantity
         })),
         subtotal,
+        discount: discountAmount,
+        discount_type: discountType,
+        discount_value: discount,
+        taxable_amount: taxableAmount,
+        cgst,
+        sgst,
+        gst_rate: gstRate,
         tax,
-        discount: 0,
         total,
         payment_mode: paymentMode,
         use_thermal: localStorage.getItem('kadai_thermal') !== 'false'
@@ -295,20 +314,75 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                             )}
                         </div>
 
+                        {/* Discount & GST Controls */}
+                        {cart.length > 0 && (
+                            <div className="billing-controls">
+                                <div className="control-row">
+                                    <label>Discount</label>
+                                    <div className="discount-input">
+                                        <input
+                                            type="number"
+                                            className="form-input small"
+                                            value={discount}
+                                            onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                                            min="0"
+                                            max={discountType === 'percentage' ? 100 : subtotal}
+                                        />
+                                        <select
+                                            className="form-input small"
+                                            value={discountType}
+                                            onChange={(e) => setDiscountType(e.target.value)}
+                                        >
+                                            <option value="percentage">%</option>
+                                            <option value="fixed">₹</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="control-row">
+                                    <label>GST Rate</label>
+                                    <select
+                                        className="form-input small"
+                                        value={gstRate}
+                                        onChange={(e) => setGstRate(parseInt(e.target.value))}
+                                    >
+                                        <option value="0">0% (Exempt)</option>
+                                        <option value="5">5%</option>
+                                        <option value="12">12%</option>
+                                        <option value="18">18%</option>
+                                        <option value="28">28%</option>
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Totals */}
                         {cart.length > 0 && (
                             <div className="cart-totals">
                                 <div className="total-row">
                                     <span>Subtotal</span>
-                                    <span>₹{subtotal}</span>
+                                    <span>₹{subtotal.toLocaleString('en-IN')}</span>
                                 </div>
+                                {discountAmount > 0 && (
+                                    <div className="total-row discount">
+                                        <span>Discount ({discountType === 'percentage' ? `${discount}%` : '₹'})</span>
+                                        <span className="text-success">-₹{discountAmount.toLocaleString('en-IN')}</span>
+                                    </div>
+                                )}
                                 <div className="total-row">
-                                    <span>GST (5%)</span>
-                                    <span>₹{tax}</span>
+                                    <span>Taxable Amount</span>
+                                    <span>₹{taxableAmount.toLocaleString('en-IN')}</span>
+                                </div>
+                                <div className="total-row tax-row">
+                                    <span>CGST ({gstRate / 2}%)</span>
+                                    <span>₹{cgst.toLocaleString('en-IN')}</span>
+                                </div>
+                                <div className="total-row tax-row">
+                                    <span>SGST ({gstRate / 2}%)</span>
+                                    <span>₹{sgst.toLocaleString('en-IN')}</span>
                                 </div>
                                 <div className="total-row grand">
                                     <span>Total</span>
-                                    <span>₹{total}</span>
+                                    <span>₹{total.toLocaleString('en-IN')}</span>
                                 </div>
                             </div>
                         )}

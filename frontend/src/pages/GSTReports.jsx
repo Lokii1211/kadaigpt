@@ -1,18 +1,15 @@
 import { useState } from 'react'
-import { Receipt, Download, FileText, Calendar, Check, Clock, IndianRupee, AlertCircle, ChevronDown } from 'lucide-react'
+import { Receipt, Download, FileText, Calendar, Check, Clock, IndianRupee, AlertCircle, ChevronDown, RefreshCw } from 'lucide-react'
 import { demoGSTData } from '../services/demoData'
 
 export default function GSTReports({ addToast }) {
     const [selectedMonth, setSelectedMonth] = useState('Jan 2026')
     const [generating, setGenerating] = useState(false)
     const [showExportMenu, setShowExportMenu] = useState(false)
+    const [gstData, setGstData] = useState(demoGSTData)
 
     // Check demo mode
     const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
-
-    // Always show demo data for now - real GST calc requires actual sales data
-    // In production, this would fetch from /api/analytics/gst endpoint
-    const gstData = demoGSTData
 
     const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
     const gstin = localStorage.getItem('kadai_gstin') || 'Not Configured'
@@ -23,6 +20,23 @@ export default function GSTReports({ addToast }) {
             setGenerating(false)
             addToast('GSTR-1 report generated successfully!', 'success')
         }, 2000)
+    }
+
+    const handleResetGST = () => {
+        if (window.confirm('Are you sure you want to reset GST data? This will clear all current period calculations.')) {
+            setGstData({
+                ...demoGSTData,
+                summary: {
+                    totalSales: 0,
+                    cgst: 0,
+                    sgst: 0,
+                    igst: 0,
+                    totalTax: 0,
+                    netPayable: 0
+                }
+            })
+            addToast('GST data reset successfully!', 'success')
+        }
     }
 
     const handleExport = (format) => {
@@ -167,6 +181,9 @@ export default function GSTReports({ addToast }) {
                     <p className="page-subtitle">Generate GSTR-1 and track tax compliance</p>
                 </div>
                 <div className="header-actions">
+                    <button className="btn btn-ghost" onClick={handleResetGST} title="Reset GST Data">
+                        <RefreshCw size={18} /> Reset
+                    </button>
                     <div className="export-dropdown">
                         <button className="btn btn-secondary" onClick={() => setShowExportMenu(!showExportMenu)}>
                             <Download size={18} /> Export <ChevronDown size={16} />
