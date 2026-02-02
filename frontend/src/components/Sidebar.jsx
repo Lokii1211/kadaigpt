@@ -34,7 +34,7 @@ export default function Sidebar({ currentPage, setCurrentPage, isOnline, user, o
             <ShoppingCart size={24} />
           </div>
           <div className="logo-text">
-            <h1>KadaiGPT</h1>
+            <h1>VyaparAI</h1>
             <span>{localStorage.getItem('kadai_store_name') || user?.store_name || 'AI Retail'}</span>
           </div>
         </div>

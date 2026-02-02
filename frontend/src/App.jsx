@@ -289,7 +289,7 @@ function App() {
             <header className="mobile-header">
                 <div className="mobile-header-title">
                     <ShoppingCart size={24} />
-                    <span>KadaiGPT</span>
+                    <span>VyaparAI</span>
                 </div>
                 <div className="mobile-header-actions">
                     <button
