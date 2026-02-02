@@ -17,6 +17,7 @@ export default function Settings({ addToast }) {
         storeAddress: localStorage.getItem('kadai_store_address') || '',
         storePhone: localStorage.getItem('kadai_store_phone') || '',
         gstin: localStorage.getItem('kadai_gstin') || '',
+        defaultGstRate: parseInt(localStorage.getItem('kadai_default_gst_rate') || '5'),
         autoPrint: localStorage.getItem('kadai_auto_print') === 'true',
         soundEnabled: localStorage.getItem('kadai_sound') !== 'false',
         thermalMode: localStorage.getItem('kadai_thermal') !== 'false',
@@ -122,6 +123,7 @@ export default function Settings({ addToast }) {
         localStorage.setItem('kadai_store_address', settings.storeAddress)
         localStorage.setItem('kadai_store_phone', settings.storePhone)
         localStorage.setItem('kadai_gstin', settings.gstin)
+        localStorage.setItem('kadai_default_gst_rate', settings.defaultGstRate.toString())
         addToast('Store settings saved!', 'success')
     }
 
@@ -213,6 +215,24 @@ export default function Settings({ addToast }) {
                                 )}
                             </div>
                         </div>
+
+                        {/* Default GST Rate Selector */}
+                        <div className="form-group">
+                            <label className="form-label">Default GST Rate</label>
+                            <select
+                                className="form-input"
+                                value={settings.defaultGstRate}
+                                onChange={(e) => setSettings({ ...settings, defaultGstRate: parseInt(e.target.value) })}
+                            >
+                                <option value="0">0% (Exempt / Essential)</option>
+                                <option value="5">5% (Most groceries, daily essentials)</option>
+                                <option value="12">12% (Processed foods, apparel)</option>
+                                <option value="18">18% (Standard rate - electronics, services)</option>
+                                <option value="28">28% (Luxury items)</option>
+                            </select>
+                            <p className="form-hint">This rate will be applied by default when creating new bills</p>
+                        </div>
+
                         <button className="btn btn-primary" onClick={saveStoreSettings}>
                             <Check size={18} /> Save Store Info
                         </button>

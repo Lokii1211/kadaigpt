@@ -18,7 +18,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     const [paymentMode, setPaymentMode] = useState('Cash')
     const [discount, setDiscount] = useState(0)
     const [discountType, setDiscountType] = useState('percentage') // 'percentage' or 'fixed'
-    const [gstRate, setGstRate] = useState(5) // Default 5% GST
+    const [gstRate, setGstRate] = useState(parseInt(localStorage.getItem('kadai_default_gst_rate') || '5')) // Use configured default
 
     useEffect(() => {
         loadProducts()

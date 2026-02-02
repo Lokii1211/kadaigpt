@@ -1,18 +1,78 @@
-import { useState } from 'react'
-import { Receipt, Download, FileText, Calendar, Check, Clock, IndianRupee, AlertCircle, ChevronDown, RefreshCw } from 'lucide-react'
-import { demoGSTData } from '../services/demoData'
+import { useState, useEffect } from 'react'
+import { Receipt, Download, FileText, Calendar, Check, Clock, IndianRupee, AlertCircle, ChevronDown, RefreshCw, Loader2 } from 'lucide-react'
+import realDataService from '../services/realDataService'
+import api from '../services/api'
 
 export default function GSTReports({ addToast }) {
     const [selectedMonth, setSelectedMonth] = useState('Jan 2026')
     const [generating, setGenerating] = useState(false)
+    const [loading, setLoading] = useState(true)
     const [showExportMenu, setShowExportMenu] = useState(false)
-    const [gstData, setGstData] = useState(demoGSTData)
-
-    // Check demo mode
-    const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+    const [gstData, setGstData] = useState({
+        summary: { totalSales: 0, cgst: 0, sgst: 0, igst: 0, totalTax: 0, netPayable: 0 },
+        monthly: [],
+        invoices: []
+    })
 
     const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
     const gstin = localStorage.getItem('kadai_gstin') || 'Not Configured'
+    const defaultGstRate = parseInt(localStorage.getItem('kadai_default_gst_rate') || '5')
+
+    // Load GST data from bills
+    useEffect(() => {
+        loadGSTData()
+    }, [])
+
+    const loadGSTData = async () => {
+        setLoading(true)
+        try {
+            const bills = await realDataService.getBills()
+
+            // Calculate GST data from bills
+            const gstRate = defaultGstRate / 100
+            let totalSales = 0
+            let totalCgst = 0
+            let totalSgst = 0
+
+            const invoices = bills.map(bill => {
+                const taxableAmount = bill.subtotal || bill.total / (1 + gstRate) || 0
+                const cgst = (taxableAmount * gstRate / 2)
+                const sgst = (taxableAmount * gstRate / 2)
+
+                totalSales += taxableAmount
+                totalCgst += cgst
+                totalSgst += sgst
+
+                return {
+                    invoiceNo: bill.bill_number || bill.billNumber || `INV-${bill.id}`,
+                    date: new Date(bill.created_at || bill.createdAt).toLocaleDateString('en-IN'),
+                    customerGstin: bill.customer_gstin || '',
+                    taxableAmount: Math.round(taxableAmount),
+                    cgst: Math.round(cgst),
+                    sgst: Math.round(sgst),
+                    total: bill.total || Math.round(taxableAmount + cgst + sgst)
+                }
+            })
+
+            setGstData({
+                summary: {
+                    totalSales: Math.round(totalSales),
+                    cgst: Math.round(totalCgst),
+                    sgst: Math.round(totalSgst),
+                    igst: 0,
+                    totalTax: Math.round(totalCgst + totalSgst),
+                    netPayable: Math.round(totalCgst + totalSgst)
+                },
+                monthly: [],
+                invoices
+            })
+        } catch (error) {
+            console.error('Failed to load GST data:', error)
+            addToast?.('Failed to load GST data', 'error')
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const handleGenerateGSTR1 = () => {
         setGenerating(true)
