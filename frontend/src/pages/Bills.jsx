@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Filter, Download, Eye, Printer, Calendar, X, ChevronDown, FileText, TrendingUp, ArrowUpRight } from 'lucide-react'
 import api from '../services/api'
+import EmptyState from '../components/EmptyState'
 
 // Demo bills data
 const demoBills = [
@@ -44,14 +45,14 @@ export default function Bills({ addToast, setCurrentPage }) {
                 if (Array.isArray(billList) && billList.length > 0) {
                     setBills(billList)
                 } else {
-                    // No bills yet - show demo data to illustrate features
-                    setBills(demoBills)
+                    // Real user with no bills - show empty state
+                    setBills([])
                 }
             }
         } catch (error) {
             console.error('Failed to load bills:', error)
-            // Fallback to demo data on error
-            setBills(demoBills)
+            // On error, show empty for real users, demo for demo mode
+            setBills(isDemoMode ? demoBills : [])
         } finally {
             setLoading(false)
         }
@@ -275,59 +276,66 @@ export default function Bills({ addToast, setCurrentPage }) {
             )}
 
             {/* Bills Table */}
-            <div className="card">
-                <div className="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Invoice</th>
-                                <th>Customer</th>
-                                <th>Items</th>
-                                <th>Amount</th>
-                                <th>Payment</th>
-                                <th>Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredBills.map(bill => (
-                                <tr key={bill.id}>
-                                    <td><code className="bill-code">{bill.bill_number}</code></td>
-                                    <td>
-                                        <div className="customer-cell">
-                                            <span className="customer-name">{bill.customer_name}</span>
-                                            {bill.customer_phone && <span className="customer-phone">{bill.customer_phone}</span>}
-                                        </div>
-                                    </td>
-                                    <td><span className="items-count">{bill.items?.length || 0} items</span></td>
-                                    <td><span className="amount">₹{bill.total?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></td>
-                                    <td><span className={`badge badge-${bill.payment_mode === 'Cash' ? 'success' : bill.payment_mode === 'UPI' ? 'info' : 'warning'}`}>{bill.payment_mode}</span></td>
-                                    <td><span className="date-cell">{formatDate(bill.created_at)}</span></td>
-                                    <td>
-                                        <div className="action-buttons">
-                                            <button className="btn btn-ghost btn-sm" onClick={() => setSelectedBill(bill)} title="View Details">
-                                                <Eye size={16} />
-                                            </button>
-                                            <button className="btn btn-ghost btn-sm" onClick={() => printBill(bill)} title="Print Receipt">
-                                                <Printer size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {filteredBills.length === 0 && (
+            {bills.length === 0 ? (
+                <EmptyState
+                    type="bills"
+                    onAction={() => setCurrentPage('create-bill')}
+                />
+            ) : (
+                <div className="card">
+                    <div className="table-container">
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td colSpan={7} className="empty-state">
-                                        <FileText size={48} />
-                                        <h4>No bills found</h4>
-                                        <p>Try adjusting your filters or create a new bill</p>
-                                    </td>
+                                    <th>Invoice</th>
+                                    <th>Customer</th>
+                                    <th>Items</th>
+                                    <th>Amount</th>
+                                    <th>Payment</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {filteredBills.map(bill => (
+                                    <tr key={bill.id}>
+                                        <td><code className="bill-code">{bill.bill_number}</code></td>
+                                        <td>
+                                            <div className="customer-cell">
+                                                <span className="customer-name">{bill.customer_name}</span>
+                                                {bill.customer_phone && <span className="customer-phone">{bill.customer_phone}</span>}
+                                            </div>
+                                        </td>
+                                        <td><span className="items-count">{bill.items?.length || 0} items</span></td>
+                                        <td><span className="amount">₹{bill.total?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></td>
+                                        <td><span className={`badge badge-${bill.payment_mode === 'Cash' ? 'success' : bill.payment_mode === 'UPI' ? 'info' : 'warning'}`}>{bill.payment_mode}</span></td>
+                                        <td><span className="date-cell">{formatDate(bill.created_at)}</span></td>
+                                        <td>
+                                            <div className="action-buttons">
+                                                <button className="btn btn-ghost btn-sm" onClick={() => setSelectedBill(bill)} title="View Details">
+                                                    <Eye size={16} />
+                                                </button>
+                                                <button className="btn btn-ghost btn-sm" onClick={() => printBill(bill)} title="Print Receipt">
+                                                    <Printer size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredBills.length === 0 && (
+                                    <tr>
+                                        <td colSpan={7} className="empty-state">
+                                            <FileText size={48} />
+                                            <h4>No bills found</h4>
+                                            <p>Try adjusting your filters or create a new bill</p>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Bill Details Modal */}
             {selectedBill && (

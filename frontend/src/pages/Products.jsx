@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Plus, Package, AlertTriangle, TrendingUp, TrendingDown, Edit2, Trash2, X, Save, BarChart3, RefreshCw } from 'lucide-react'
 import api from '../services/api'
+import EmptyState from '../components/EmptyState'
 
 // Demo products with stock levels and predictions
 const demoProducts = [
@@ -59,14 +60,14 @@ export default function Products({ addToast }) {
                     }))
                     setProducts(mappedProducts)
                 } else {
-                    // No products yet - show demo data to illustrate features
-                    setProducts(demoProducts)
+                    // Real user with no products - show empty state
+                    setProducts([])
                 }
             }
         } catch (error) {
             console.error('Failed to load products:', error)
-            // Fallback to demo data on error
-            setProducts(demoProducts)
+            // On error, show empty for real users, demo for demo mode
+            setProducts(isDemoMode ? demoProducts : [])
         } finally {
             setLoading(false)
         }
@@ -231,74 +232,81 @@ export default function Products({ addToast }) {
             </div>
 
             {/* Products Grid */}
-            <div className="products-grid">
-                {filteredProducts.map(product => {
-                    const stockStatus = getStockStatus(product)
-                    const daysLeft = getDaysUntilStockout(product)
+            {products.length === 0 ? (
+                <EmptyState
+                    type="products"
+                    onAction={() => setShowAddModal(true)}
+                />
+            ) : (
+                <div className="products-grid">
+                    {filteredProducts.map(product => {
+                        const stockStatus = getStockStatus(product)
+                        const daysLeft = getDaysUntilStockout(product)
 
-                    return (
-                        <div key={product.id} className={`product-card ${stockStatus.status}`}>
-                            <div className="product-header">
-                                <span className="product-category">{product.category}</span>
-                                <span className={`stock-badge ${stockStatus.color}`}>{stockStatus.label}</span>
+                        return (
+                            <div key={product.id} className={`product-card ${stockStatus.status}`}>
+                                <div className="product-header">
+                                    <span className="product-category">{product.category}</span>
+                                    <span className={`stock-badge ${stockStatus.color}`}>{stockStatus.label}</span>
+                                </div>
+
+                                <h3 className="product-name">{product.name}</h3>
+                                <p className="product-sku">{product.sku}</p>
+
+                                <div className="product-price">
+                                    <span className="price">₹{product.price}</span>
+                                    <span className="unit">/{product.unit}</span>
+                                </div>
+
+                                <div className="stock-info">
+                                    <div className="stock-bar-container">
+                                        <div
+                                            className={`stock-bar ${stockStatus.color}`}
+                                            style={{ width: `${Math.min(100, (product.stock / product.minStock) * 50)}%` }}
+                                        ></div>
+                                    </div>
+                                    <div className="stock-numbers">
+                                        <span className="current">{product.stock} {product.unit}</span>
+                                        <span className="min">Min: {product.minStock}</span>
+                                    </div>
+                                </div>
+
+                                <div className="product-prediction">
+                                    <div className={`trend ${product.trend}`}>
+                                        {product.trend === 'up' ? <TrendingUp size={14} /> : product.trend === 'down' ? <TrendingDown size={14} /> : '→'}
+                                        <span>{product.dailySales}/day</span>
+                                    </div>
+                                    <div className="days-left">
+                                        {daysLeft === '∞' ? 'No sales data' : `${daysLeft} days left`}
+                                    </div>
+                                </div>
+
+                                <div className="product-actions">
+                                    <div className="quick-stock">
+                                        <button onClick={() => handleUpdateStock(product.id, product.stock - 1)}>−</button>
+                                        <span>{product.stock}</span>
+                                        <button onClick={() => handleUpdateStock(product.id, product.stock + 1)}>+</button>
+                                    </div>
+                                    <div className="action-btns">
+                                        <button className="btn btn-ghost btn-sm" onClick={() => setEditProduct(product)}>
+                                            <Edit2 size={14} />
+                                        </button>
+                                        <button className="btn btn-ghost btn-sm" onClick={() => handleDeleteProduct(product.id)}>
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
+                        )
+                    })}
+                </div>
+            )}
 
-                            <h3 className="product-name">{product.name}</h3>
-                            <p className="product-sku">{product.sku}</p>
-
-                            <div className="product-price">
-                                <span className="price">₹{product.price}</span>
-                                <span className="unit">/{product.unit}</span>
-                            </div>
-
-                            <div className="stock-info">
-                                <div className="stock-bar-container">
-                                    <div
-                                        className={`stock-bar ${stockStatus.color}`}
-                                        style={{ width: `${Math.min(100, (product.stock / product.minStock) * 50)}%` }}
-                                    ></div>
-                                </div>
-                                <div className="stock-numbers">
-                                    <span className="current">{product.stock} {product.unit}</span>
-                                    <span className="min">Min: {product.minStock}</span>
-                                </div>
-                            </div>
-
-                            <div className="product-prediction">
-                                <div className={`trend ${product.trend}`}>
-                                    {product.trend === 'up' ? <TrendingUp size={14} /> : product.trend === 'down' ? <TrendingDown size={14} /> : '→'}
-                                    <span>{product.dailySales}/day</span>
-                                </div>
-                                <div className="days-left">
-                                    {daysLeft === '∞' ? 'No sales data' : `${daysLeft} days left`}
-                                </div>
-                            </div>
-
-                            <div className="product-actions">
-                                <div className="quick-stock">
-                                    <button onClick={() => handleUpdateStock(product.id, product.stock - 1)}>−</button>
-                                    <span>{product.stock}</span>
-                                    <button onClick={() => handleUpdateStock(product.id, product.stock + 1)}>+</button>
-                                </div>
-                                <div className="action-btns">
-                                    <button className="btn btn-ghost btn-sm" onClick={() => setEditProduct(product)}>
-                                        <Edit2 size={14} />
-                                    </button>
-                                    <button className="btn btn-ghost btn-sm" onClick={() => handleDeleteProduct(product.id)}>
-                                        <Trash2 size={14} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )
-                })}
-            </div>
-
-            {filteredProducts.length === 0 && (
+            {products.length > 0 && filteredProducts.length === 0 && (
                 <div className="empty-state">
                     <Package size={64} />
                     <h3>No products found</h3>
-                    <p>Try adjusting your search or add a new product</p>
+                    <p>Try adjusting your search or filters</p>
                 </div>
             )}
 

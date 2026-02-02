@@ -56,13 +56,14 @@ export default function ExpenseTracker({ addToast }) {
             if (savedExpenses) {
                 try {
                     const parsed = JSON.parse(savedExpenses)
-                    setExpenses(parsed.length > 0 ? parsed : demoExpenses)
+                    // Real users see their actual expenses (or empty if none)
+                    setExpenses(Array.isArray(parsed) ? parsed : [])
                 } catch {
-                    setExpenses(demoExpenses)
+                    setExpenses([])
                 }
             } else {
-                // Show demo data for new users to illustrate the feature
-                setExpenses(demoExpenses)
+                // Real user with no expenses - show empty state
+                setExpenses([])
             }
         }
         setLoading(false)

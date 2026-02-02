@@ -45,9 +45,8 @@ export default function Analytics({ addToast }) {
         }
     }
 
-    // Use demo data for demo mode OR when no real data exists (for new users)
-    const hasRealData = salesData?.current?.total_sales > 0
-    const analytics = (isDemoMode || !hasRealData) ? demoAnalytics : {
+    // Use demo data ONLY for demo mode, real users see their actual data
+    const analytics = isDemoMode ? demoAnalytics : {
         todaySales: salesData?.current?.total_sales || 0,
         todayBills: salesData?.current?.total_bills || 0,
         avgBillValue: salesData?.current?.average_bill_value || 0,
@@ -55,6 +54,7 @@ export default function Analytics({ addToast }) {
         hourlyData: salesData?.hourly || []
     }
 
+    const hasData = analytics.todaySales > 0 || analytics.todayBills > 0
     const salesChange = salesData?.change?.sales_change || (isDemoMode ? 18.5 : 0)
 
     const maxWeeklySale = Math.max(...analytics.weeklySales, 1) // Prevent division by zero

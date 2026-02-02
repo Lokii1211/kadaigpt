@@ -49,8 +49,8 @@ export default function LoyaltyRewards({ addToast }) {
                 const customerList = Array.isArray(data) ? data : []
 
                 if (customerList.length === 0) {
-                    // No customers yet - show demo data to illustrate the feature
-                    setCustomers(demoLoyaltyCustomers)
+                    // Real user with no customers - show empty state
+                    setCustomers([])
                 } else {
                     const customersWithPoints = customerList.map(c => ({
                         ...c,
@@ -64,8 +64,8 @@ export default function LoyaltyRewards({ addToast }) {
             }
         } catch (error) {
             console.error('Error loading loyalty customers:', error)
-            // Fallback to demo data on error
-            setCustomers(demoLoyaltyCustomers)
+            // On error, show empty for real users, demo for demo mode
+            setCustomers(isDemoMode ? demoLoyaltyCustomers : [])
         } finally {
             setLoading(false)
         }
