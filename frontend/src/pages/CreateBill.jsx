@@ -1,20 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Plus, Minus, Trash2, Printer, Save, ShoppingCart, X, Eye, Loader2 } from 'lucide-react'
+import realDataService from '../services/realDataService'
 import api from '../services/api'
-
-// Demo products - in real app, fetch from API
-const demoProducts = [
-    { id: 1, name: "Basmati Rice", price: 85, unit: "kg", stock: 45 },
-    { id: 2, name: "Toor Dal", price: 140, unit: "kg", stock: 28 },
-    { id: 3, name: "Sugar", price: 45, unit: "kg", stock: 120 },
-    { id: 4, name: "Sunflower Oil", price: 180, unit: "L", stock: 25 },
-    { id: 5, name: "Salt", price: 20, unit: "kg", stock: 50 },
-    { id: 6, name: "Wheat Flour", price: 55, unit: "kg", stock: 60 },
-    { id: 7, name: "Tea Powder", price: 280, unit: "kg", stock: 15 },
-    { id: 8, name: "Coffee", price: 450, unit: "kg", stock: 10 },
-    { id: 9, name: "Milk", price: 60, unit: "L", stock: 100 },
-    { id: 10, name: "Butter", price: 55, unit: "pcs", stock: 40 },
-]
 
 export default function CreateBill({ addToast, setCurrentPage }) {
     const [search, setSearch] = useState('')
@@ -38,19 +25,20 @@ export default function CreateBill({ addToast, setCurrentPage }) {
 
     const loadProducts = async () => {
         setLoading(true)
-        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
 
         try {
-            if (isDemoMode) {
-                setProducts(demoProducts)
+            // Always fetch from real API - no more demo mode
+            const productList = await realDataService.getProducts()
+
+            if (Array.isArray(productList) && productList.length > 0) {
+                setProducts(productList)
             } else {
-                const data = await api.getProducts()
-                setProducts(data.products || [])
+                setProducts([])
             }
         } catch (error) {
             console.error('Error loading products:', error)
-            // Fallback to demo products
-            setProducts(demoProducts)
+            addToast?.('Failed to load products. Please add products first.', 'warning')
+            setProducts([])
         } finally {
             setLoading(false)
         }
