@@ -6,7 +6,7 @@ import MobileNav from './components/MobileNav'
 import OnboardingWizard from './components/OnboardingWizard'
 import CommandPalette from './components/CommandPalette'
 import GlobalFAB from './components/GlobalFAB'
-import AIChatBot from './components/AIChatBot'
+import AgentDashboard from './components/AgentDashboard'
 import Dashboard from './pages/Dashboard'
 import Bills from './pages/Bills'
 import OCRCapture from './pages/OCRCapture'
@@ -393,8 +393,8 @@ function App() {
                 addToast={addToast}
             />
 
-            {/* AI ChatBot */}
-            <AIChatBot
+            {/* AI Agent Dashboard */}
+            <AgentDashboard
                 addToast={addToast}
                 setCurrentPage={setCurrentPage}
             />

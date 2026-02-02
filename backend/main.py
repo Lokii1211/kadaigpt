@@ -163,6 +163,11 @@ app.include_router(bulk_router, prefix=settings.api_v1_prefix)
 from app.services.scheduler import router as scheduler_router
 app.include_router(scheduler_router, prefix=settings.api_v1_prefix)
 
+# Include AI Agents router
+from app.routers.agents import router as agents_router
+app.include_router(agents_router, prefix=settings.api_v1_prefix)
+print("🤖 AI Agents router enabled")
+
 # Add security middleware if available
 if SECURITY_MIDDLEWARE_AVAILABLE:
     app.add_middleware(SecurityMiddleware)
