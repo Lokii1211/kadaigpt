@@ -1,16 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Search, Filter, Download, Eye, Printer, Calendar, X, ChevronDown, FileText, TrendingUp, ArrowUpRight } from 'lucide-react'
+import realDataService from '../services/realDataService'
 import api from '../services/api'
 import EmptyState from '../components/EmptyState'
-
-// Demo bills data
-const demoBills = [
-    { id: 1, bill_number: "INV-2026-0047", customer_name: "Rajesh Kumar", customer_phone: "9876543210", items: [{ product_name: "Basmati Rice", quantity: 2, unit_price: 85 }, { product_name: "Toor Dal", quantity: 1, unit_price: 140 }], subtotal: 310, tax: 15.5, total: 325.5, payment_mode: "UPI", created_at: new Date().toISOString(), status: "completed" },
-    { id: 2, bill_number: "INV-2026-0046", customer_name: "Priya Sharma", customer_phone: "9876543211", items: [{ product_name: "Sugar", quantity: 3, unit_price: 45 }, { product_name: "Salt", quantity: 2, unit_price: 20 }], subtotal: 175, tax: 8.75, total: 183.75, payment_mode: "Cash", created_at: new Date(Date.now() - 1800000).toISOString(), status: "completed" },
-    { id: 3, bill_number: "INV-2026-0045", customer_name: "Walk-in Customer", customer_phone: "", items: [{ product_name: "Sunflower Oil", quantity: 2, unit_price: 180 }], subtotal: 360, tax: 18, total: 378, payment_mode: "Cash", created_at: new Date(Date.now() - 3600000).toISOString(), status: "completed" },
-    { id: 4, bill_number: "INV-2026-0044", customer_name: "Amit Patel", customer_phone: "9876543212", items: [{ product_name: "Tea Powder", quantity: 1, unit_price: 280 }, { product_name: "Coffee", quantity: 1, unit_price: 450 }], subtotal: 730, tax: 36.5, total: 766.5, payment_mode: "Card", created_at: new Date(Date.now() - 7200000).toISOString(), status: "completed" },
-    { id: 5, bill_number: "INV-2026-0043", customer_name: "Sunita Verma", customer_phone: "9876543213", items: [{ product_name: "Wheat Flour", quantity: 5, unit_price: 55 }, { product_name: "Milk", quantity: 10, unit_price: 60 }], subtotal: 875, tax: 43.75, total: 918.75, payment_mode: "UPI", created_at: new Date(Date.now() - 14400000).toISOString(), status: "completed" },
-]
 
 export default function Bills({ addToast, setCurrentPage }) {
     const [bills, setBills] = useState([])
@@ -31,28 +23,30 @@ export default function Bills({ addToast, setCurrentPage }) {
 
     const loadBills = async () => {
         setLoading(true)
-        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
 
         try {
-            if (isDemoMode) {
-                // Demo mode - use demo data
-                setBills(demoBills)
-            } else {
-                // Real user - fetch from API
-                const data = await api.getBills()
-                const billList = data.bills || data || []
+            // Always fetch from real API - no more demo mode
+            const billList = await realDataService.getBills()
 
-                if (Array.isArray(billList) && billList.length > 0) {
-                    setBills(billList)
-                } else {
-                    // Real user with no bills - show empty state
-                    setBills([])
-                }
+            if (Array.isArray(billList) && billList.length > 0) {
+                // Normalize bill data
+                const normalizedBills = billList.map(b => ({
+                    ...b,
+                    bill_number: b.billNumber || b.bill_number || `INV-${b.id}`,
+                    customer_name: b.customerName || b.customer_name || 'Walk-in',
+                    total: b.total || b.total_amount || 0,
+                    payment_mode: b.paymentMethod || b.payment_mode || 'cash',
+                    created_at: b.createdAt || b.created_at,
+                    status: b.status || 'completed'
+                }))
+                setBills(normalizedBills)
+            } else {
+                setBills([])
             }
         } catch (error) {
             console.error('Failed to load bills:', error)
-            // On error, show empty for real users, demo for demo mode
-            setBills(isDemoMode ? demoBills : [])
+            addToast?.('Failed to load bills', 'error')
+            setBills([])
         } finally {
             setLoading(false)
         }
