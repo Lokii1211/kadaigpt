@@ -1,0 +1,30 @@
+{
+    "name": "kadaigpt-whatsapp-bot",
+    "version": "1.0.0",
+    "description": "KadaiGPT WhatsApp Bot using Baileys for stock alerts, sales updates, and AI queries",
+    "main": "bot.js",
+    "scripts": {
+        "start": "node bot.js",
+        "dev": "nodemon bot.js"
+    },
+    "dependencies": {
+        "@whiskeysockets/baileys": "^6.7.5",
+        "@hapi/boom": "^10.0.1",
+        "axios": "^1.6.2",
+        "pino": "^8.16.2",
+        "qrcode-terminal": "^0.12.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.2"
+    },
+    "keywords": [
+        "whatsapp",
+        "bot",
+        "baileys",
+        "kadaigpt",
+        "retail",
+        "inventory"
+    ],
+    "author": "KadaiGPT Team",
+    "license": "MIT"
+}

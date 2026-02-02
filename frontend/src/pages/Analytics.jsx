@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, ShoppingBag, Users, IndianRupee, ArrowUpRight, ArrowDownRight, Minus, Zap, BarChart3, PieChart, Loader2 } from 'lucide-react'
+import { TrendingUp, ShoppingBag, Users, IndianRupee, ArrowUpRight, ArrowDownRight, Minus, Zap, BarChart3, PieChart, Loader2, Sparkles, Calendar } from 'lucide-react'
 import { demoAnalytics, demoProducts } from '../services/demoData'
 import api from '../services/api'
+import DateRangeFilter from '../components/DateRangeFilter'
+import PricePredictions from '../components/PricePredictions'
 
 export default function Analytics({ addToast }) {
     const [period, setPeriod] = useState('week')
@@ -80,16 +82,26 @@ export default function Analytics({ addToast }) {
                     <h1 className="page-title">📊 Analytics</h1>
                     <p className="page-subtitle">AI-powered business insights</p>
                 </div>
-                <div className="period-selector">
-                    {['today', 'week', 'month'].map(p => (
-                        <button
-                            key={p}
-                            className={`period-btn ${period === p ? 'active' : ''}`}
-                            onClick={() => setPeriod(p)}
-                        >
-                            {p.charAt(0).toUpperCase() + p.slice(1)}
-                        </button>
-                    ))}
+                <div className="header-filters">
+                    <DateRangeFilter
+                        initialPreset="week"
+                        onChange={(range, preset) => {
+                            if (preset === 'today') setPeriod('today')
+                            else if (preset === 'last7' || preset === 'thisWeek') setPeriod('week')
+                            else setPeriod('month')
+                        }}
+                    />
+                    <div className="period-selector">
+                        {['today', 'week', 'month', 'year'].map(p => (
+                            <button
+                                key={p}
+                                className={`period-btn ${period === p ? 'active' : ''}`}
+                                onClick={() => setPeriod(p)}
+                            >
+                                {p.charAt(0).toUpperCase() + p.slice(1)}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -218,16 +230,41 @@ export default function Analytics({ addToast }) {
                 </div>
             </div>
 
+            {/* Price Predictions Section */}
+            <div className="predictions-section">
+                <PricePredictions
+                    products={isDemoMode ? demoProducts : topProducts.map(p => ({
+                        id: p.id,
+                        name: p.name,
+                        price: p.revenue / (p.sales || 1),
+                        category: p.category || 'General',
+                        unit: p.unit || 'unit'
+                    }))}
+                    language="en"
+                    onAlertSet={(product) => addToast?.(`Price alert set for ${product.name}`, 'success')}
+                />
+            </div>
+
             <style>{`
-        .period-selector { display: flex; gap: 8px; }
-        .period-btn {
-          padding: 8px 16px; background: var(--bg-tertiary);
-          border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
-          cursor: pointer; font-weight: 500; color: var(--text-secondary);
-          transition: all var(--transition-fast);
+        .header-filters { 
+            display: flex; 
+            align-items: center; 
+            gap: 16px;
+            flex-wrap: wrap;
         }
-        .period-btn:hover { border-color: var(--primary-400); }
-        .period-btn.active { background: var(--primary-400); color: white; border-color: var(--primary-400); }
+        .period-selector { display: flex; gap: 6px; background: var(--bg-tertiary); padding: 4px; border-radius: 10px; }
+        .period-btn {
+          padding: 8px 14px; background: transparent;
+          border: none; border-radius: 8px;
+          cursor: pointer; font-weight: 500; color: var(--text-secondary);
+          transition: all 0.2s; font-size: 0.8rem;
+        }
+        .period-btn:hover { background: var(--bg-secondary); }
+        .period-btn.active { background: var(--primary-500); color: white; }
+
+        .predictions-section {
+            margin-top: 24px;
+        }
 
         .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
         @media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }

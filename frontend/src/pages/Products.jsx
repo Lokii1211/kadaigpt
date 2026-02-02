@@ -113,12 +113,19 @@ export default function Products({ addToast }) {
             id: Date.now(),
             name: newProduct.name,
             sku: newProduct.sku || `SKU${Date.now()}`,
+            // Frontend display fields
             price: parseFloat(newProduct.price),
-            unit: newProduct.unit,
             stock: parseInt(newProduct.stock),
             minStock: parseInt(newProduct.minStock) || 10,
-            min_stock: parseInt(newProduct.minStock) || 10,
-            category: newProduct.category,
+            // Backend API fields
+            selling_price: parseFloat(newProduct.price),
+            current_stock: parseInt(newProduct.stock),
+            min_stock_alert: parseInt(newProduct.minStock) || 10,
+            unit: newProduct.unit || 'kg',
+            category: newProduct.category || 'Essentials',
+            category_id: null,
+            description: '',
+            cost_price: parseFloat(newProduct.price) * 0.8,
             dailySales: 2,
             trend: 'stable'
         }
