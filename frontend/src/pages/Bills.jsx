@@ -39,16 +39,19 @@ export default function Bills({ addToast, setCurrentPage }) {
             } else {
                 // Real user - fetch from API
                 const data = await api.getBills()
-                setBills(data.bills || [])
+                const billList = data.bills || data || []
+
+                if (Array.isArray(billList) && billList.length > 0) {
+                    setBills(billList)
+                } else {
+                    // No bills yet - show demo data to illustrate features
+                    setBills(demoBills)
+                }
             }
         } catch (error) {
             console.error('Failed to load bills:', error)
-            // For real users, show empty state; for demo, show demo data
-            if (isDemoMode) {
-                setBills(demoBills)
-            } else {
-                setBills([])
-            }
+            // Fallback to demo data on error
+            setBills(demoBills)
         } finally {
             setLoading(false)
         }
