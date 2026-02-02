@@ -107,24 +107,54 @@ export default function Products({ addToast }) {
             return
         }
 
+        const isDemoMode = localStorage.getItem('kadai_demo_mode') === 'true'
+
+        const productData = {
+            id: Date.now(),
+            name: newProduct.name,
+            sku: newProduct.sku || `SKU${Date.now()}`,
+            price: parseFloat(newProduct.price),
+            unit: newProduct.unit,
+            stock: parseInt(newProduct.stock),
+            minStock: parseInt(newProduct.minStock) || 10,
+            min_stock: parseInt(newProduct.minStock) || 10,
+            category: newProduct.category,
+            dailySales: 2,
+            trend: 'stable'
+        }
+
         try {
-            const productData = {
-                name: newProduct.name,
-                sku: newProduct.sku || `SKU${Date.now()}`,
-                price: parseFloat(newProduct.price),
-                unit: newProduct.unit,
-                stock: parseInt(newProduct.stock),
-                min_stock: parseInt(newProduct.minStock) || 10,
-                category: newProduct.category
+            if (isDemoMode) {
+                // Demo mode - add to local state only
+                setProducts(prevProducts => [productData, ...prevProducts])
+                addToast('✅ Product added successfully!', 'success')
+            } else {
+                // Real mode - call API
+                const result = await api.createProduct(productData)
+                const mappedResult = {
+                    ...result,
+                    price: result.selling_price || result.price || productData.price,
+                    stock: result.current_stock || result.stock || productData.stock,
+                    minStock: result.min_stock_alert || result.minStock || productData.minStock,
+                    dailySales: 2,
+                    trend: 'stable'
+                }
+                setProducts(prevProducts => [mappedResult, ...prevProducts])
+                addToast('✅ Product added successfully!', 'success')
             }
 
-            const result = await api.createProduct(productData)
-            setProducts([result, ...products])
             setShowAddModal(false)
             setNewProduct({ name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'Essentials' })
-            addToast('Product added successfully!', 'success')
         } catch (error) {
-            addToast(error.message || 'Failed to add product', 'error')
+            // If API fails, still add locally in demo mode
+            if (isDemoMode) {
+                setProducts(prevProducts => [productData, ...prevProducts])
+                setShowAddModal(false)
+                setNewProduct({ name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'Essentials' })
+                addToast('✅ Product added (demo mode)', 'success')
+            } else {
+                addToast(error.message || 'Failed to add product', 'error')
+            }
         }
     }
 

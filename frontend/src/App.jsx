@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ShoppingCart, Home, FileText, Camera, Package, Menu, X, BarChart3, Settings as SettingsIcon, Plus, Command, Search } from 'lucide-react'
 import Sidebar from './components/Sidebar'
-import VoiceAssistant from './components/VoiceAssistant'
 import MobileNav from './components/MobileNav'
 import OnboardingWizard from './components/OnboardingWizard'
 import CommandPalette from './components/CommandPalette'
-import GlobalFAB from './components/GlobalFAB'
-import AIAgentControlCenter from './components/AIAgentControlCenter'
+import UnifiedAIAssistant from './components/UnifiedAIAssistant'
 import Dashboard from './pages/Dashboard'
 import Bills from './pages/Bills'
 import OCRCapture from './pages/OCRCapture'
@@ -378,25 +376,11 @@ function App() {
                 <Plus size={28} />
             </button>
 
-            {/* Voice Assistant */}
-            <VoiceAssistant
-                onCommand={handleVoiceCommand}
-                onNavigate={setCurrentPage}
+            {/* Unified AI Assistant - All-in-One Command Center */}
+            <UnifiedAIAssistant
+                addToast={addToast}
+                setCurrentPage={setCurrentPage}
                 products={products}
-                addToast={addToast}
-            />
-
-            {/* Global FAB for Quick Actions */}
-            <GlobalFAB
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                addToast={addToast}
-            />
-
-            {/* AI Agent Control Center - 6 Specialized Agents */}
-            <AIAgentControlCenter
-                addToast={addToast}
-                setCurrentPage={setCurrentPage}
             />
 
             {/* Toast Notifications */}
