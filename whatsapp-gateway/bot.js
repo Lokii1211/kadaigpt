@@ -1,55 +1,46 @@
 /**
- * KadaiGPT WhatsApp AI Agent v2.1
- * Optimized for Railway 24/7 deployment
+ * KadaiGPT WhatsApp Bot - Railway 24/7 Version
+ * Reads credentials from CREDS_BASE64 env variable
  */
 
 const {
     default: makeWASocket,
     useMultiFileAuthState,
     DisconnectReason,
-    fetchLatestBaileysVersion,
-    makeCacheableSignalKeyStore
+    fetchLatestBaileysVersion
 } = require('@whiskeysockets/baileys');
-const qrcode = require('qrcode-terminal');
 const pino = require('pino');
 const fs = require('fs');
 
-// Configuration
-const PHONE_NUMBER = process.env.PHONE_NUMBER || '919363324580';
-const BACKEND_URL = process.env.BACKEND_URL || 'https://kadaigpt.up.railway.app';
 const AUTH_DIR = './auth_info';
 
 console.log('');
-console.log('╔══════════════════════════════════════════════════╗');
-console.log('║     🚀 KadaiGPT WhatsApp AI Agent v2.1           ║');
-console.log('║     24/7 Railway Deployment                      ║');
-console.log('╚══════════════════════════════════════════════════╝');
-console.log('');
-console.log(`Phone: ${PHONE_NUMBER}`);
-console.log(`Backend: ${BACKEND_URL}`);
-console.log(`Auth Dir: ${AUTH_DIR}`);
+console.log('╔═══════════════════════════════════════╗');
+console.log('║   KadaiGPT WhatsApp Bot v2.2          ║');
+console.log('║   Railway 24/7 Deployment             ║');
+console.log('╚═══════════════════════════════════════╝');
 console.log('');
 
-// NLP Keywords
-const NLP_INTENTS = {
-    greeting: ['hi', 'hello', 'hey', 'vanakkam', 'namaste', 'start'],
-    sales: ['sales', 'sell', 'sold', 'revenue', 'income'],
-    stock: ['stock', 'inventory', 'available', 'items'],
-    lowstock: ['low stock', 'lowstock', 'reorder', 'running out', 'less'],
-    expense: ['expense', 'cost', 'spending', 'kharcha'],
-    profit: ['profit', 'margin', 'earning', 'laabh'],
-    bill: ['bill', 'invoice', 'receipt'],
-    report: ['report', 'daily', 'summary'],
-    predict: ['predict', 'forecast', 'tomorrow'],
-    help: ['help', 'commands', 'menu', '?'],
-    thanks: ['thanks', 'thank', 'nandri']
-};
+// Restore credentials from environment variable
+function restoreCredentials() {
+    const credsBase64 = process.env.CREDS_BASE64;
+    if (credsBase64) {
+        console.log('📦 Restoring credentials from environment...');
+        if (!fs.existsSync(AUTH_DIR)) {
+            fs.mkdirSync(AUTH_DIR, { recursive: true });
+        }
+        const credsJson = Buffer.from(credsBase64, 'base64').toString('utf8');
+        fs.writeFileSync(`${AUTH_DIR}/creds.json`, credsJson);
+        console.log('✅ Credentials restored!');
+        return true;
+    }
+    return false;
+}
 
-let sock = null;
-let isConnected = false;
+async function start() {
+    // Restore creds if available
+    restoreCredentials();
 
-async function connectWhatsApp() {
-    // Ensure auth directory
     if (!fs.existsSync(AUTH_DIR)) {
         fs.mkdirSync(AUTH_DIR, { recursive: true });
     }
@@ -57,149 +48,96 @@ async function connectWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
     const { version } = await fetchLatestBaileysVersion();
 
-    console.log(`WhatsApp Version: ${version.join('.')}`);
+    console.log('WhatsApp Version:', version.join('.'));
     console.log('Connecting...');
 
-    sock = makeWASocket({
+    const sock = makeWASocket({
         version,
-        auth: {
-            creds: state.creds,
-            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
-        },
+        auth: state,
         printQRInTerminal: true,
         logger: pino({ level: 'silent' }),
         browser: ['KadaiGPT', 'Chrome', '120.0.0'],
-        connectTimeoutMs: 120000,
-        keepAliveIntervalMs: 30000,
-        retryRequestDelayMs: 2000
+        connectTimeoutMs: 60000
     });
 
-    // Connection events
-    sock.ev.on('connection.update', async (update) => {
+    sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        if (qr && !sock.authState.creds.registered) {
+        if (qr) {
             console.log('');
-            console.log('Requesting pairing code...');
-            try {
-                const code = await sock.requestPairingCode(PHONE_NUMBER);
-                console.log('');
-                console.log('╔═══════════════════════════════════════╗');
-                console.log('║     🔐 PAIRING CODE                   ║');
-                console.log('╠═══════════════════════════════════════╣');
-                console.log(`║         ${code}                       ║`);
-                console.log('╚═══════════════════════════════════════╝');
-                console.log('');
-                console.log('WhatsApp → Settings → Linked Devices');
-                console.log('→ Link a Device → Link with phone number');
-                console.log(`→ Enter: ${code}`);
-                console.log('');
-            } catch (e) {
-                console.log('Use QR code above');
-            }
+            console.log('QR Code displayed - scan with WhatsApp');
         }
 
         if (connection === 'close') {
-            isConnected = false;
             const code = lastDisconnect?.error?.output?.statusCode;
-            console.log('Disconnected. Code:', code);
+            console.log('Disconnected:', code);
 
             if (code === DisconnectReason.loggedOut) {
-                console.log('Logged out. Clearing auth...');
-                try {
-                    fs.rmSync(AUTH_DIR, { recursive: true, force: true });
-                } catch (e) { }
+                console.log('Logged out - clearing auth');
+                fs.rmSync(AUTH_DIR, { recursive: true, force: true });
             }
 
-            // Reconnect after delay
-            console.log('Reconnecting in 5 seconds...');
-            setTimeout(connectWhatsApp, 5000);
+            console.log('Reconnecting in 5s...');
+            setTimeout(start, 5000);
         }
 
         if (connection === 'open') {
-            isConnected = true;
             console.log('');
-            console.log('╔═══════════════════════════════════════╗');
-            console.log('║     ✅ CONNECTED!                     ║');
-            console.log('║     🤖 KadaiGPT AI is LIVE            ║');
-            console.log('╚═══════════════════════════════════════╝');
+            console.log('═══════════════════════════════════════');
+            console.log('   ✅ CONNECTED TO WHATSAPP!           ');
+            console.log('   🤖 KadaiGPT Bot is LIVE 24/7        ');
+            console.log('═══════════════════════════════════════');
             console.log('');
-            console.log('Bot ready. Send "hi" to test.');
         }
     });
 
     sock.ev.on('creds.update', saveCreds);
 
     // Message handler
-    sock.ev.on('messages.upsert', async ({ messages, type }) => {
-        if (type !== 'notify') return;
+    sock.ev.on('messages.upsert', async ({ messages }) => {
+        const msg = messages[0];
+        if (!msg.message || msg.key.fromMe) return;
+        if (msg.key.remoteJid.endsWith('@g.us')) return;
 
-        for (const msg of messages) {
-            try {
-                if (!msg.message || msg.key.fromMe) continue;
-                if (msg.key.remoteJid.endsWith('@g.us')) continue;
+        const text = msg.message.conversation ||
+            msg.message.extendedTextMessage?.text || '';
+        if (!text) return;
 
-                const text = msg.message.conversation ||
-                    msg.message.extendedTextMessage?.text || '';
+        const phone = msg.key.remoteJid.replace('@s.whatsapp.net', '');
+        console.log(`📩 [${phone}]: ${text}`);
 
-                if (!text) continue;
-
-                const phone = msg.key.remoteJid.replace('@s.whatsapp.net', '');
-                console.log(`📩 ${phone}: ${text}`);
-
-                const response = getResponse(text.toLowerCase().trim());
-                await sock.sendMessage(msg.key.remoteJid, { text: response });
-                console.log(`✅ Replied`);
-
-            } catch (e) {
-                console.error('Error:', e.message);
-            }
-        }
+        const reply = getReply(text.toLowerCase().trim());
+        await sock.sendMessage(msg.key.remoteJid, { text: reply });
+        console.log('✅ Reply sent');
     });
 }
 
-function getResponse(text) {
-    const intent = detectIntent(text);
-
-    const responses = {
-        greeting: `🙏 *Welcome to KadaiGPT!*
-India's First AI-Powered Retail Intelligence.
+function getReply(text) {
+    // Greetings
+    if (['hi', 'hello', 'hey', 'start', 'vanakkam', 'namaste'].some(g => text.includes(g))) {
+        return `🙏 *Welcome to KadaiGPT!*
+India's First AI-Powered Retail Intelligence
 
 *Commands:*
-📊 sales - Sales report
-📦 stock - Stock levels
+📊 sales - Today's sales
+📦 stock - Inventory status
 💸 expense - Expenses
 📈 profit - Profit summary
 🧾 bill - Recent bills
 📋 report - Daily report
 💡 help - All commands
 
-_Just type naturally!_ 🤖`,
+_Just type what you need!_ 🤖`;
+    }
 
-        help: `🤖 *KadaiGPT Commands*
-
-📊 *Reports*
-• sales - Sales report
-• expense - Expenses
-• profit - Margins
-• report - Daily summary
-
-📦 *Inventory*
-• stock - Stock levels
-• lowstock - Alerts
-
-🧾 *Billing*
-• bill - Recent bills
-
-🔮 *AI*
-• predict - Forecast`,
-
-        sales: `📊 *Today's Sales*
+    // Sales
+    if (text.includes('sales') || text.includes('revenue')) {
+        return `📊 *Today's Sales*
 ━━━━━━━━━━━━━━━━━━
 💰 Total: ₹12,450
 🧾 Bills: 28
 👥 Customers: 25
-📈 Avg: ₹444
+📈 Avg Bill: ₹444
 
 *Top Products:*
 1. Rice 5kg - ₹3,750
@@ -207,94 +145,169 @@ _Just type naturally!_ 🤖`,
 3. Sugar 1kg - ₹1,100
 
 📈 +12% vs yesterday
-_via KadaiGPT_ 🤖`,
+_via KadaiGPT AI_ 🤖`;
+    }
 
-        stock: `📦 *Stock Summary*
+    // Stock
+    if (text.includes('stock') || text.includes('inventory')) {
+        return `📦 *Stock Summary*
 ━━━━━━━━━━━━━━━━━━
 ✅ In Stock: 156
 ⚠️ Low Stock: 8
-❌ Out: 3
+❌ Out of Stock: 3
+
+*Categories:*
+🍚 Groceries: 89
+🥤 Beverages: 34
+🧴 Personal: 33
 
 Type *lowstock* for alerts
-_via KadaiGPT_ 🤖`,
+_via KadaiGPT AI_ 🤖`;
+    }
 
-        lowstock: `⚠️ *Low Stock Alerts*
+    // Low stock
+    if (text.includes('low') || text.includes('alert')) {
+        return `⚠️ *Low Stock Alerts*
 ━━━━━━━━━━━━━━━━━━
 1. Sugar 1kg - 5 left
 2. Milk 500ml - 8 left
 3. Bread - 3 left
 4. Eggs - 12 left
+5. Butter - 4 left
 
 💡 Order today!
-_via KadaiGPT_ 🤖`,
+_via KadaiGPT AI_ 🤖`;
+    }
 
-        expense: `💸 *Today's Expenses*
+    // Expense
+    if (text.includes('expense') || text.includes('cost')) {
+        return `💸 *Today's Expenses*
 ━━━━━━━━━━━━━━━━━━
 Total: ₹3,200
 
 • Stock: ₹2,500
-• Electric: ₹400
+• Electricity: ₹400
 • Transport: ₹200
 • Misc: ₹100
 
-_via KadaiGPT_ 🤖`,
+📊 Month: ₹45,600
+_via KadaiGPT AI_ 🤖`;
+    }
 
-        profit: `📈 *Profit Summary*
+    // Profit
+    if (text.includes('profit') || text.includes('margin')) {
+        return `📈 *Profit Summary*
 ━━━━━━━━━━━━━━━━━━
+*Today:*
 💰 Revenue: ₹12,450
 💸 Expenses: ₹3,200
 ✨ Profit: ₹9,250 (74%)
 
-_via KadaiGPT_ 🤖`,
+*This Month:*
+💰 Revenue: ₹3,45,000
+✨ Profit: ₹1,35,000 (39%)
 
-        bill: `🧾 *Recent Bills*
+_via KadaiGPT AI_ 🤖`;
+    }
+
+    // Bill
+    if (text.includes('bill') || text.includes('invoice')) {
+        return `🧾 *Recent Bills*
 ━━━━━━━━━━━━━━━━━━
-1. #1234 - ₹850
-2. #1233 - ₹1,200
-3. #1232 - ₹450
-4. #1231 - ₹2,100
+1. #1234 - ₹850 - Ramesh
+2. #1233 - ₹1,200 - Walk-in
+3. #1232 - ₹450 - Priya
+4. #1231 - ₹2,100 - Kumar
+5. #1230 - ₹680 - Lakshmi
 
-_via KadaiGPT_ 🤖`,
+📊 Today: ₹5,280
+_via KadaiGPT AI_ 🤖`;
+    }
 
-        report: `📋 *Daily Report*
+    // Report
+    if (text.includes('report') || text.includes('summary') || text.includes('daily')) {
+        const today = new Date().toLocaleDateString('en-IN');
+        return `📋 *Daily Report*
 ━━━━━━━━━━━━━━━━━━
-📅 ${new Date().toLocaleDateString('en-IN')}
+📅 ${today}
 
-💰 Sales: ₹12,450
-💸 Expenses: ₹3,200
-📈 Profit: ₹9,250
-📦 Low Stock: 8
-👥 Customers: 25
+💰 *Sales:* ₹12,450
+💸 *Expenses:* ₹3,200
+📈 *Profit:* ₹9,250
 
-_via KadaiGPT_ 🤖`,
+📦 *Inventory:*
+• Low Stock: 8 items
+• Out of Stock: 3 items
 
-        predict: `🔮 *AI Forecast*
+👥 *Customers:* 25
+🧾 *Bills:* 28
+
+_via KadaiGPT AI_ 🤖`;
+    }
+
+    // Predict
+    if (text.includes('predict') || text.includes('forecast')) {
+        return `🔮 *AI Predictions*
 ━━━━━━━━━━━━━━━━━━
 *Tomorrow:*
 💰 Expected: ₹14,200
-📈 +14% growth
+📈 +14% vs today
 
-💡 Stock up Rice!
-_via KadaiGPT_ 🤖`,
+*This Week:*
+Mon-Fri: ₹70,000
+Weekend: ₹40,000
 
-        thanks: `🙏 Happy to help!
-_KadaiGPT AI_ 🤖`,
-
-        unknown: `Try: sales, stock, profit, help
-_KadaiGPT_ 🤖`
-    };
-
-    return responses[intent] || responses.unknown;
-}
-
-function detectIntent(text) {
-    for (const [intent, keywords] of Object.entries(NLP_INTENTS)) {
-        if (keywords.some(k => text.includes(k))) {
-            return intent;
-        }
+💡 *Tip:* Stock up on Rice!
+_via KadaiGPT AI_ 🤖`;
     }
-    return 'unknown';
+
+    // Help
+    if (text.includes('help') || text.includes('command') || text === '?') {
+        return `🤖 *KadaiGPT Commands*
+
+📊 *Reports*
+• sales - Sales report
+• expense - Expenses
+• profit - Profit margin
+• report - Daily summary
+
+📦 *Inventory*
+• stock - Stock levels
+• lowstock - Low stock alerts
+
+🧾 *Billing*
+• bill - Recent bills
+
+🔮 *AI Features*
+• predict - Sales forecast
+
+_Type naturally in Tamil/Hindi/English!_`;
+    }
+
+    // Thanks
+    if (text.includes('thank') || text.includes('nandri')) {
+        return `🙏 Happy to help!
+
+Need anything else? Just ask!
+
+_KadaiGPT - Your AI Partner_ 🤖`;
+    }
+
+    // Default
+    return `🤔 I can help with:
+
+• *sales* - Today's sales
+• *stock* - Stock status
+• *profit* - Profit summary
+• *help* - All commands
+
+Just type what you need! 🤖`;
 }
+
+// Keep alive log
+setInterval(() => {
+    console.log(`[${new Date().toLocaleTimeString()}] Bot alive ✓`);
+}, 300000);
 
 // Error handlers
 process.on('uncaughtException', (e) => {
@@ -302,15 +315,8 @@ process.on('uncaughtException', (e) => {
 });
 
 process.on('unhandledRejection', (e) => {
-    console.error('Error:', e.message);
+    console.error('Rejection:', e.message);
 });
 
-// Keep alive
-setInterval(() => {
-    if (isConnected) {
-        console.log(`[${new Date().toLocaleTimeString()}] Bot alive ✓`);
-    }
-}, 300000); // Every 5 min
-
 // Start
-connectWhatsApp().catch(console.error);
+start().catch(console.error);
