@@ -85,7 +85,6 @@ export default function GSTReports({ addToast }) {
     const handleResetGST = () => {
         if (window.confirm('Are you sure you want to reset GST data? This will clear all current period calculations.')) {
             setGstData({
-                ...demoGSTData,
                 summary: {
                     totalSales: 0,
                     cgst: 0,
@@ -93,7 +92,9 @@ export default function GSTReports({ addToast }) {
                     igst: 0,
                     totalTax: 0,
                     netPayable: 0
-                }
+                },
+                monthly: [],
+                invoices: []
             })
             addToast('GST data reset successfully!', 'success')
         }

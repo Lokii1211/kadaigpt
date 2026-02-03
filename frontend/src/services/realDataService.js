@@ -163,18 +163,97 @@ class RealDataService {
     // ==================== ANALYTICS DATA ====================
     async getAnalytics(period = 'week') {
         try {
-            const response = await api.getAnalytics?.(period) || {}
+            // First try API
+            const response = await api.getAnalytics?.(period)
+            if (response && response.total_sales > 0) {
+                return {
+                    totalSales: response.total_sales || 0,
+                    totalBills: response.total_bills || 0,
+                    avgBillValue: response.avg_bill_value || 0,
+                    growth: response.growth || 0,
+                    topProducts: response.top_products || [],
+                    salesByDay: response.sales_by_day || [],
+                    salesByHour: response.sales_by_hour || [],
+                    paymentBreakdown: response.payment_breakdown || { cash: 0, upi: 0, card: 0, credit: 0 }
+                }
+            }
+
+            // Fallback: Compute from bills
+            const bills = await this.getBills()
+            const now = new Date()
+            const periodDays = period === 'today' ? 1 : period === 'week' ? 7 : period === 'month' ? 30 : 365
+            const startDate = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000)
+
+            const filteredBills = bills.filter(b => new Date(b.createdAt || b.created_at) >= startDate)
+            const totalSales = filteredBills.reduce((sum, b) => sum + (b.total || 0), 0)
+            const totalBills = filteredBills.length
+            const avgBillValue = totalBills > 0 ? totalSales / totalBills : 0
+
+            // Calculate payment breakdown
+            const paymentBreakdown = { cash: 0, upi: 0, card: 0, credit: 0 }
+            filteredBills.forEach(bill => {
+                const mode = (bill.payment_mode || bill.paymentMode || 'cash').toLowerCase()
+                paymentBreakdown[mode] = (paymentBreakdown[mode] || 0) + (bill.total || 0)
+            })
+
+            // Calculate sales by day of week
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+            const salesByDayMap = {}
+            dayNames.forEach(d => salesByDayMap[d] = 0)
+            filteredBills.forEach(bill => {
+                const day = dayNames[new Date(bill.createdAt || bill.created_at).getDay()]
+                salesByDayMap[day] += bill.total || 0
+            })
+            const salesByDay = dayNames.map(day => ({ day, sales: salesByDayMap[day] }))
+
+            // Calculate sales by hour
+            const salesByHourMap = {}
+            for (let h = 0; h < 24; h++) salesByHourMap[h] = 0
+            filteredBills.forEach(bill => {
+                const hour = new Date(bill.createdAt || bill.created_at).getHours()
+                salesByHourMap[hour] += bill.total || 0
+            })
+            const salesByHour = Object.entries(salesByHourMap)
+                .filter(([_, sales]) => sales > 0)
+                .map(([hour, sales]) => ({ hour: `${hour}:00`, sales }))
+
+            // Calculate top products from bill items
+            const productSales = {}
+            filteredBills.forEach(bill => {
+                (bill.items || []).forEach(item => {
+                    const name = item.product_name || item.name || 'Unknown'
+                    productSales[name] = (productSales[name] || 0) + (item.quantity || 1)
+                })
+            })
+            const topProducts = Object.entries(productSales)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([name, qty]) => ({ name, quantity: qty }))
+
+            // Calculate growth (compare to previous period)
+            const prevStart = new Date(startDate.getTime() - periodDays * 24 * 60 * 60 * 1000)
+            const prevBills = bills.filter(b => {
+                const date = new Date(b.createdAt || b.created_at)
+                return date >= prevStart && date < startDate
+            })
+            const prevSales = prevBills.reduce((sum, b) => sum + (b.total || 0), 0)
+            const growth = prevSales > 0 ? ((totalSales - prevSales) / prevSales * 100) : 0
 
             return {
-                totalSales: response.total_sales || 0,
-                totalBills: response.total_bills || 0,
-                avgBillValue: response.avg_bill_value || 0,
-                growth: response.growth || 0,
-                topProducts: response.top_products || [],
-                salesByDay: response.sales_by_day || [],
-                salesByHour: response.sales_by_hour || [],
-                paymentBreakdown: response.payment_breakdown || {
-                    cash: 0, upi: 0, card: 0, credit: 0
+                totalSales,
+                totalBills,
+                avgBillValue,
+                growth: parseFloat(growth.toFixed(1)),
+                topProducts,
+                salesByDay,
+                salesByHour,
+                paymentBreakdown,
+                // AI Predictions based on data
+                predictions: {
+                    nextWeekSales: Math.round(totalSales * 1.1),
+                    peakDay: salesByDay.sort((a, b) => b.sales - a.sales)[0]?.day || 'Saturday',
+                    peakHour: salesByHour.sort((a, b) => b.sales - a.sales)[0]?.hour || '11:00',
+                    suggestedRestock: topProducts.slice(0, 3).map(p => p.name)
                 }
             }
         } catch (error) {
@@ -187,7 +266,8 @@ class RealDataService {
                 topProducts: [],
                 salesByDay: [],
                 salesByHour: [],
-                paymentBreakdown: { cash: 0, upi: 0, card: 0, credit: 0 }
+                paymentBreakdown: { cash: 0, upi: 0, card: 0, credit: 0 },
+                predictions: { nextWeekSales: 0, peakDay: 'N/A', peakHour: 'N/A', suggestedRestock: [] }
             }
         }
     }

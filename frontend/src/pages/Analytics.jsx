@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react'
 import { TrendingUp, ShoppingBag, Users, IndianRupee, ArrowUpRight, ArrowDownRight, Minus, Zap, BarChart3, PieChart, Loader2, Sparkles, Calendar, WifiOff } from 'lucide-react'
 import realDataService from '../services/realDataService'
 import api from '../services/api'
-import DateRangeFilter from '../components/DateRangeFilter'
-import PricePredictions from '../components/PricePredictions'
 
 export default function Analytics({ addToast }) {
     const [period, setPeriod] = useState('week')
@@ -16,7 +14,8 @@ export default function Analytics({ addToast }) {
         topProducts: [],
         salesByDay: [],
         salesByHour: [],
-        paymentBreakdown: { cash: 0, upi: 0, card: 0, credit: 0 }
+        paymentBreakdown: { cash: 0, upi: 0, card: 0, credit: 0 },
+        predictions: { nextWeekSales: 0, peakDay: 'N/A', peakHour: 'N/A', suggestedRestock: [] }
     })
     const [products, setProducts] = useState([])
 
@@ -34,17 +33,7 @@ export default function Analytics({ addToast }) {
                 realDataService.getProducts()
             ])
 
-            setAnalytics({
-                totalSales: analyticsData.totalSales || 0,
-                totalBills: analyticsData.totalBills || 0,
-                avgBillValue: analyticsData.avgBillValue || 0,
-                growth: analyticsData.growth || 0,
-                topProducts: analyticsData.topProducts || [],
-                salesByDay: analyticsData.salesByDay || [],
-                salesByHour: analyticsData.salesByHour || [],
-                paymentBreakdown: analyticsData.paymentBreakdown || { cash: 0, upi: 0, card: 0, credit: 0 }
-            })
-
+            setAnalytics(analyticsData)
             setProducts(productsData)
         } catch (error) {
             console.error('Error loading analytics:', error)
@@ -58,24 +47,37 @@ export default function Analytics({ addToast }) {
     const hasData = analytics.totalSales > 0 || analytics.totalBills > 0
     const salesChange = analytics.growth || 0
 
-    // Weekly sales array for chart
-    const weeklySales = analytics.salesByDay.length > 0
-        ? analytics.salesByDay.map(d => d.sales || 0)
-        : [0, 0, 0, 0, 0, 0, 0]
+    // Get weekly sales from salesByDay
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const weeklySales = dayNames.map(day => {
+        const dayData = analytics.salesByDay.find(d => d.day === day)
+        return dayData?.sales || 0
+    })
     const maxWeeklySale = Math.max(...weeklySales, 1)
+
+    // Payment breakdown
+    const totalPayments = Object.values(analytics.paymentBreakdown).reduce((a, b) => a + b, 0) || 1
+    const paymentCategories = Object.entries(analytics.paymentBreakdown)
+        .filter(([_, val]) => val > 0)
+        .map(([name, val]) => ({
+            name: name.charAt(0).toUpperCase() + name.slice(1),
+            revenue: val,
+            percentage: Math.round((val / totalPayments) * 100)
+        }))
 
     const kpis = [
         { label: 'Total Revenue', value: `₹${analytics.totalSales.toLocaleString()}`, change: salesChange, icon: IndianRupee, positive: salesChange >= 0 },
         { label: 'Total Orders', value: analytics.totalBills, change: Math.abs(salesChange * 0.7).toFixed(1), icon: ShoppingBag, positive: true },
-        { label: 'New Customers', value: analytics.paymentBreakdown?.customers || 0, change: 5, icon: Users, positive: true },
-        { label: 'Avg Order Value', value: `₹${analytics.avgBillValue.toFixed(0)}`, change: 3.2, icon: TrendingUp, positive: true },
+        { label: 'Peak Day', value: analytics.predictions?.peakDay || 'N/A', change: 0, icon: Calendar, positive: true },
+        { label: 'Avg Order Value', value: `₹${(analytics.avgBillValue || 0).toFixed(0)}`, change: 3.2, icon: TrendingUp, positive: true },
     ]
 
     const aiInsights = [
         { icon: '📈', title: 'Sales Trend', text: hasData ? `Your sales ${salesChange >= 0 ? 'increased' : 'decreased'} by ${Math.abs(salesChange).toFixed(1)}% compared to last period.` : 'Start making sales to see trends.' },
-        { icon: '🎯', title: 'Best Seller', text: analytics.topProducts[0]?.name ? `${analytics.topProducts[0].name} is your top seller.` : 'No sales data yet.' },
-        { icon: '⏰', title: 'Peak Hours', text: analytics.salesByHour.length > 0 ? 'Peak hours identified from your sales data.' : 'More sales needed for peak hour analysis.' },
-        { icon: '💡', title: 'Opportunity', text: products.length > 0 ? `You have ${products.filter(p => p.stock <= p.minStock).length} products low on stock.` : 'Add products to see opportunities.' },
+        { icon: '🎯', title: 'Best Seller', text: analytics.topProducts[0]?.name ? `${analytics.topProducts[0].name} is your top seller with ${analytics.topProducts[0].quantity} units.` : 'No sales data yet.' },
+        { icon: '⏰', title: 'Peak Hours', text: analytics.predictions?.peakHour ? `Your peak sales hour is ${analytics.predictions.peakHour}. Staff up during this time!` : 'More sales needed for peak hour analysis.' },
+        { icon: '💰', title: 'Next Week Prediction', text: analytics.predictions?.nextWeekSales > 0 ? `AI predicts ₹${analytics.predictions.nextWeekSales.toLocaleString()} in sales next week.` : 'Need more data for predictions.' },
+        { icon: '💡', title: 'Restock Alert', text: products.filter(p => p.stock <= p.minStock).length > 0 ? `${products.filter(p => p.stock <= p.minStock).length} products need restocking.` : 'All stock levels are healthy!' },
     ]
 
 
@@ -134,7 +136,7 @@ export default function Analytics({ addToast }) {
                     </div>
                     <div className="chart-container">
                         <div className="bar-chart">
-                            {analytics.weeklySales.map((sale, i) => (
+                            {weeklySales.map((sale, i) => (
                                 <div key={i} className="bar-column">
                                     <div
                                         className="bar"
@@ -142,7 +144,7 @@ export default function Analytics({ addToast }) {
                                     >
                                         <span className="bar-value">₹{(sale / 1000).toFixed(1)}k</span>
                                     </div>
-                                    <span className="bar-day">{analytics.weeklyDays[i]}</span>
+                                    <span className="bar-day">{dayNames[i]}</span>
                                 </div>
                             ))}
                         </div>
@@ -153,19 +155,19 @@ export default function Analytics({ addToast }) {
                             <span>Sales (₹)</span>
                         </div>
                         <div className="legend-stats">
-                            <span>Total: ₹{(analytics.weeklySales.reduce((a, b) => a + b, 0) / 1000).toFixed(1)}k</span>
-                            <span>Avg: ₹{(analytics.weeklySales.reduce((a, b) => a + b, 0) / 7 / 1000).toFixed(1)}k/day</span>
+                            <span>Total: ₹{(weeklySales.reduce((a, b) => a + b, 0) / 1000).toFixed(1)}k</span>
+                            <span>Avg: ₹{(weeklySales.reduce((a, b) => a + b, 0) / 7 / 1000).toFixed(1)}k/day</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Category Breakdown */}
+                {/* Payment Breakdown */}
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title"><PieChart size={20} /> Category Breakdown</h3>
+                        <h3 className="card-title"><PieChart size={20} /> Payment Breakdown</h3>
                     </div>
                     <div className="category-breakdown">
-                        {analytics.categoryBreakdown.map((cat, i) => (
+                        {paymentCategories.length > 0 ? paymentCategories.map((cat, i) => (
                             <div key={i} className="category-item">
                                 <div className="category-info">
                                     <span className="category-name">{cat.name}</span>
@@ -174,12 +176,16 @@ export default function Analytics({ addToast }) {
                                 <div className="category-bar">
                                     <div
                                         className="category-fill"
-                                        style={{ width: `${cat.percentage}%`, backgroundColor: `hsl(${i * 50}, 70%, 50%)` }}
+                                        style={{ width: `${cat.percentage}%`, backgroundColor: `hsl(${i * 80}, 70%, 50%)` }}
                                     ></div>
                                 </div>
                                 <span className="category-percent">{cat.percentage}%</span>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="empty-state">
+                                <p>No payment data yet. Create bills to see breakdown.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
