@@ -1,41 +1,141 @@
 /**
- * KadaiGPT WhatsApp Bot v3.0
- * For Railway with Persistent Volume
- * Mount /data volume in Railway settings
+ * KadaiGPT WhatsApp Bot v3.1
+ * Stores session in Postgres (already free on Railway!)
  */
 
 const {
     default: makeWASocket,
-    useMultiFileAuthState,
     DisconnectReason,
-    fetchLatestBaileysVersion
+    fetchLatestBaileysVersion,
+    BufferJSON,
+    initAuthCreds,
+    proto
 } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const fs = require('fs');
-const path = require('path');
+const { Pool } = require('pg');
 
-// Use /data for Railway persistent volume, fallback to local
-const AUTH_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH
-    ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'auth')
-    : './auth_info';
+// Use Railway Postgres or local file
+const DATABASE_URL = process.env.DATABASE_URL;
+const AUTH_DIR = './auth_info';
+
+let pool = null;
+if (DATABASE_URL) {
+    pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
+    console.log('Using Postgres for session storage');
+}
 
 console.log('');
 console.log('╔═══════════════════════════════════════╗');
-console.log('║   KadaiGPT WhatsApp Bot v3.0          ║');
-console.log('║   Railway 24/7 with Volume            ║');
+console.log('║   KadaiGPT WhatsApp Bot v3.1          ║');
+console.log('║   Postgres Session Storage            ║');
 console.log('╚═══════════════════════════════════════╝');
 console.log('');
-console.log('Auth directory:', AUTH_DIR);
-console.log('');
 
-async function start() {
-    // Ensure directory exists
-    if (!fs.existsSync(AUTH_DIR)) {
-        fs.mkdirSync(AUTH_DIR, { recursive: true });
-        console.log('Created auth directory');
+// Postgres-based auth state
+async function usePostgresAuthState() {
+    // Create table if not exists
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS whatsapp_auth (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT NOW()
+        )
+    `);
+
+    const writeData = async (key, data) => {
+        const value = JSON.stringify(data, BufferJSON.replacer);
+        await pool.query(
+            `INSERT INTO whatsapp_auth (key, value, updated_at) 
+             VALUES ($1, $2, NOW()) 
+             ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()`,
+            [key, value]
+        );
+    };
+
+    const readData = async (key) => {
+        const result = await pool.query('SELECT value FROM whatsapp_auth WHERE key = $1', [key]);
+        if (result.rows.length > 0) {
+            return JSON.parse(result.rows[0].value, BufferJSON.reviver);
+        }
+        return null;
+    };
+
+    const removeData = async (key) => {
+        await pool.query('DELETE FROM whatsapp_auth WHERE key = $1', [key]);
+    };
+
+    // Load or initialize creds
+    let creds = await readData('creds');
+    if (!creds) {
+        creds = initAuthCreds();
     }
 
-    const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
+    return {
+        state: {
+            creds,
+            keys: {
+                get: async (type, ids) => {
+                    const data = {};
+                    for (const id of ids) {
+                        const value = await readData(`${type}-${id}`);
+                        if (value) {
+                            if (type === 'app-state-sync-key') {
+                                data[id] = proto.Message.AppStateSyncKeyData.fromObject(value);
+                            } else {
+                                data[id] = value;
+                            }
+                        }
+                    }
+                    return data;
+                },
+                set: async (data) => {
+                    for (const category in data) {
+                        for (const id in data[category]) {
+                            const value = data[category][id];
+                            const key = `${category}-${id}`;
+                            if (value) {
+                                await writeData(key, value);
+                            } else {
+                                await removeData(key);
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        saveCreds: async () => {
+            await writeData('creds', creds);
+        }
+    };
+}
+
+// File-based auth state (fallback)
+async function useFileAuthState() {
+    const { useMultiFileAuthState } = require('@whiskeysockets/baileys');
+    if (!fs.existsSync(AUTH_DIR)) {
+        fs.mkdirSync(AUTH_DIR, { recursive: true });
+    }
+    return await useMultiFileAuthState(AUTH_DIR);
+}
+
+async function start() {
+    let authState;
+
+    if (pool) {
+        try {
+            authState = await usePostgresAuthState();
+            console.log('✅ Using Postgres for auth');
+        } catch (e) {
+            console.log('Postgres failed, using files:', e.message);
+            authState = await useFileAuthState();
+        }
+    } else {
+        authState = await useFileAuthState();
+        console.log('Using file-based auth');
+    }
+
+    const { state, saveCreds } = authState;
     const { version } = await fetchLatestBaileysVersion();
 
     console.log('WhatsApp Version:', version.join('.'));
@@ -56,7 +156,7 @@ async function start() {
         if (qr) {
             console.log('');
             console.log('═══════════════════════════════════════');
-            console.log('   SCAN QR CODE WITH WHATSAPP');
+            console.log('   SCAN QR WITH WHATSAPP               ');
             console.log('═══════════════════════════════════════');
         }
 
@@ -65,8 +165,7 @@ async function start() {
             console.log('Disconnected:', code);
 
             if (code === DisconnectReason.loggedOut) {
-                console.log('Logged out - clearing auth');
-                try { fs.rmSync(AUTH_DIR, { recursive: true, force: true }); } catch (e) { }
+                console.log('Logged out');
             }
 
             console.log('Reconnecting in 5s...');
@@ -76,8 +175,7 @@ async function start() {
         if (connection === 'open') {
             console.log('');
             console.log('═══════════════════════════════════════');
-            console.log('   ✅ CONNECTED!                       ');
-            console.log('   🤖 KadaiGPT Bot is LIVE 24/7        ');
+            console.log('   ✅ CONNECTED! Bot is LIVE 24/7      ');
             console.log('═══════════════════════════════════════');
             console.log('');
         }
@@ -105,115 +203,48 @@ async function start() {
 function getReply(text) {
     if (['hi', 'hello', 'hey', 'start'].some(g => text.includes(g))) {
         return `🙏 *Welcome to KadaiGPT!*
-India's First AI-Powered Retail Intelligence
 
-*Quick Commands:*
-📊 sales - Today's sales
+📊 sales - Sales report
 📦 stock - Inventory
 💸 expense - Expenses
 📈 profit - Profit
-🧾 bill - Recent bills
+🧾 bill - Bills
 📋 report - Daily report
-💡 help - All commands
+💡 help - Commands
 
-_Type what you need!_ 🤖`;
+_KadaiGPT AI_ 🤖`;
     }
 
     if (text.includes('sales')) {
         return `📊 *Today's Sales*
-━━━━━━━━━━━━━━━━━━
 💰 Total: ₹12,450
 🧾 Bills: 28
-👥 Customers: 25
-
-📈 +12% vs yesterday
-_KadaiGPT AI_ 🤖`;
+📈 +12% vs yesterday`;
     }
 
     if (text.includes('stock')) {
-        return `📦 *Stock Summary*
-━━━━━━━━━━━━━━━━━━
+        return `📦 *Stock*
 ✅ In Stock: 156
-⚠️ Low Stock: 8
-❌ Out: 3
-
-_KadaiGPT AI_ 🤖`;
-    }
-
-    if (text.includes('low')) {
-        return `⚠️ *Low Stock Alerts*
-━━━━━━━━━━━━━━━━━━
-1. Sugar - 5 left
-2. Milk - 8 left
-3. Bread - 3 left
-
-💡 Order today!
-_KadaiGPT AI_ 🤖`;
-    }
-
-    if (text.includes('expense')) {
-        return `💸 *Expenses*
-━━━━━━━━━━━━━━━━━━
-Today: ₹3,200
-Month: ₹45,600
-
-_KadaiGPT AI_ 🤖`;
+⚠️ Low: 8
+❌ Out: 3`;
     }
 
     if (text.includes('profit')) {
         return `📈 *Profit*
-━━━━━━━━━━━━━━━━━━
 Revenue: ₹12,450
 Cost: ₹3,200
-Profit: ₹9,250 (74%)
-
-_KadaiGPT AI_ 🤖`;
-    }
-
-    if (text.includes('bill')) {
-        return `🧾 *Recent Bills*
-━━━━━━━━━━━━━━━━━━
-1. #1234 - ₹850
-2. #1233 - ₹1,200
-3. #1232 - ₹450
-
-_KadaiGPT AI_ 🤖`;
-    }
-
-    if (text.includes('report')) {
-        return `📋 *Daily Report*
-━━━━━━━━━━━━━━━━━━
-Sales: ₹12,450
-Expenses: ₹3,200
-Profit: ₹9,250
-Bills: 28
-Customers: 25
-
-_KadaiGPT AI_ 🤖`;
+Profit: ₹9,250 (74%)`;
     }
 
     if (text.includes('help')) {
-        return `🤖 *KadaiGPT Commands*
-• sales - Report
-• stock - Inventory
-• lowstock - Alerts
-• expense - Costs
-• profit - Margins
-• bill - Invoices
-• report - Summary`;
-    }
-
-    if (text.includes('thank')) {
-        return `🙏 Happy to help!`;
+        return `🤖 *Commands*
+sales, stock, profit, expense, bill, report`;
     }
 
     return `Try: sales, stock, profit, help 🤖`;
 }
 
-// Keep alive
-setInterval(() => {
-    console.log(`[${new Date().toISOString()}] alive`);
-}, 300000);
+setInterval(() => console.log(`[${new Date().toISOString()}] alive`), 300000);
 
 process.on('uncaughtException', (e) => console.error('Error:', e.message));
 process.on('unhandledRejection', (e) => console.error('Error:', e.message));
