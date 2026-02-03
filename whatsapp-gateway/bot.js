@@ -1,6 +1,6 @@
 /**
- * KadaiGPT WhatsApp AI Agent
- * Using PAIRING CODE instead of QR (easier to use!)
+ * KadaiGPT WhatsApp AI Agent v2.1
+ * Optimized for Railway 24/7 deployment
  */
 
 const {
@@ -10,201 +10,160 @@ const {
     fetchLatestBaileysVersion,
     makeCacheableSignalKeyStore
 } = require('@whiskeysockets/baileys');
+const qrcode = require('qrcode-terminal');
 const pino = require('pino');
 const fs = require('fs');
-const axios = require('axios');
-const readline = require('readline');
 
 // Configuration
-const CONFIG = {
-    BACKEND_URL: process.env.BACKEND_URL || 'https://kadaigpt.up.railway.app',
-    BOT_NAME: 'KadaiGPT AI',
-    // Set your phone number here (with country code, no + or spaces)
-    // Example: 919876543210 for India
-    PHONE_NUMBER: process.env.PHONE_NUMBER || '',
-    VERSION: '2.0.0'
-};
+const PHONE_NUMBER = process.env.PHONE_NUMBER || '919363324580';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://kadaigpt.up.railway.app';
+const AUTH_DIR = './auth_info';
 
-const STORE_NAME = 'KadaiGPT Store';
-
-// User session management
-const userSessions = new Map();
+console.log('');
+console.log('╔══════════════════════════════════════════════════╗');
+console.log('║     🚀 KadaiGPT WhatsApp AI Agent v2.1           ║');
+console.log('║     24/7 Railway Deployment                      ║');
+console.log('╚══════════════════════════════════════════════════╝');
+console.log('');
+console.log(`Phone: ${PHONE_NUMBER}`);
+console.log(`Backend: ${BACKEND_URL}`);
+console.log(`Auth Dir: ${AUTH_DIR}`);
+console.log('');
 
 // NLP Keywords
 const NLP_INTENTS = {
     greeting: ['hi', 'hello', 'hey', 'vanakkam', 'namaste', 'start'],
     sales: ['sales', 'sell', 'sold', 'revenue', 'income'],
     stock: ['stock', 'inventory', 'available', 'items'],
-    lowstock: ['low stock', 'lowstock', 'reorder', 'running out'],
+    lowstock: ['low stock', 'lowstock', 'reorder', 'running out', 'less'],
     expense: ['expense', 'cost', 'spending', 'kharcha'],
     profit: ['profit', 'margin', 'earning', 'laabh'],
     bill: ['bill', 'invoice', 'receipt'],
     report: ['report', 'daily', 'summary'],
     predict: ['predict', 'forecast', 'tomorrow'],
-    help: ['help', 'commands', 'menu'],
-    thanks: ['thanks', 'thank you']
+    help: ['help', 'commands', 'menu', '?'],
+    thanks: ['thanks', 'thank', 'nandri']
 };
 
-async function question(query) {
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-    return new Promise(resolve => rl.question(query, ans => {
-        rl.close();
-        resolve(ans);
-    }));
-}
+let sock = null;
+let isConnected = false;
 
-async function startBot() {
-    console.log('');
-    console.log('╔══════════════════════════════════════════════════╗');
-    console.log('║     🚀 KadaiGPT WhatsApp AI Agent v2.0           ║');
-    console.log('║     Using Pairing Code (No QR needed!)           ║');
-    console.log('╚══════════════════════════════════════════════════╝');
-    console.log('');
-    console.log(`Backend: ${CONFIG.BACKEND_URL}`);
-    console.log('');
-
+async function connectWhatsApp() {
     // Ensure auth directory
-    if (!fs.existsSync('./auth_info')) {
-        fs.mkdirSync('./auth_info', { recursive: true });
+    if (!fs.existsSync(AUTH_DIR)) {
+        fs.mkdirSync(AUTH_DIR, { recursive: true });
     }
 
-    const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
+    const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
     const { version } = await fetchLatestBaileysVersion();
 
     console.log(`WhatsApp Version: ${version.join('.')}`);
-    console.log('');
+    console.log('Connecting...');
 
-    const sock = makeWASocket({
+    sock = makeWASocket({
         version,
         auth: {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' }))
         },
-        printQRInTerminal: false,
+        printQRInTerminal: true,
         logger: pino({ level: 'silent' }),
-        browser: ['KadaiGPT AI', 'Chrome', '120.0.0']
+        browser: ['KadaiGPT', 'Chrome', '120.0.0'],
+        connectTimeoutMs: 120000,
+        keepAliveIntervalMs: 30000,
+        retryRequestDelayMs: 2000
     });
 
-    // Check if we need to pair
-    if (!sock.authState.creds.registered) {
-        let phoneNumber = CONFIG.PHONE_NUMBER;
-
-        if (!phoneNumber) {
-            console.log('╔══════════════════════════════════════════════════╗');
-            console.log('║     📱 PHONE NUMBER REQUIRED                     ║');
-            console.log('╚══════════════════════════════════════════════════╝');
-            console.log('');
-            console.log('Enter your phone number with country code.');
-            console.log('Example: 919876543210 (India)');
-            console.log('');
-            phoneNumber = await question('Phone Number: ');
-            phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
-        }
-
-        if (phoneNumber.length < 10) {
-            console.log('Invalid phone number!');
-            process.exit(1);
-        }
-
-        console.log('');
-        console.log('Requesting pairing code...');
-
-        try {
-            const code = await sock.requestPairingCode(phoneNumber);
-            console.log('');
-            console.log('╔══════════════════════════════════════════════════╗');
-            console.log('║     🔐 YOUR PAIRING CODE                         ║');
-            console.log('╠══════════════════════════════════════════════════╣');
-            console.log(`║                                                  ║`);
-            console.log(`║           ${code}                              ║`);
-            console.log(`║                                                  ║`);
-            console.log('╚══════════════════════════════════════════════════╝');
-            console.log('');
-            console.log('📱 To connect:');
-            console.log('   1. Open WhatsApp on your phone');
-            console.log('   2. Go to Settings → Linked Devices');
-            console.log('   3. Tap "Link a Device"');
-            console.log('   4. Tap "Link with phone number instead"');
-            console.log(`   5. Enter the code: ${code}`);
-            console.log('');
-        } catch (error) {
-            console.error('Failed to get pairing code:', error.message);
-            console.log('');
-            console.log('Falling back to QR code...');
-        }
-    }
-
     // Connection events
-    sock.ev.on('connection.update', (update) => {
+    sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        if (qr) {
+        if (qr && !sock.authState.creds.registered) {
             console.log('');
-            console.log('If pairing code didn\'t work, scan this QR:');
-            require('qrcode-terminal').generate(qr, { small: true });
-        }
-
-        if (connection === 'close') {
-            const reason = lastDisconnect?.error?.output?.statusCode;
-            console.log(`Connection closed. Reason: ${reason}`);
-
-            if (reason !== DisconnectReason.loggedOut) {
-                console.log('Reconnecting...');
-                setTimeout(() => startBot(), 3000);
+            console.log('Requesting pairing code...');
+            try {
+                const code = await sock.requestPairingCode(PHONE_NUMBER);
+                console.log('');
+                console.log('╔═══════════════════════════════════════╗');
+                console.log('║     🔐 PAIRING CODE                   ║');
+                console.log('╠═══════════════════════════════════════╣');
+                console.log(`║         ${code}                       ║`);
+                console.log('╚═══════════════════════════════════════╝');
+                console.log('');
+                console.log('WhatsApp → Settings → Linked Devices');
+                console.log('→ Link a Device → Link with phone number');
+                console.log(`→ Enter: ${code}`);
+                console.log('');
+            } catch (e) {
+                console.log('Use QR code above');
             }
         }
 
+        if (connection === 'close') {
+            isConnected = false;
+            const code = lastDisconnect?.error?.output?.statusCode;
+            console.log('Disconnected. Code:', code);
+
+            if (code === DisconnectReason.loggedOut) {
+                console.log('Logged out. Clearing auth...');
+                try {
+                    fs.rmSync(AUTH_DIR, { recursive: true, force: true });
+                } catch (e) { }
+            }
+
+            // Reconnect after delay
+            console.log('Reconnecting in 5 seconds...');
+            setTimeout(connectWhatsApp, 5000);
+        }
+
         if (connection === 'open') {
+            isConnected = true;
             console.log('');
-            console.log('╔══════════════════════════════════════════════════╗');
-            console.log('║     ✅ CONNECTED TO WHATSAPP!                    ║');
-            console.log('║     🤖 KadaiGPT AI Agent is LIVE                 ║');
-            console.log('╚══════════════════════════════════════════════════╝');
+            console.log('╔═══════════════════════════════════════╗');
+            console.log('║     ✅ CONNECTED!                     ║');
+            console.log('║     🤖 KadaiGPT AI is LIVE            ║');
+            console.log('╚═══════════════════════════════════════╝');
             console.log('');
-            console.log('Bot is ready! Send "hi" to test.');
-            console.log('');
+            console.log('Bot ready. Send "hi" to test.');
         }
     });
 
     sock.ev.on('creds.update', saveCreds);
 
     // Message handler
-    sock.ev.on('messages.upsert', async ({ messages }) => {
-        try {
-            const msg = messages[0];
-            if (!msg.message || msg.key.fromMe) return;
-            if (msg.key.remoteJid.endsWith('@g.us')) return;
+    sock.ev.on('messages.upsert', async ({ messages, type }) => {
+        if (type !== 'notify') return;
 
-            const phone = msg.key.remoteJid.replace('@s.whatsapp.net', '');
-            const text = msg.message.conversation ||
-                msg.message.extendedTextMessage?.text || '';
+        for (const msg of messages) {
+            try {
+                if (!msg.message || msg.key.fromMe) continue;
+                if (msg.key.remoteJid.endsWith('@g.us')) continue;
 
-            if (!text) return;
+                const text = msg.message.conversation ||
+                    msg.message.extendedTextMessage?.text || '';
 
-            console.log(`📩 [${phone}]: ${text}`);
+                if (!text) continue;
 
-            const response = await processMessage(phone, text);
-            await sock.sendMessage(msg.key.remoteJid, { text: response });
-            console.log(`✅ Reply sent`);
+                const phone = msg.key.remoteJid.replace('@s.whatsapp.net', '');
+                console.log(`📩 ${phone}: ${text}`);
 
-        } catch (error) {
-            console.error('Message error:', error.message);
+                const response = getResponse(text.toLowerCase().trim());
+                await sock.sendMessage(msg.key.remoteJid, { text: response });
+                console.log(`✅ Replied`);
+
+            } catch (e) {
+                console.error('Error:', e.message);
+            }
         }
     });
 }
 
-async function processMessage(phone, text) {
-    const cleanText = text.toLowerCase().trim();
-    const intent = detectIntent(cleanText);
+function getResponse(text) {
+    const intent = detectIntent(text);
 
-    switch (intent) {
-        case 'greeting':
-            return `🙏 *Welcome to ${STORE_NAME}!*
-
-I'm your KadaiGPT AI assistant.
+    const responses = {
+        greeting: `🙏 *Welcome to KadaiGPT!*
+India's First AI-Powered Retail Intelligence.
 
 *Commands:*
 📊 sales - Sales report
@@ -215,36 +174,32 @@ I'm your KadaiGPT AI assistant.
 📋 report - Daily report
 💡 help - All commands
 
-Just type what you need! 🤖`;
+_Just type naturally!_ 🤖`,
 
-        case 'help':
-            return `🤖 *KadaiGPT Commands*
+        help: `🤖 *KadaiGPT Commands*
 
 📊 *Reports*
 • sales - Sales report
 • expense - Expenses
-• profit - Profit margin
+• profit - Margins
 • report - Daily summary
 
 📦 *Inventory*
 • stock - Stock levels
-• lowstock - Low stock alerts
+• lowstock - Alerts
 
 🧾 *Billing*
 • bill - Recent bills
 
-🔮 *AI Features*
-• predict - Sales forecast
+🔮 *AI*
+• predict - Forecast`,
 
-Type naturally in Tamil/Hindi/English!`;
-
-        case 'sales':
-            return `📊 *Today's Sales*
+        sales: `📊 *Today's Sales*
 ━━━━━━━━━━━━━━━━━━
 💰 Total: ₹12,450
 🧾 Bills: 28
 👥 Customers: 25
-📈 Avg Bill: ₹444
+📈 Avg: ₹444
 
 *Top Products:*
 1. Rice 5kg - ₹3,750
@@ -252,124 +207,84 @@ Type naturally in Tamil/Hindi/English!`;
 3. Sugar 1kg - ₹1,100
 
 📈 +12% vs yesterday
-_via KadaiGPT AI_ 🤖`;
+_via KadaiGPT_ 🤖`,
 
-        case 'stock':
-            return `📦 *Stock Summary*
+        stock: `📦 *Stock Summary*
 ━━━━━━━━━━━━━━━━━━
 ✅ In Stock: 156
 ⚠️ Low Stock: 8
-❌ Out of Stock: 3
-
-*Categories:*
-🍚 Groceries: 89
-🥤 Beverages: 34
-🧴 Personal: 33
+❌ Out: 3
 
 Type *lowstock* for alerts
-_via KadaiGPT AI_ 🤖`;
+_via KadaiGPT_ 🤖`,
 
-        case 'lowstock':
-            return `⚠️ *Low Stock Alerts*
+        lowstock: `⚠️ *Low Stock Alerts*
 ━━━━━━━━━━━━━━━━━━
 1. Sugar 1kg - 5 left
 2. Milk 500ml - 8 left
 3. Bread - 3 left
 4. Eggs - 12 left
-5. Butter - 4 left
 
-💡 Order today before stockout!
-_via KadaiGPT AI_ 🤖`;
+💡 Order today!
+_via KadaiGPT_ 🤖`,
 
-        case 'expense':
-            return `💸 *Expenses Today*
+        expense: `💸 *Today's Expenses*
 ━━━━━━━━━━━━━━━━━━
 Total: ₹3,200
 
 • Stock: ₹2,500
-• Electricity: ₹400
+• Electric: ₹400
 • Transport: ₹200
 • Misc: ₹100
 
-📊 Month: ₹45,600
-_via KadaiGPT AI_ 🤖`;
+_via KadaiGPT_ 🤖`,
 
-        case 'profit':
-            return `📈 *Profit Summary*
+        profit: `📈 *Profit Summary*
 ━━━━━━━━━━━━━━━━━━
-*Today:*
 💰 Revenue: ₹12,450
 💸 Expenses: ₹3,200
 ✨ Profit: ₹9,250 (74%)
 
-*This Month:*
-💰 Revenue: ₹3,45,000
-✨ Profit: ₹1,35,000 (39%)
+_via KadaiGPT_ 🤖`,
 
-📈 +12% vs last month
-_via KadaiGPT AI_ 🤖`;
-
-        case 'bill':
-            return `🧾 *Recent Bills*
+        bill: `🧾 *Recent Bills*
 ━━━━━━━━━━━━━━━━━━
-1. #1234 - ₹850 - Ramesh
-2. #1233 - ₹1,200 - Walk-in
-3. #1232 - ₹450 - Priya
-4. #1231 - ₹2,100 - Kumar
-5. #1230 - ₹680 - Lakshmi
+1. #1234 - ₹850
+2. #1233 - ₹1,200
+3. #1232 - ₹450
+4. #1231 - ₹2,100
 
-📊 Today: ₹5,280 (5 bills)
-_via KadaiGPT AI_ 🤖`;
+_via KadaiGPT_ 🤖`,
 
-        case 'report':
-            return `📋 *Daily Report*
+        report: `📋 *Daily Report*
 ━━━━━━━━━━━━━━━━━━
 📅 ${new Date().toLocaleDateString('en-IN')}
 
-💰 *Sales:* ₹12,450
-💸 *Expenses:* ₹3,200
-📈 *Profit:* ₹9,250
+💰 Sales: ₹12,450
+💸 Expenses: ₹3,200
+📈 Profit: ₹9,250
+📦 Low Stock: 8
+👥 Customers: 25
 
-📦 *Inventory:*
-• Low Stock: 8 items
-• Out of Stock: 3 items
+_via KadaiGPT_ 🤖`,
 
-👥 *Customers:* 25
-🧾 *Bills:* 28
-
-_via KadaiGPT AI_ 🤖`;
-
-        case 'predict':
-            return `🔮 *AI Predictions*
+        predict: `🔮 *AI Forecast*
 ━━━━━━━━━━━━━━━━━━
 *Tomorrow:*
 💰 Expected: ₹14,200
-📈 +14% vs today
+📈 +14% growth
 
-*This Week:*
-Mon-Fri: ₹70,000
-Weekend: ₹40,000
+💡 Stock up Rice!
+_via KadaiGPT_ 🤖`,
 
-💡 *Tip:* Stock up on Rice!
-_via KadaiGPT AI_ 🤖`;
+        thanks: `🙏 Happy to help!
+_KadaiGPT AI_ 🤖`,
 
-        case 'thanks':
-            return `🙏 Happy to help!
+        unknown: `Try: sales, stock, profit, help
+_KadaiGPT_ 🤖`
+    };
 
-Need anything else? Just ask!
-
-_KadaiGPT - Your AI Partner_ 🤖`;
-
-        default:
-            return `🤔 I can help with:
-
-• *sales* - Sales report
-• *stock* - Stock levels
-• *profit* - Profit summary
-• *help* - All commands
-
-Just type what you need! 🤖`;
-    }
+    return responses[intent] || responses.unknown;
 }
 
 function detectIntent(text) {
@@ -381,5 +296,21 @@ function detectIntent(text) {
     return 'unknown';
 }
 
+// Error handlers
+process.on('uncaughtException', (e) => {
+    console.error('Error:', e.message);
+});
+
+process.on('unhandledRejection', (e) => {
+    console.error('Error:', e.message);
+});
+
+// Keep alive
+setInterval(() => {
+    if (isConnected) {
+        console.log(`[${new Date().toLocaleTimeString()}] Bot alive ✓`);
+    }
+}, 300000); // Every 5 min
+
 // Start
-startBot().catch(console.error);
+connectWhatsApp().catch(console.error);
