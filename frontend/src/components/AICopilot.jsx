@@ -419,7 +419,7 @@ const copilotStyles = `
     @media (max-width: 768px) {
         .copilot-panel {
             top: auto;
-            bottom: 140px;
+            bottom: 200px;
             right: 10px;
             left: 10px;
             width: auto;
@@ -427,7 +427,8 @@ const copilotStyles = `
 
         .copilot-minimized {
             top: auto;
-            bottom: 140px;
+            bottom: 200px;
+            right: 16px;
         }
     }
 `
