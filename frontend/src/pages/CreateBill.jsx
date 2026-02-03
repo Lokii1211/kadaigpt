@@ -178,8 +178,40 @@ export default function CreateBill({ addToast, setCurrentPage }) {
 
             const newBillNumber = result.bill_number || `INV-${Date.now().toString().slice(-6)}`
             setBillNumber(newBillNumber)
-            addToast('Bill saved successfully!', 'success')
+
+            // Update stock for each item sold
+            for (const item of cart) {
+                try {
+                    const newStock = Math.max(0, (item.stock || 0) - item.quantity)
+                    await api.updateProduct(item.id, { current_stock: newStock })
+                } catch (stockError) {
+                    console.log('Stock update via API failed, updating locally')
+                }
+            }
+
+            // Update local products state
+            setProducts(products.map(p => {
+                const cartItem = cart.find(c => c.id === p.id)
+                if (cartItem) {
+                    return { ...p, stock: Math.max(0, p.stock - cartItem.quantity) }
+                }
+                return p
+            }))
+
+            addToast('Bill saved & stock updated!', 'success')
             setShowPayment(true)
+
+            // Auto-send bill to WhatsApp if customer phone is provided
+            if (customer.phone && customer.phone.length >= 10) {
+                const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
+                const itemsList = cart.map(i => `• ${i.name} x${i.quantity} = ₹${i.price * i.quantity}`).join('\n')
+                const whatsappMessage = `🧾 *BILL - ${newBillNumber}*\n📍 ${storeName}\n\n${itemsList}\n\n💰 *Total: ₹${total.toFixed(2)}*\n📱 Payment: ${paymentMode}\n\nThank you for shopping! 🙏\n_Powered by KadaiGPT_`
+
+                // Open WhatsApp with pre-filled message
+                const waUrl = `https://wa.me/91${customer.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
+                window.open(waUrl, '_blank')
+                addToast('Bill sent to WhatsApp!', 'success')
+            }
         } catch (error) {
             console.error('Error saving bill:', error)
             // Fallback - still show as saved locally
@@ -193,10 +225,45 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     const handlePrint = async () => {
         setPrinting(true)
         try {
+            // Try API print first (for connected printers)
             await api.printReceipt(getBillData())
             addToast('Bill printed successfully!', 'success')
         } catch (err) {
-            addToast('Print sent (demo mode)', 'info')
+            // Fallback: Use browser print dialog (works without physical printer)
+            const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
+            const printContent = `
+                <html>
+                <head>
+                    <title>Bill ${billNumber}</title>
+                    <style>
+                        body { font-family: 'Courier New', monospace; width: 300px; margin: 0 auto; padding: 20px; }
+                        h2 { text-align: center; margin-bottom: 5px; }
+                        .store-info { text-align: center; font-size: 12px; margin-bottom: 15px; }
+                        hr { border: 1px dashed #000; }
+                        .item { display: flex; justify-content: space-between; font-size: 12px; margin: 5px 0; }
+                        .total { font-weight: bold; font-size: 16px; margin-top: 10px; }
+                        .footer { text-align: center; font-size: 10px; margin-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <h2>${storeName}</h2>
+                    <p class="store-info">Bill No: ${billNumber}<br/>Date: ${new Date().toLocaleString('en-IN')}</p>
+                    <hr/>
+                    ${cart.map(item => `<div class="item"><span>${item.name} x${item.quantity}</span><span>₹${(item.price * item.quantity).toFixed(2)}</span></div>`).join('')}
+                    <hr/>
+                    <div class="item"><span>Subtotal</span><span>₹${subtotal.toFixed(2)}</span></div>
+                    <div class="item"><span>GST (${gstRate}%)</span><span>₹${tax.toFixed(2)}</span></div>
+                    <div class="item total"><span>TOTAL</span><span>₹${total.toFixed(2)}</span></div>
+                    <hr/>
+                    <p class="footer">Thank you for shopping!<br/>Powered by KadaiGPT</p>
+                </body>
+                </html>
+            `
+            const printWindow = window.open('', '_blank')
+            printWindow.document.write(printContent)
+            printWindow.document.close()
+            printWindow.print()
+            addToast('Print preview opened!', 'success')
         } finally {
             setPrinting(false)
             clearCart()
@@ -318,7 +385,18 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                                             <button className="qty-btn" onClick={() => updateQuantity(item.id, -1)}>
                                                 <Minus size={14} />
                                             </button>
-                                            <span className="qty-value">{item.quantity}</span>
+                                            <input
+                                                type="number"
+                                                className="qty-input"
+                                                value={item.quantity}
+                                                onChange={(e) => {
+                                                    const newQty = parseInt(e.target.value) || 1
+                                                    setCart(cart.map(i =>
+                                                        i.id === item.id ? { ...i, quantity: Math.max(1, newQty) } : i
+                                                    ))
+                                                }}
+                                                min="1"
+                                            />
                                             <button className="qty-btn" onClick={() => updateQuantity(item.id, 1)}>
                                                 <Plus size={14} />
                                             </button>
@@ -532,6 +610,8 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .item-price { font-size: 0.8125rem; color: var(--text-secondary); }
         .item-actions { display: flex; align-items: center; gap: 4px; }
         .qty-btn { width: 28px; height: 28px; border-radius: var(--radius-md); background: var(--bg-tertiary); border: none; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .qty-input { width: 50px; text-align: center; font-weight: 600; background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-sm); padding: 4px; color: var(--text-primary); }
+        .qty-input::-webkit-inner-spin-button, .qty-input::-webkit-outer-spin-button { -webkit-appearance: none; }
         .qty-value { width: 32px; text-align: center; font-weight: 600; }
         .remove-btn { width: 28px; height: 28px; border-radius: var(--radius-md); background: none; border: none; color: var(--error); cursor: pointer; margin-left: 8px; }
         .item-total { font-weight: 700; min-width: 70px; text-align: right; }

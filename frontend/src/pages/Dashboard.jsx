@@ -289,18 +289,24 @@ export default function Dashboard({ addToast, setCurrentPage }) {
                 </tr>
               </thead>
               <tbody>
-                {(bills.length > 0 ? bills : [
-                  { id: 1, bill_number: 'KG-001', customer_name: 'Walk-in', total: 850, payment_mode: 'UPI' },
-                  { id: 2, bill_number: 'KG-002', customer_name: 'Ramesh', total: 1200, payment_mode: 'Cash' },
-                  { id: 3, bill_number: 'KG-003', customer_name: 'Priya', total: 450, payment_mode: 'Card' }
-                ]).slice(0, 5).map(bill => (
+                {bills.length > 0 ? bills.slice(0, 5).map(bill => (
                   <tr key={bill.id}>
                     <td><code>{bill.bill_number}</code></td>
-                    <td>{bill.customer_name}</td>
-                    <td className="amount">₹{bill.total.toFixed(2)}</td>
-                    <td><span className={`badge badge-${bill.payment_mode === 'UPI' ? 'info' : bill.payment_mode === 'Card' ? 'warning' : 'success'}`}>{bill.payment_mode}</span></td>
+                    <td>{bill.customer_name || 'Walk-in'}</td>
+                    <td className="amount">₹{(bill.total || 0).toFixed(2)}</td>
+                    <td><span className={`badge badge-${bill.payment_mode === 'UPI' ? 'info' : bill.payment_mode === 'Card' ? 'warning' : 'success'}`}>{bill.payment_mode || 'Cash'}</span></td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan="4" className="empty-table">
+                      <div className="empty-state-inline">
+                        <FileText size={24} />
+                        <span>No bills yet. Create your first bill!</span>
+                        <button className="btn btn-primary btn-sm" onClick={() => setCurrentPage('create-bill')}>Create Bill</button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

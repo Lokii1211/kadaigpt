@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Bell, X, Check, AlertTriangle, Info, Package, TrendingDown, Users, Gift } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Bell, X, Check, AlertTriangle, Info, Package, TrendingDown, Users, Gift, Sparkles } from 'lucide-react'
+import realDataService from '../services/realDataService'
 
 const notificationIcons = {
     'low-stock': Package,
@@ -7,52 +8,71 @@ const notificationIcons = {
     'new-customer': Users,
     'reward': Gift,
     'alert': AlertTriangle,
-    'info': Info
+    'info': Info,
+    'ai': Sparkles
 }
 
-// Demo notifications for initial state
-const demoNotifications = [
-    {
-        id: 1,
-        type: 'low-stock',
-        title: 'Low Stock Alert',
-        message: 'Toor Dal is running low (8 kg remaining)',
-        time: '5 min ago',
-        read: false,
-        priority: 'high'
-    },
-    {
-        id: 2,
-        type: 'reward',
-        title: 'Loyalty Milestone',
-        message: 'Priya Sharma earned 500 bonus points!',
-        time: '1 hour ago',
-        read: false,
-        priority: 'medium'
-    },
-    {
-        id: 3,
-        type: 'new-customer',
-        title: 'New Customer Registered',
-        message: 'Amit Kumar signed up via WhatsApp',
-        time: '2 hours ago',
-        read: true,
-        priority: 'low'
-    },
-    {
-        id: 4,
-        type: 'info',
-        title: 'Daily Report Ready',
-        message: 'Your daily summary for Jan 31 is ready',
-        time: '3 hours ago',
-        read: true,
-        priority: 'low'
-    }
-]
+// Get dynamic notifications based on real data
+const getInitialNotifications = async () => {
+    const notifications = []
 
-export default function NotificationCenter({ notifications = demoNotifications }) {
+    try {
+        // Get low stock products
+        const lowStock = await realDataService.getLowStockProducts()
+        if (lowStock.length > 0) {
+            notifications.push({
+                id: 1,
+                type: 'low-stock',
+                title: 'Low Stock Alert',
+                message: `${lowStock[0].name} is running low (${lowStock[0].stock} remaining)`,
+                time: 'Just now',
+                read: false,
+                priority: 'high'
+            })
+        }
+
+        // Add AI tip
+        notifications.push({
+            id: 2,
+            type: 'ai',
+            title: 'AI Insight',
+            message: 'Peak sales hour is 11 AM - 1 PM. Stock high-demand items!',
+            time: '1 hour ago',
+            read: false,
+            priority: 'medium'
+        })
+
+        // Add welcome message if no other notifications
+        if (notifications.length < 2) {
+            notifications.push({
+                id: 3,
+                type: 'info',
+                title: 'Welcome to KadaiGPT',
+                message: 'Add products and create bills to see real-time insights!',
+                time: 'Now',
+                read: false,
+                priority: 'low'
+            })
+        }
+    } catch (error) {
+        console.log('Could not fetch real notifications')
+    }
+
+    return notifications
+}
+
+export default function NotificationCenter() {
     const [isOpen, setIsOpen] = useState(false)
-    const [items, setItems] = useState(notifications)
+    const [items, setItems] = useState([])
+
+    useEffect(() => {
+        loadNotifications()
+    }, [])
+
+    const loadNotifications = async () => {
+        const notifications = await getInitialNotifications()
+        setItems(notifications)
+    }
 
     const unreadCount = items.filter(n => !n.read).length
 
