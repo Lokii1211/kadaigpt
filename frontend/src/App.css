@@ -465,3 +465,54 @@
     display: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Loyalty Points Section
+═══════════════════════════════════════════════════════════════════ */
+.loyalty-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.15), rgba(245, 158, 11, 0.1));
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: var(--radius-md);
+  margin-top: 12px;
+}
+
+.loyalty-section span {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ca8a04;
+}
+
+.loyalty-points {
+  color: #eab308 !important;
+  font-weight: 600 !important;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  border: none;
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+}
+
+/* Empty state improvements */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.875rem;
+}

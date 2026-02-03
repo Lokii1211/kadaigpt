@@ -11,8 +11,20 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 from app.config import settings
 import logging
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
+from app.database import get_db
 
 logger = logging.getLogger(__name__)
+
+# In-memory cache for quick data access (refreshed periodically)
+_data_cache = {
+    'bills': [],
+    'products': [],
+    'customers': [],
+    'expenses': [],
+    'last_refresh': None
+}
 
 
 class WhatsAppBotService:
@@ -643,25 +655,63 @@ Try:
 Or say *hi* to get started! 👋"""
 
     async def _get_sales_response(self, user_id: Optional[int]) -> str:
-        """Get sales data - TODO: Connect to database"""
+        """Get sales data from real database"""
         today = datetime.now().strftime("%d %b %Y")
         
-        # TODO: Fetch from database
+        try:
+            # Try to get data from internal API
+            async with httpx.AsyncClient() as client:
+                # Call our own analytics endpoint
+                base_url = settings.API_BASE_URL or "http://localhost:8000"
+                response = await client.get(
+                    f"{base_url}/api/v1/bills/analytics/today",
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    today_data = data.get("today", {})
+                    payment_breakdown = data.get("payment_breakdown", {})
+                    
+                    total_sales = today_data.get("revenue", 0)
+                    total_bills = today_data.get("bills", 0)
+                    avg_bill = today_data.get("avg_bill_value", 0)
+                    
+                    cash = payment_breakdown.get("cash", 0)
+                    upi = payment_breakdown.get("upi", 0)
+                    card = payment_breakdown.get("card", 0)
+                    credit = payment_breakdown.get("credit", 0)
+                    
+                    change_pct = data.get("revenue_change_percent", 0)
+                    trend = "📈" if change_pct >= 0 else "📉"
+                    
+                    return f"""📊 *Sales Report*
+📅 {today}
+
+💰 *Today's Sales*: ₹{total_sales:,.0f}
+🧾 *Bills Created*: {total_bills}
+📈 *Avg Bill Value*: ₹{avg_bill:,.0f}
+{trend} *vs Yesterday*: {change_pct:+.1f}%
+
+💳 *Payment Breakdown*
+• Cash: ₹{cash:,.0f}
+• UPI: ₹{upi:,.0f}
+• Card: ₹{card:,.0f}
+• Credit: ₹{credit:,.0f}
+
+_Updated just now_ ✨
+Type *report* for full summary."""
+
+        except Exception as e:
+            logger.error(f"Failed to fetch sales data: {e}")
+        
+        # Fallback response
         return f"""📊 *Sales Report*
 📅 {today}
 
-💰 *Today's Sales*: ₹0
-🧾 *Bills Created*: 0
-📈 *Avg Bill Value*: ₹0
+Unable to fetch live data. Please check the app!
 
-💳 *Payment Breakdown*
-• Cash: ₹0
-• UPI: ₹0
-• Card: ₹0
-• Credit: ₹0
-
-_Updated just now_
-Type *report* for full summary."""
+Type *help* for other commands."""
 
     async def _get_expense_response(self, user_id: Optional[int]) -> str:
         today = datetime.now().strftime("%d %b %Y")

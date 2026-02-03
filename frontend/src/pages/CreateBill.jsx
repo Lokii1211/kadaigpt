@@ -198,14 +198,53 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                 return p
             }))
 
+            // AUTO-ADD OR UPDATE CUSTOMER WITH LOYALTY POINTS
+            if (customer.name || customer.phone) {
+                try {
+                    // Calculate loyalty points: 10 points per ₹100
+                    const loyaltyPointsEarned = Math.floor(total / 100) * 10
+
+                    // Check if customer exists by phone
+                    const existingCustomers = await api.getCustomers?.() || []
+                    const existingCustomer = existingCustomers.find(c => c.phone === customer.phone)
+
+                    if (existingCustomer) {
+                        // UPDATE existing customer: add to purchases, update credit if on credit
+                        const creditToAdd = paymentMode === 'credit' ? total : 0
+                        await api.updateCustomer?.(existingCustomer.id, {
+                            total_purchases: (existingCustomer.total_purchases || 0) + total,
+                            credit: (existingCustomer.credit || 0) + creditToAdd,
+                            loyalty_points: (existingCustomer.loyalty_points || 0) + loyaltyPointsEarned,
+                            last_purchase: new Date().toISOString()
+                        })
+                        addToast(`+${loyaltyPointsEarned} loyalty points added!`, 'success')
+                    } else if (customer.phone && customer.phone.length >= 10) {
+                        // CREATE new customer
+                        const creditAmount = paymentMode === 'credit' ? total : 0
+                        await api.createCustomer?.({
+                            name: customer.name || 'Walk-in Customer',
+                            phone: customer.phone,
+                            credit: creditAmount,
+                            loyalty_points: loyaltyPointsEarned,
+                            total_purchases: total,
+                            last_purchase: new Date().toISOString()
+                        })
+                        addToast(`New customer added with ${loyaltyPointsEarned} points!`, 'success')
+                    }
+                } catch (custError) {
+                    console.log('Customer update failed:', custError)
+                }
+            }
+
             addToast('Bill saved & stock updated!', 'success')
             setShowPayment(true)
 
             // Auto-send bill to WhatsApp if customer phone is provided
             if (customer.phone && customer.phone.length >= 10) {
                 const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
+                const loyaltyPoints = Math.floor(total / 100) * 10
                 const itemsList = cart.map(i => `• ${i.name} x${i.quantity} = ₹${i.price * i.quantity}`).join('\n')
-                const whatsappMessage = `🧾 *BILL - ${newBillNumber}*\n📍 ${storeName}\n\n${itemsList}\n\n💰 *Total: ₹${total.toFixed(2)}*\n📱 Payment: ${paymentMode}\n\nThank you for shopping! 🙏\n_Powered by KadaiGPT_`
+                const whatsappMessage = `🧾 *BILL - ${newBillNumber}*\n📍 ${storeName}\n\n${itemsList}\n\n💰 *Total: ₹${total.toFixed(2)}*\n📱 Payment: ${paymentMode}\n⭐ Loyalty Points Earned: +${loyaltyPoints}\n\nThank you for shopping! 🙏\n_Powered by KadaiGPT_`
 
                 // Open WhatsApp with pre-filled message
                 const waUrl = `https://wa.me/91${customer.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`

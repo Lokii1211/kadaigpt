@@ -55,29 +55,37 @@ export default function Analytics({ addToast }) {
     })
     const maxWeeklySale = Math.max(...weeklySales, 1)
 
-    // Payment breakdown
-    const totalPayments = Object.values(analytics.paymentBreakdown).reduce((a, b) => a + b, 0) || 1
-    const paymentCategories = Object.entries(analytics.paymentBreakdown)
-        .filter(([_, val]) => val > 0)
+    // Payment breakdown with null safety
+    const paymentData = analytics.paymentBreakdown || { cash: 0, upi: 0, card: 0, credit: 0 }
+    const totalPayments = Object.values(paymentData).reduce((a, b) => a + (b || 0), 0) || 1
+    const paymentCategories = Object.entries(paymentData)
+        .filter(([_, val]) => (val || 0) > 0)
         .map(([name, val]) => ({
             name: name.charAt(0).toUpperCase() + name.slice(1),
-            revenue: val,
-            percentage: Math.round((val / totalPayments) * 100)
+            revenue: val || 0,
+            percentage: Math.round(((val || 0) / totalPayments) * 100)
         }))
 
+    // Null-safe values
+    const totalSales = analytics.totalSales || 0
+    const totalBills = analytics.totalBills || 0
+    const avgBillValue = analytics.avgBillValue || 0
+    const predictions = analytics.predictions || {}
+    const topProducts = analytics.topProducts || []
+
     const kpis = [
-        { label: 'Total Revenue', value: `₹${analytics.totalSales.toLocaleString()}`, change: salesChange, icon: IndianRupee, positive: salesChange >= 0 },
-        { label: 'Total Orders', value: analytics.totalBills, change: Math.abs(salesChange * 0.7).toFixed(1), icon: ShoppingBag, positive: true },
-        { label: 'Peak Day', value: analytics.predictions?.peakDay || 'N/A', change: 0, icon: Calendar, positive: true },
-        { label: 'Avg Order Value', value: `₹${(analytics.avgBillValue || 0).toFixed(0)}`, change: 3.2, icon: TrendingUp, positive: true },
+        { label: 'Total Revenue', value: `₹${totalSales.toLocaleString()}`, change: salesChange, icon: IndianRupee, positive: salesChange >= 0 },
+        { label: 'Total Orders', value: totalBills, change: Math.abs(salesChange * 0.7).toFixed(1), icon: ShoppingBag, positive: true },
+        { label: 'Peak Day', value: predictions.peakDay || 'N/A', change: 0, icon: Calendar, positive: true },
+        { label: 'Avg Order Value', value: `₹${avgBillValue.toFixed(0)}`, change: 3.2, icon: TrendingUp, positive: true },
     ]
 
     const aiInsights = [
         { icon: '📈', title: 'Sales Trend', text: hasData ? `Your sales ${salesChange >= 0 ? 'increased' : 'decreased'} by ${Math.abs(salesChange).toFixed(1)}% compared to last period.` : 'Start making sales to see trends.' },
-        { icon: '🎯', title: 'Best Seller', text: analytics.topProducts[0]?.name ? `${analytics.topProducts[0].name} is your top seller with ${analytics.topProducts[0].quantity} units.` : 'No sales data yet.' },
-        { icon: '⏰', title: 'Peak Hours', text: analytics.predictions?.peakHour ? `Your peak sales hour is ${analytics.predictions.peakHour}. Staff up during this time!` : 'More sales needed for peak hour analysis.' },
-        { icon: '💰', title: 'Next Week Prediction', text: analytics.predictions?.nextWeekSales > 0 ? `AI predicts ₹${analytics.predictions.nextWeekSales.toLocaleString()} in sales next week.` : 'Need more data for predictions.' },
-        { icon: '💡', title: 'Restock Alert', text: products.filter(p => p.stock <= p.minStock).length > 0 ? `${products.filter(p => p.stock <= p.minStock).length} products need restocking.` : 'All stock levels are healthy!' },
+        { icon: '🎯', title: 'Best Seller', text: topProducts[0]?.name ? `${topProducts[0].name} is your top seller with ${topProducts[0].quantity || 0} units.` : 'No sales data yet.' },
+        { icon: '⏰', title: 'Peak Hours', text: predictions.peakHour ? `Your peak sales hour is ${predictions.peakHour}. Staff up during this time!` : 'More sales needed for peak hour analysis.' },
+        { icon: '💰', title: 'Next Week Prediction', text: (predictions.nextWeekSales || 0) > 0 ? `AI predicts ₹${predictions.nextWeekSales.toLocaleString()} in sales next week.` : 'Need more data for predictions.' },
+        { icon: '💡', title: 'Restock Alert', text: products.filter(p => (p.stock || 0) <= (p.minStock || 0)).length > 0 ? `${products.filter(p => (p.stock || 0) <= (p.minStock || 0)).length} products need restocking.` : 'All stock levels are healthy!' },
     ]
 
 

@@ -26,7 +26,8 @@ export default function GSTReports({ addToast }) {
     const loadGSTData = async () => {
         setLoading(true)
         try {
-            const bills = await realDataService.getBills()
+            const billsData = await realDataService.getBills()
+            const bills = Array.isArray(billsData) ? billsData : []
 
             // Calculate GST data from bills
             const gstRate = defaultGstRate / 100
@@ -35,7 +36,8 @@ export default function GSTReports({ addToast }) {
             let totalSgst = 0
 
             const invoices = bills.map(bill => {
-                const taxableAmount = bill.subtotal || bill.total / (1 + gstRate) || 0
+                const billTotal = bill.total || 0
+                const taxableAmount = bill.subtotal || (billTotal / (1 + gstRate)) || 0
                 const cgst = (taxableAmount * gstRate / 2)
                 const sgst = (taxableAmount * gstRate / 2)
 
@@ -43,14 +45,23 @@ export default function GSTReports({ addToast }) {
                 totalCgst += cgst
                 totalSgst += sgst
 
+                // Safe date parsing
+                let dateStr = 'N/A'
+                try {
+                    const date = new Date(bill.created_at || bill.createdAt || Date.now())
+                    dateStr = date.toLocaleDateString('en-IN')
+                } catch (e) {
+                    dateStr = 'N/A'
+                }
+
                 return {
-                    invoiceNo: bill.bill_number || bill.billNumber || `INV-${bill.id}`,
-                    date: new Date(bill.created_at || bill.createdAt).toLocaleDateString('en-IN'),
+                    invoiceNo: bill.bill_number || bill.billNumber || `INV-${bill.id || 0}`,
+                    date: dateStr,
                     customerGstin: bill.customer_gstin || '',
                     taxableAmount: Math.round(taxableAmount),
                     cgst: Math.round(cgst),
                     sgst: Math.round(sgst),
-                    total: bill.total || Math.round(taxableAmount + cgst + sgst)
+                    total: billTotal || Math.round(taxableAmount + cgst + sgst)
                 }
             })
 
@@ -69,6 +80,12 @@ export default function GSTReports({ addToast }) {
         } catch (error) {
             console.error('Failed to load GST data:', error)
             addToast?.('Failed to load GST data', 'error')
+            // Set empty data on error
+            setGstData({
+                summary: { totalSales: 0, cgst: 0, sgst: 0, igst: 0, totalTax: 0, netPayable: 0 },
+                monthly: [],
+                invoices: []
+            })
         } finally {
             setLoading(false)
         }

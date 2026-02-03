@@ -153,6 +153,45 @@ export default function Customers({ addToast }) {
         addToast(`Reminder sent to ${customer.name}`, 'success')
     }
 
+    // Redeem loyalty points: 10000 points = ₹1000 discount
+    const handleRedeemPoints = async (customer) => {
+        const points = customer.loyalty_points || customer.loyaltyPoints || 0
+        if (points < 10000) {
+            addToast('Minimum 10,000 points required for redemption', 'error')
+            return
+        }
+
+        const pointsToRedeem = Math.floor(points / 10000) * 10000
+        const discountValue = pointsToRedeem / 10 // 10 points = ₹1
+
+        if (window.confirm(`Redeem ${pointsToRedeem.toLocaleString()} points for ₹${discountValue.toLocaleString()} credit?`)) {
+            try {
+                const newPoints = points - pointsToRedeem
+                const newCredit = (customer.credit || 0) - discountValue // Reduce credit or add as store credit
+
+                await api.updateCustomer?.(customer.id, {
+                    loyalty_points: newPoints,
+                    credit: Math.max(0, newCredit)
+                })
+
+                setCustomers(customers.map(c =>
+                    c.id === customer.id
+                        ? { ...c, loyalty_points: newPoints, credit: Math.max(0, newCredit) }
+                        : c
+                ))
+
+                addToast(`🎉 ₹${discountValue} redeemed! ${newPoints} points remaining.`, 'success')
+
+                // Send WhatsApp confirmation
+                const waMessage = `🎉 Congratulations ${customer.name}!\n\nYou've redeemed ${pointsToRedeem.toLocaleString()} loyalty points for ₹${discountValue.toLocaleString()} discount!\n\nRemaining points: ${newPoints.toLocaleString()}\n\nThank you for being a valued customer! 🙏\n_Powered by KadaiGPT_`
+                const waUrl = `https://wa.me/91${customer.phone}?text=${encodeURIComponent(waMessage)}`
+                window.open(waUrl, '_blank')
+            } catch (error) {
+                addToast('Failed to redeem points', 'error')
+            }
+        }
+    }
+
     if (loading) {
         return (
             <div className="loading-container">
@@ -248,6 +287,10 @@ export default function Customers({ addToast }) {
                                 <span className="value">₹{(customer.total_purchases || 0).toLocaleString()}</span>
                             </div>
                             <div className="customer-stat">
+                                <span className="label">Loyalty Points</span>
+                                <span className="value loyalty-points">⭐ {(customer.loyalty_points || customer.loyaltyPoints || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="customer-stat">
                                 <span className="label">Last Purchase</span>
                                 <span className="value">
                                     {customer.last_purchase
@@ -256,6 +299,16 @@ export default function Customers({ addToast }) {
                                 </span>
                             </div>
                         </div>
+
+                        {/* Loyalty Points Redemption */}
+                        {(customer.loyalty_points || customer.loyaltyPoints || 0) >= 10000 && (
+                            <div className="loyalty-section">
+                                <span>🎉 Eligible for ₹{Math.floor((customer.loyalty_points || 0) / 10000) * 1000} discount!</span>
+                                <button className="btn btn-sm btn-success" onClick={() => handleRedeemPoints(customer)}>
+                                    Redeem Points
+                                </button>
+                            </div>
+                        )}
 
                         {(customer.credit || 0) > 0 && (
                             <div className="credit-section">
