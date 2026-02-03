@@ -3,6 +3,9 @@ import { TrendingUp, ShoppingBag, Users, AlertTriangle, IndianRupee, ArrowUpRigh
 import realDataService from '../services/realDataService'
 import WhatsAppAgentPanel from '../components/WhatsAppAgentPanel'
 import AIInsightsPanel from '../components/AIInsightsPanel'
+import SmartGoals from '../components/SmartGoals'
+import ChurnPrediction from '../components/ChurnPrediction'
+import ProfitMarginAnalyzer from '../components/ProfitMarginAnalyzer'
 import api from '../services/api'
 
 export default function Dashboard({ addToast, setCurrentPage }) {
@@ -317,6 +320,17 @@ export default function Dashboard({ addToast, setCurrentPage }) {
 
       {/* AI Insights Panel - Advanced AI Analytics */}
       <AIInsightsPanel addToast={addToast} />
+
+      {/* Advanced AI Features Grid */}
+      <div className="ai-features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: '24px' }}>
+        <SmartGoals addToast={addToast} />
+        <ChurnPrediction addToast={addToast} />
+      </div>
+
+      {/* Profit Margin Analyzer */}
+      <div style={{ marginTop: '24px' }}>
+        <ProfitMarginAnalyzer addToast={addToast} />
+      </div>
 
       <style>{`
         /* Dashboard Header */
