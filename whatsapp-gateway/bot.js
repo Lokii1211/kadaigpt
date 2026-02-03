@@ -1,6 +1,6 @@
 /**
- * KadaiGPT WhatsApp Bot v3.1
- * Stores session in Postgres (already free on Railway!)
+ * KadaiGPT WhatsApp Bot v3.2
+ * Postgres session + QR Code URL for easy scanning
  */
 
 const {
@@ -15,26 +15,22 @@ const pino = require('pino');
 const fs = require('fs');
 const { Pool } = require('pg');
 
-// Use Railway Postgres or local file
 const DATABASE_URL = process.env.DATABASE_URL;
 const AUTH_DIR = './auth_info';
 
 let pool = null;
 if (DATABASE_URL) {
     pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
-    console.log('Using Postgres for session storage');
 }
 
 console.log('');
 console.log('╔═══════════════════════════════════════╗');
-console.log('║   KadaiGPT WhatsApp Bot v3.1          ║');
-console.log('║   Postgres Session Storage            ║');
+console.log('║   KadaiGPT WhatsApp Bot v3.2          ║');
 console.log('╚═══════════════════════════════════════╝');
 console.log('');
 
 // Postgres-based auth state
 async function usePostgresAuthState() {
-    // Create table if not exists
     await pool.query(`
         CREATE TABLE IF NOT EXISTS whatsapp_auth (
             key TEXT PRIMARY KEY,
@@ -65,7 +61,6 @@ async function usePostgresAuthState() {
         await pool.query('DELETE FROM whatsapp_auth WHERE key = $1', [key]);
     };
 
-    // Load or initialize creds
     let creds = await readData('creds');
     if (!creds) {
         creds = initAuthCreds();
@@ -110,7 +105,6 @@ async function usePostgresAuthState() {
     };
 }
 
-// File-based auth state (fallback)
 async function useFileAuthState() {
     const { useMultiFileAuthState } = require('@whiskeysockets/baileys');
     if (!fs.existsSync(AUTH_DIR)) {
@@ -125,20 +119,19 @@ async function start() {
     if (pool) {
         try {
             authState = await usePostgresAuthState();
-            console.log('✅ Using Postgres for auth');
+            console.log('✅ Postgres auth ready');
         } catch (e) {
-            console.log('Postgres failed, using files:', e.message);
+            console.log('Postgres error:', e.message);
             authState = await useFileAuthState();
         }
     } else {
         authState = await useFileAuthState();
-        console.log('Using file-based auth');
     }
 
     const { state, saveCreds } = authState;
     const { version } = await fetchLatestBaileysVersion();
 
-    console.log('WhatsApp Version:', version.join('.'));
+    console.log('WhatsApp:', version.join('.'));
     console.log('Connecting...');
 
     const sock = makeWASocket({
@@ -155,35 +148,37 @@ async function start() {
 
         if (qr) {
             console.log('');
-            console.log('═══════════════════════════════════════');
-            console.log('   SCAN QR WITH WHATSAPP               ');
-            console.log('═══════════════════════════════════════');
+            console.log('══════════════════════════════════════════════════════');
+            console.log('');
+            console.log('   📱 SCAN THIS QR CODE:');
+            console.log('');
+            console.log('   https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(qr));
+            console.log('');
+            console.log('   1. Copy the URL above');
+            console.log('   2. Open in browser');
+            console.log('   3. Scan QR with WhatsApp → Linked Devices');
+            console.log('');
+            console.log('══════════════════════════════════════════════════════');
+            console.log('');
         }
 
         if (connection === 'close') {
             const code = lastDisconnect?.error?.output?.statusCode;
             console.log('Disconnected:', code);
-
-            if (code === DisconnectReason.loggedOut) {
-                console.log('Logged out');
-            }
-
-            console.log('Reconnecting in 5s...');
             setTimeout(start, 5000);
         }
 
         if (connection === 'open') {
             console.log('');
-            console.log('═══════════════════════════════════════');
-            console.log('   ✅ CONNECTED! Bot is LIVE 24/7      ');
-            console.log('═══════════════════════════════════════');
+            console.log('══════════════════════════════════════════════════════');
+            console.log('   ✅ CONNECTED! KadaiGPT Bot is LIVE 24/7');
+            console.log('══════════════════════════════════════════════════════');
             console.log('');
         }
     });
 
     sock.ev.on('creds.update', saveCreds);
 
-    // Message handler
     sock.ev.on('messages.upsert', async ({ messages }) => {
         const msg = messages[0];
         if (!msg.message || msg.key.fromMe) return;
@@ -205,47 +200,27 @@ function getReply(text) {
         return `🙏 *Welcome to KadaiGPT!*
 
 📊 sales - Sales report
-📦 stock - Inventory
+📦 stock - Inventory  
 💸 expense - Expenses
 📈 profit - Profit
 🧾 bill - Bills
-📋 report - Daily report
 💡 help - Commands
 
 _KadaiGPT AI_ 🤖`;
     }
 
-    if (text.includes('sales')) {
-        return `📊 *Today's Sales*
-💰 Total: ₹12,450
-🧾 Bills: 28
-📈 +12% vs yesterday`;
-    }
-
-    if (text.includes('stock')) {
-        return `📦 *Stock*
-✅ In Stock: 156
-⚠️ Low: 8
-❌ Out: 3`;
-    }
-
-    if (text.includes('profit')) {
-        return `📈 *Profit*
-Revenue: ₹12,450
-Cost: ₹3,200
-Profit: ₹9,250 (74%)`;
-    }
-
-    if (text.includes('help')) {
-        return `🤖 *Commands*
-sales, stock, profit, expense, bill, report`;
-    }
+    if (text.includes('sales')) return `📊 *Sales*\n💰 ₹12,450 | 🧾 28 bills | 📈 +12%`;
+    if (text.includes('stock')) return `📦 *Stock*\n✅ 156 in | ⚠️ 8 low | ❌ 3 out`;
+    if (text.includes('profit')) return `📈 *Profit*\n₹12,450 - ₹3,200 = ₹9,250 (74%)`;
+    if (text.includes('expense')) return `💸 *Expense*\nToday: ₹3,200 | Month: ₹45,600`;
+    if (text.includes('bill')) return `🧾 *Bills*\n#1234 ₹850 | #1233 ₹1,200 | #1232 ₹450`;
+    if (text.includes('help')) return `🤖 sales, stock, profit, expense, bill`;
+    if (text.includes('thank')) return `🙏 Happy to help!`;
 
     return `Try: sales, stock, profit, help 🤖`;
 }
 
-setInterval(() => console.log(`[${new Date().toISOString()}] alive`), 300000);
-
+setInterval(() => console.log(`[${new Date().toISOString()}] ♥`), 300000);
 process.on('uncaughtException', (e) => console.error('Error:', e.message));
 process.on('unhandledRejection', (e) => console.error('Error:', e.message));
 
