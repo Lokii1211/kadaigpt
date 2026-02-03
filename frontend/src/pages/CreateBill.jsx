@@ -19,6 +19,9 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     const [discount, setDiscount] = useState(0)
     const [discountType, setDiscountType] = useState('percentage') // 'percentage' or 'fixed'
     const [gstRate, setGstRate] = useState(parseInt(localStorage.getItem('kadai_default_gst_rate') || '5')) // Use configured default
+    const [existingCustomer, setExistingCustomer] = useState(null) // For customer lookup
+    const [redeemPoints, setRedeemPoints] = useState(0) // Points to redeem
+    const [lookingUpCustomer, setLookingUpCustomer] = useState(false)
 
     useEffect(() => {
         loadProducts()
@@ -82,6 +85,33 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         setCustomer({ name: '', phone: '' })
         setBillNumber('')
         setDiscount(0)
+        setExistingCustomer(null)
+        setRedeemPoints(0)
+    }
+
+    // Lookup customer by phone number
+    const lookupCustomer = async (phone) => {
+        if (!phone || phone.length < 10) {
+            setExistingCustomer(null)
+            return
+        }
+
+        setLookingUpCustomer(true)
+        try {
+            const customers = await api.getCustomers?.() || []
+            const found = customers.find(c => c.phone === phone || c.phone === `+91${phone}`)
+            if (found) {
+                setExistingCustomer(found)
+                setCustomer({ ...customer, name: found.name })
+                addToast(`Welcome back, ${found.name}! ${found.loyalty_points || 0} points available`, 'success')
+            } else {
+                setExistingCustomer(null)
+            }
+        } catch (error) {
+            console.log('Customer lookup failed:', error)
+        } finally {
+            setLookingUpCustomer(false)
+        }
     }
 
     // Proper billing calculations
@@ -89,7 +119,8 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     const discountAmount = discountType === 'percentage'
         ? Math.round((subtotal * discount) / 100)
         : Math.min(discount, subtotal)
-    const taxableAmount = subtotal - discountAmount
+    const pointsDiscount = Math.floor(redeemPoints / 10) // 10 points = ₹1
+    const taxableAmount = Math.max(0, subtotal - discountAmount - pointsDiscount)
     const cgst = Math.round((taxableAmount * gstRate) / 200) // Half of GST rate for CGST
     const sgst = Math.round((taxableAmount * gstRate) / 200) // Half of GST rate for SGST
     const tax = cgst + sgst
@@ -387,22 +418,69 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                             )}
                         </div>
 
-                        {/* Customer Info */}
+                        {/* Customer Info with Loyalty */}
                         <div className="customer-info">
+                            <div className="phone-lookup">
+                                <input
+                                    type="tel"
+                                    className="form-input"
+                                    placeholder="📱 Phone Number *"
+                                    value={customer.phone}
+                                    onChange={(e) => {
+                                        setCustomer({ ...customer, phone: e.target.value })
+                                        if (e.target.value.length >= 10) {
+                                            lookupCustomer(e.target.value)
+                                        }
+                                    }}
+                                />
+                                {lookingUpCustomer && <span className="lookup-loading">🔍</span>}
+                            </div>
                             <input
                                 type="text"
                                 className="form-input"
-                                placeholder="Customer Name (Optional)"
+                                placeholder="👤 Customer Name"
                                 value={customer.name}
                                 onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
                             />
-                            <input
-                                type="tel"
-                                className="form-input"
-                                placeholder="Phone (Optional)"
-                                value={customer.phone}
-                                onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
-                            />
+
+                            {/* Show Loyalty Points if existing customer */}
+                            {existingCustomer && (
+                                <div className="loyalty-banner">
+                                    <div className="loyalty-info">
+                                        <span className="loyalty-label">⭐ Loyalty Points</span>
+                                        <span className="loyalty-points">{existingCustomer.loyalty_points || 0}</span>
+                                    </div>
+                                    {(existingCustomer.loyalty_points || 0) >= 100 && (
+                                        <div className="redeem-section">
+                                            <label>Redeem Points:</label>
+                                            <input
+                                                type="number"
+                                                className="form-input small"
+                                                value={redeemPoints}
+                                                onChange={(e) => setRedeemPoints(Math.min(
+                                                    Math.max(0, parseInt(e.target.value) || 0),
+                                                    existingCustomer.loyalty_points || 0
+                                                ))}
+                                                max={existingCustomer.loyalty_points || 0}
+                                                min={0}
+                                                step={100}
+                                            />
+                                            <span className="redeem-value">= ₹{Math.floor(redeemPoints / 10)}</span>
+                                        </div>
+                                    )}
+                                    {existingCustomer.credit > 0 && (
+                                        <div className="credit-due">
+                                            ⚠️ Credit Due: ₹{existingCustomer.credit}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {!existingCustomer && customer.phone?.length >= 10 && (
+                                <div className="new-customer-badge">
+                                    ✨ New Customer - Will be added automatically!
+                                </div>
+                            )}
                         </div>
 
                         {/* Cart Items */}
@@ -501,6 +579,12 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                                     <div className="total-row discount">
                                         <span>Discount ({discountType === 'percentage' ? `${discount}%` : '₹'})</span>
                                         <span className="text-success">-₹{discountAmount.toLocaleString('en-IN')}</span>
+                                    </div>
+                                )}
+                                {pointsDiscount > 0 && (
+                                    <div className="total-row discount">
+                                        <span>⭐ Points Redeemed ({redeemPoints}pts)</span>
+                                        <span className="text-success">-₹{pointsDiscount.toLocaleString('en-IN')}</span>
                                     </div>
                                 )}
                                 <div className="total-row">
@@ -739,6 +823,49 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           flex-shrink: 0;
         }
         .customer-info input { padding: 8px 10px; font-size: 0.8rem; }
+        
+        .phone-lookup { position: relative; display: flex; align-items: center; }
+        .phone-lookup input { flex: 1; }
+        .lookup-loading { position: absolute; right: 10px; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .loyalty-banner {
+          background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(234, 179, 8, 0.1));
+          border: 1px solid var(--primary-400);
+          border-radius: var(--radius-md);
+          padding: 10px;
+          margin-top: 4px;
+        }
+        .loyalty-info { display: flex; justify-content: space-between; align-items: center; }
+        .loyalty-label { font-size: 0.75rem; color: var(--text-secondary); }
+        .loyalty-points { font-size: 1.25rem; font-weight: 700; color: var(--primary-400); }
+        
+        .redeem-section {
+          display: flex; align-items: center; gap: 8px;
+          margin-top: 8px; padding-top: 8px;
+          border-top: 1px dashed var(--border-subtle);
+          font-size: 0.75rem;
+        }
+        .redeem-section label { color: var(--text-secondary); }
+        .redeem-section input { width: 70px; }
+        .redeem-value { color: var(--success); font-weight: 600; }
+        
+        .credit-due {
+          margin-top: 8px; padding: 6px 8px;
+          background: rgba(239, 68, 68, 0.1);
+          border-radius: var(--radius-sm);
+          font-size: 0.75rem; color: var(--error);
+        }
+        
+        .new-customer-badge {
+          background: rgba(34, 197, 94, 0.1);
+          border: 1px dashed var(--success);
+          border-radius: var(--radius-sm);
+          padding: 8px;
+          font-size: 0.75rem;
+          color: var(--success);
+          text-align: center;
+        }
         
         .cart-items { 
           flex: 1; 

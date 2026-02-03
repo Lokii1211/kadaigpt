@@ -427,6 +427,62 @@ export default function Settings({ addToast }) {
                         </p>
                     </div>
                 </div>
+
+                {/* Subscription Plans */}
+                <div className="card settings-card subscription-card" style={{ gridColumn: '1 / -1' }}>
+                    <div className="card-header">
+                        <h3 className="card-title">💎 Subscription Plans</h3>
+                        <span className="current-plan">Current: Free Trial</span>
+                    </div>
+                    <div className="subscription-plans">
+                        <div className="plan-card free">
+                            <div className="plan-badge">Free</div>
+                            <h4>Starter</h4>
+                            <div className="plan-price">₹0<span>/month</span></div>
+                            <ul className="plan-features">
+                                <li>✅ 50 Bills/month</li>
+                                <li>✅ 20 Products</li>
+                                <li>✅ Basic Analytics</li>
+                                <li>✅ WhatsApp Notifications</li>
+                                <li>❌ GST Reports</li>
+                                <li>❌ AI Predictions</li>
+                            </ul>
+                            <button className="btn btn-secondary" disabled>Current Plan</button>
+                        </div>
+
+                        <div className="plan-card pro popular">
+                            <div className="plan-badge">Most Popular</div>
+                            <h4>Pro</h4>
+                            <div className="plan-price">₹299<span>/month</span></div>
+                            <ul className="plan-features">
+                                <li>✅ Unlimited Bills</li>
+                                <li>✅ 500 Products</li>
+                                <li>✅ Advanced Analytics</li>
+                                <li>✅ WhatsApp Integration</li>
+                                <li>✅ GST Reports & Filing</li>
+                                <li>✅ AI Price Predictions</li>
+                                <li>✅ Multi-language Support</li>
+                            </ul>
+                            <button className="btn btn-primary" onClick={() => addToast('Upgrade coming soon!', 'info')}>Upgrade Now</button>
+                        </div>
+
+                        <div className="plan-card enterprise">
+                            <div className="plan-badge">Enterprise</div>
+                            <h4>Business</h4>
+                            <div className="plan-price">₹999<span>/month</span></div>
+                            <ul className="plan-features">
+                                <li>✅ Everything in Pro</li>
+                                <li>✅ Multiple Stores</li>
+                                <li>✅ Team Access (5 users)</li>
+                                <li>✅ Advanced AI Insights</li>
+                                <li>✅ Priority Support</li>
+                                <li>✅ Custom Integrations</li>
+                                <li>✅ Dedicated Account Manager</li>
+                            </ul>
+                            <button className="btn btn-ghost" onClick={() => addToast('Contact sales@kadaigpt.com', 'info')}>Contact Sales</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <style>{`
@@ -537,6 +593,98 @@ export default function Settings({ addToast }) {
           align-items: center;
           gap: 6px;
         }
+        
+        /* Subscription Plans */
+        .current-plan {
+          font-size: 0.8rem;
+          background: var(--primary-500);
+          color: white;
+          padding: 4px 12px;
+          border-radius: var(--radius-md);
+        }
+        
+        .subscription-plans {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+          margin-top: 16px;
+        }
+        
+        @media (max-width: 900px) {
+          .subscription-plans { grid-template-columns: 1fr; }
+        }
+        
+        .plan-card {
+          background: var(--bg-tertiary);
+          border: 2px solid var(--border-subtle);
+          border-radius: var(--radius-xl);
+          padding: 24px;
+          text-align: center;
+          position: relative;
+          transition: all 0.3s;
+        }
+        
+        .plan-card:hover {
+          transform: translateY(-4px);
+          border-color: var(--primary-400);
+        }
+        
+        .plan-card.popular {
+          border-color: var(--primary-400);
+          background: linear-gradient(135deg, rgba(249, 115, 22, 0.05), rgba(234, 179, 8, 0.05));
+        }
+        
+        .plan-badge {
+          display: inline-block;
+          font-size: 0.7rem;
+          padding: 4px 10px;
+          border-radius: var(--radius-sm);
+          margin-bottom: 12px;
+          background: var(--bg-secondary);
+          color: var(--text-tertiary);
+          text-transform: uppercase;
+          font-weight: 600;
+        }
+        
+        .plan-card.popular .plan-badge {
+          background: var(--primary-500);
+          color: white;
+        }
+        
+        .plan-card h4 {
+          font-size: 1.25rem;
+          margin-bottom: 8px;
+        }
+        
+        .plan-price {
+          font-size: 2.5rem;
+          font-weight: 700;
+          color: var(--primary-400);
+          margin-bottom: 16px;
+        }
+        
+        .plan-price span {
+          font-size: 0.9rem;
+          color: var(--text-tertiary);
+          font-weight: 400;
+        }
+        
+        .plan-features {
+          list-style: none;
+          padding: 0;
+          margin: 0 0 20px 0;
+          text-align: left;
+          font-size: 0.85rem;
+        }
+        
+        .plan-features li {
+          padding: 6px 0;
+          border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .plan-features li:last-child { border-bottom: none; }
+        
+        .plan-card .btn { width: 100%; }
       `}</style>
         </div>
     )

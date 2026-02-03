@@ -37,7 +37,10 @@ export default function Products({ addToast }) {
                     stock: p.stock || p.current_stock || 0,
                     minStock: p.minStock || p.min_stock_alert || 10,
                     dailySales: p.dailySales || p.daily_sales || 2,
-                    trend: p.trend || 'stable'
+                    trend: p.trend || 'stable',
+                    // Properly map category - handle both string and object formats
+                    category: typeof p.category === 'string' ? p.category :
+                        (p.category?.name || p.category_name || 'General')
                 }))
                 setProducts(mappedProducts)
             } else {
