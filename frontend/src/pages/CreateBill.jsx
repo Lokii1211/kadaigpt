@@ -729,12 +729,13 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         
         .products-grid { 
           display: grid; 
-          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-          gap: 12px;
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+          gap: 10px;
           overflow-y: auto;
           flex: 1;
           padding: 4px;
           padding-right: 8px;
+          align-content: start;
         }
         
         .products-grid::-webkit-scrollbar { width: 6px; }
@@ -744,21 +745,21 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .product-item {
           background: var(--bg-card); 
           border: 1px solid var(--border-subtle);
-          border-radius: var(--radius-lg); 
-          padding: 14px; 
+          border-radius: var(--radius-md); 
+          padding: 10px; 
           cursor: pointer;
           transition: all 0.2s;
           position: relative;
-          min-height: 90px;
+          height: fit-content;
         }
         .product-item:hover { 
           border-color: var(--primary-400); 
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        .product-name { font-weight: 600; margin-bottom: 4px; font-size: 0.9rem; }
-        .product-price { color: var(--primary-400); font-weight: 700; font-size: 1rem; }
-        .product-stock { font-size: 0.7rem; color: var(--text-tertiary); margin-top: 4px; }
+        .product-name { font-weight: 600; margin-bottom: 2px; font-size: 0.8rem; line-height: 1.2; }
+        .product-price { color: var(--primary-400); font-weight: 700; font-size: 0.9rem; }
+        .product-stock { font-size: 0.65rem; color: var(--text-tertiary); margin-top: 2px; }
         .add-btn {
           position: absolute; 
           top: 8px; 
@@ -780,11 +781,12 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         
         /* Cart Section - Fixed width on desktop */
         .cart-section {
-          width: 340px;
+          width: 300px;
           flex-shrink: 0;
           display: flex;
           flex-direction: column;
-          overflow: hidden;
+          overflow: visible;
+          margin-right: 60px; /* Space for AI button */
         }
         
         .cart-card { 
