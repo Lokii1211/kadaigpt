@@ -254,8 +254,8 @@ export default function AICopilot({ currentPage, addToast }) {
 const copilotStyles = `
     .copilot-panel {
         position: fixed;
-        bottom: 140px;
-        right: 20px;
+        bottom: 100px;
+        left: 280px;
         width: 280px;
         max-height: 400px;
         background: var(--bg-card);
@@ -386,8 +386,8 @@ const copilotStyles = `
     /* Minimized state */
     .copilot-minimized {
         position: fixed;
-        bottom: 90px;
-        right: 20px;
+        bottom: 100px;
+        left: 280px;
         width: 44px;
         height: 44px;
         display: flex;

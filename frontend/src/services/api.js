@@ -317,6 +317,7 @@ class ApiService {
             current_stock: product.current_stock || product.stock || 0,
             min_stock_alert: product.min_stock_alert || product.minStock || 10,
             unit: product.unit || 'kg',
+            category: product.category || 'General', // Store category name
             category_id: product.category_id || null,
             description: product.description || '',
         }

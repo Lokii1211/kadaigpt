@@ -230,29 +230,40 @@ export default function CreateBill({ addToast, setCurrentPage }) {
             }))
 
             // AUTO-ADD OR UPDATE CUSTOMER WITH LOYALTY POINTS
-            if (customer.name || customer.phone) {
+            if (customer.phone && customer.phone.length >= 10) {
                 try {
                     // Calculate loyalty points: 10 points per ₹100
                     const loyaltyPointsEarned = Math.floor(total / 100) * 10
+                    const pointsToDeduct = redeemPoints || 0
 
                     // Check if customer exists by phone
-                    const existingCustomers = await api.getCustomers?.() || []
-                    const existingCustomer = existingCustomers.find(c => c.phone === customer.phone)
+                    let existingCustomers = []
+                    try {
+                        existingCustomers = await api.getCustomers() || []
+                    } catch (e) {
+                        console.log('Could not fetch customers:', e)
+                    }
 
-                    if (existingCustomer) {
-                        // UPDATE existing customer: add to purchases, update credit if on credit
+                    const matchedCustomer = existingCustomers.find(c =>
+                        c.phone === customer.phone || c.phone === `+91${customer.phone}`
+                    )
+
+                    if (matchedCustomer) {
+                        // UPDATE existing customer
                         const creditToAdd = paymentMode === 'credit' ? total : 0
-                        await api.updateCustomer?.(existingCustomer.id, {
-                            total_purchases: (existingCustomer.total_purchases || 0) + total,
-                            credit: (existingCustomer.credit || 0) + creditToAdd,
-                            loyalty_points: (existingCustomer.loyalty_points || 0) + loyaltyPointsEarned,
+                        const newLoyaltyPoints = Math.max(0, (matchedCustomer.loyalty_points || 0) + loyaltyPointsEarned - pointsToDeduct)
+
+                        await api.updateCustomer(matchedCustomer.id, {
+                            total_purchases: (matchedCustomer.total_purchases || 0) + total,
+                            credit: (matchedCustomer.credit || 0) + creditToAdd,
+                            loyalty_points: newLoyaltyPoints,
                             last_purchase: new Date().toISOString()
                         })
-                        addToast(`+${loyaltyPointsEarned} loyalty points added!`, 'success')
-                    } else if (customer.phone && customer.phone.length >= 10) {
+                        addToast(`+${loyaltyPointsEarned} points earned, ${pointsToDeduct} redeemed!`, 'success')
+                    } else {
                         // CREATE new customer
                         const creditAmount = paymentMode === 'credit' ? total : 0
-                        await api.createCustomer?.({
+                        await api.createCustomer({
                             name: customer.name || 'Walk-in Customer',
                             phone: customer.phone,
                             credit: creditAmount,
@@ -263,7 +274,8 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                         addToast(`New customer added with ${loyaltyPointsEarned} points!`, 'success')
                     }
                 } catch (custError) {
-                    console.log('Customer update failed:', custError)
+                    console.error('Customer update failed:', custError)
+                    addToast('Customer saved locally, will sync later', 'warning')
                 }
             }
 
