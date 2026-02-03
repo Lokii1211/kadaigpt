@@ -347,9 +347,9 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                 <p className="page-subtitle">Add products and generate invoice</p>
             </div>
 
-            <div className="bill-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '24px' }}>
+            <div className="bill-layout">
                 {/* Products Section */}
-                <div className="products-section">
+                <div className="products-section" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
                     {/* Search */}
                     <div className="card mb-lg">
                         <div className="search-input">
@@ -610,11 +610,38 @@ export default function CreateBill({ addToast, setCurrentPage }) {
             )}
 
             <style>{`
-        .bill-layout { display: grid; grid-template-columns: 1fr 400px; gap: 24px; }
+        .create-bill { padding-bottom: 20px; }
+        .bill-layout { 
+          display: grid; 
+          grid-template-columns: 1fr 380px; 
+          gap: 24px; 
+          min-height: calc(100vh - 200px);
+        }
+        .products-section {
+          max-height: calc(100vh - 200px);
+          overflow-y: auto;
+          padding-right: 8px;
+        }
+        .products-section::-webkit-scrollbar { width: 6px; }
+        .products-section::-webkit-scrollbar-track { background: var(--bg-tertiary); border-radius: 3px; }
+        .products-section::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 3px; }
+        .cart-section {
+          background: var(--bg-card);
+          border-radius: var(--radius-lg);
+          border: 1px solid var(--border-subtle);
+          height: fit-content;
+          max-height: calc(100vh - 200px);
+          position: sticky;
+          top: 20px;
+        }
         @media (max-width: 1024px) { 
           .bill-layout { 
             grid-template-columns: 1fr; 
-            padding-bottom: 180px; /* Space for sticky cart */
+            padding-bottom: 280px; /* Space for sticky cart */
+          }
+          .products-section {
+            max-height: none;
+            overflow-y: visible;
           }
           .cart-section {
             position: fixed;
@@ -627,6 +654,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
             border-top: 1px solid var(--border-subtle);
             max-height: 50vh;
             overflow-y: auto;
+            border-radius: 16px 16px 0 0;
           }
           .cart-card {
             height: auto !important;
