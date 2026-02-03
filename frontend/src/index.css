@@ -1685,3 +1685,127 @@ tbody tr:last-child td {
     padding-bottom: var(--space-lg);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE SCROLLING FIX
+═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Enable smooth scrolling on mobile */
+  html,
+  body {
+    height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Main content scrolling */
+  .main-content {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 100px !important;
+  }
+
+  /* Fix app container for mobile */
+  .app,
+  .app-container {
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important;
+  }
+
+  /* Ensure all page content is scrollable */
+  .dashboard-page,
+  .analytics-page,
+  .products-page,
+  .bills-page,
+  .customers-page,
+  .settings-page,
+  .gst-reports-page,
+  .loyalty-page,
+  [class*="-page"] {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    min-height: auto;
+    padding-bottom: 80px;
+  }
+
+  /* Fix modals on mobile */
+  .modal-overlay {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal {
+    margin: 20px auto;
+    max-height: calc(100vh - 40px);
+  }
+
+  /* Cards should not restrict scrolling */
+  .card {
+    overflow: visible;
+  }
+
+  /* AI Features Grid fix */
+  .ai-features-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Hide sidebar on mobile */
+  .sidebar {
+    display: none;
+  }
+
+  /* Page header mobile fix */
+  .page-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  /* Stats grid mobile */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  /* Quick actions mobile */
+  .quick-actions {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-card {
+    padding: 12px !important;
+  }
+
+  .stat-value {
+    font-size: 1.5rem !important;
+  }
+
+  h1,
+  .page-title {
+    font-size: 1.5rem !important;
+  }
+
+  .modal {
+    margin: 10px;
+    max-height: calc(100vh - 20px);
+  }
+}

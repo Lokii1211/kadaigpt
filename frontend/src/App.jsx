@@ -5,6 +5,7 @@ import MobileNav from './components/MobileNav'
 import OnboardingWizard from './components/OnboardingWizard'
 import CommandPalette from './components/CommandPalette'
 import UnifiedAIAssistant from './components/UnifiedAIAssistant'
+import VoiceCommandAgent from './components/VoiceCommandAgent'
 import Dashboard from './pages/Dashboard'
 import Bills from './pages/Bills'
 import OCRCapture from './pages/OCRCapture'
@@ -381,6 +382,12 @@ function App() {
                 addToast={addToast}
                 setCurrentPage={setCurrentPage}
                 products={products}
+            />
+
+            {/* Voice Command AI Agent */}
+            <VoiceCommandAgent
+                addToast={addToast}
+                setCurrentPage={setCurrentPage}
             />
 
             {/* Toast Notifications */}

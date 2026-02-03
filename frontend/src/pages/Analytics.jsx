@@ -98,14 +98,6 @@ export default function Analytics({ addToast }) {
                     <p className="page-subtitle">AI-powered business insights</p>
                 </div>
                 <div className="header-filters">
-                    <DateRangeFilter
-                        initialPreset="week"
-                        onChange={(range, preset) => {
-                            if (preset === 'today') setPeriod('today')
-                            else if (preset === 'last7' || preset === 'thisWeek') setPeriod('week')
-                            else setPeriod('month')
-                        }}
-                    />
                     <div className="period-selector">
                         {['today', 'week', 'month', 'year'].map(p => (
                             <button

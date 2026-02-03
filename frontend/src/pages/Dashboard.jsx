@@ -144,10 +144,12 @@ export default function Dashboard({ addToast, setCurrentPage }) {
             <span className="stat-value">{formatCurrency(stats.todaySales)}</span>
             <span className="stat-label">Today's Sales</span>
           </div>
-          <div className="stat-change positive">
-            <ArrowUpRight size={16} />
-            +18.5%
-          </div>
+          {stats.todaySales > 0 && (
+            <div className="stat-change positive">
+              <ArrowUpRight size={16} />
+              Active
+            </div>
+          )}
         </div>
         <div className="stat-card">
           <div className="stat-icon"><ShoppingBag size={28} /></div>
@@ -155,10 +157,12 @@ export default function Dashboard({ addToast, setCurrentPage }) {
             <span className="stat-value">{stats.todayBills}</span>
             <span className="stat-label">Total Bills</span>
           </div>
-          <div className="stat-change positive">
-            <ArrowUpRight size={16} />
-            +12%
-          </div>
+          {stats.todayBills > 0 && (
+            <div className="stat-change positive">
+              <ArrowUpRight size={16} />
+              {stats.todayBills} today
+            </div>
+          )}
         </div>
         <div className="stat-card">
           <div className="stat-icon"><TrendingUp size={28} /></div>
@@ -166,10 +170,12 @@ export default function Dashboard({ addToast, setCurrentPage }) {
             <span className="stat-value">{formatCurrency(stats.avgBillValue)}</span>
             <span className="stat-label">Avg Bill Value</span>
           </div>
-          <div className="stat-change positive">
-            <ArrowUpRight size={16} />
-            +5.2%
-          </div>
+          {stats.avgBillValue > 0 && (
+            <div className="stat-change positive">
+              <ArrowUpRight size={16} />
+              Per bill
+            </div>
+          )}
         </div>
         <div className={`stat-card ${stats.lowStockCount > 0 ? 'warning' : ''}`}>
           <div className="stat-icon"><Package size={28} /></div>
