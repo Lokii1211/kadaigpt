@@ -1236,6 +1236,11 @@ tbody tr:last-child td {
   margin-left: 260px;
   padding: var(--space-xl);
   min-height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 .page-header {

@@ -4,14 +4,25 @@ import realDataService from '../services/realDataService'
 import api from '../services/api'
 
 export default function GSTReports({ addToast }) {
-    const [selectedMonth, setSelectedMonth] = useState('Jan 2026')
+    const [selectedMonth, setSelectedMonth] = useState('Feb 2026')
     const [generating, setGenerating] = useState(false)
     const [loading, setLoading] = useState(true)
     const [showExportMenu, setShowExportMenu] = useState(false)
     const [gstData, setGstData] = useState({
-        summary: { totalSales: 0, cgst: 0, sgst: 0, igst: 0, totalTax: 0, netPayable: 0 },
-        monthly: [],
-        invoices: []
+        summary: {
+            totalSales: 0,
+            taxableAmount: 0,
+            cgst: 0,
+            sgst: 0,
+            igst: 0,
+            totalTax: 0,
+            totalGST: 0,
+            exemptSales: 0,
+            netPayable: 0
+        },
+        monthly: [{ month: 'Feb 2026' }],
+        invoices: [],
+        breakdown: []
     })
 
     const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
@@ -342,28 +353,28 @@ export default function GSTReports({ addToast }) {
                 <div className="stat-card">
                     <IndianRupee size={24} />
                     <div>
-                        <span className="value">₹{gstData.summary.totalSales.toLocaleString()}</span>
+                        <span className="value">₹{(gstData?.summary?.totalSales || 0).toLocaleString()}</span>
                         <span className="label">Total Sales</span>
                     </div>
                 </div>
                 <div className="stat-card">
                     <Receipt size={24} />
                     <div>
-                        <span className="value">₹{gstData.summary.taxableAmount.toLocaleString()}</span>
+                        <span className="value">₹{(gstData?.summary?.taxableAmount || 0).toLocaleString()}</span>
                         <span className="label">Taxable Amount</span>
                     </div>
                 </div>
                 <div className="stat-card highlight">
                     <FileText size={24} />
                     <div>
-                        <span className="value">₹{gstData.summary.totalGST.toLocaleString()}</span>
+                        <span className="value">₹{(gstData?.summary?.totalGST || 0).toLocaleString()}</span>
                         <span className="label">Total GST</span>
                     </div>
                 </div>
                 <div className="stat-card">
                     <AlertCircle size={24} />
                     <div>
-                        <span className="value">₹{gstData.summary.exemptSales.toLocaleString()}</span>
+                        <span className="value">₹{(gstData?.summary?.exemptSales || 0).toLocaleString()}</span>
                         <span className="label">Exempt Sales</span>
                     </div>
                 </div>
@@ -387,25 +398,33 @@ export default function GSTReports({ addToast }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {gstData.breakdown.map((item, i) => (
-                                <tr key={i}>
-                                    <td>{item.category}</td>
-                                    <td>₹{item.sales.toLocaleString()}</td>
-                                    <td><span className={`rate-badge rate-${item.gstRate}`}>{item.gstRate}%</span></td>
-                                    <td>₹{item.cgst.toLocaleString()}</td>
-                                    <td>₹{item.sgst.toLocaleString()}</td>
-                                    <td className="total-gst">₹{(item.cgst + item.sgst).toLocaleString()}</td>
+                            {(gstData?.breakdown || []).length > 0 ? (
+                                (gstData?.breakdown || []).map((item, i) => (
+                                    <tr key={i}>
+                                        <td>{item?.category || 'General'}</td>
+                                        <td>₹{(item?.sales || 0).toLocaleString()}</td>
+                                        <td><span className={`rate-badge rate-${item?.gstRate || 5}`}>{item?.gstRate || 5}%</span></td>
+                                        <td>₹{(item?.cgst || 0).toLocaleString()}</td>
+                                        <td>₹{(item?.sgst || 0).toLocaleString()}</td>
+                                        <td className="total-gst">₹{((item?.cgst || 0) + (item?.sgst || 0)).toLocaleString()}</td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-tertiary)' }}>
+                                        No GST data available. Create some bills to see breakdown.
+                                    </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                         <tfoot>
                             <tr>
                                 <td><strong>Total</strong></td>
-                                <td><strong>₹{gstData.summary.totalSales.toLocaleString()}</strong></td>
+                                <td><strong>₹{(gstData?.summary?.totalSales || 0).toLocaleString()}</strong></td>
                                 <td></td>
-                                <td><strong>₹{gstData.summary.cgst.toLocaleString()}</strong></td>
-                                <td><strong>₹{gstData.summary.sgst.toLocaleString()}</strong></td>
-                                <td className="total-gst"><strong>₹{gstData.summary.totalGST.toLocaleString()}</strong></td>
+                                <td><strong>₹{(gstData?.summary?.cgst || 0).toLocaleString()}</strong></td>
+                                <td><strong>₹{(gstData?.summary?.sgst || 0).toLocaleString()}</strong></td>
+                                <td className="total-gst"><strong>₹{(gstData?.summary?.totalGST || 0).toLocaleString()}</strong></td>
                             </tr>
                         </tfoot>
                     </table>

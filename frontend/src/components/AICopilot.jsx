@@ -4,7 +4,7 @@ import realDataService from '../services/realDataService'
 
 export default function AICopilot({ currentPage, addToast }) {
     const [suggestions, setSuggestions] = useState([])
-    const [isMinimized, setIsMinimized] = useState(false)
+    const [isMinimized, setIsMinimized] = useState(true) // Start minimized for better UX
     const [dismissed, setDismissed] = useState([])
     const [loading, setLoading] = useState(true)
 
