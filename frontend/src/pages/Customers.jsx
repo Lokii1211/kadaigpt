@@ -153,7 +153,7 @@ export default function Customers({ addToast }) {
         addToast(`Reminder sent to ${customer.name}`, 'success')
     }
 
-    // Redeem loyalty points: 10000 points = ₹1000 discount
+    // Redeem loyalty points: 10000 points = ₹100 discount (100 points = ₹1)
     const handleRedeemPoints = async (customer) => {
         const points = customer.loyalty_points || customer.loyaltyPoints || 0
         if (points < 10000) {
@@ -162,7 +162,7 @@ export default function Customers({ addToast }) {
         }
 
         const pointsToRedeem = Math.floor(points / 10000) * 10000
-        const discountValue = pointsToRedeem / 10 // 10 points = ₹1
+        const discountValue = pointsToRedeem / 100 // 100 points = ₹1, so 10000 = ₹100
 
         if (window.confirm(`Redeem ${pointsToRedeem.toLocaleString()} points for ₹${discountValue.toLocaleString()} credit?`)) {
             try {
@@ -303,7 +303,7 @@ export default function Customers({ addToast }) {
                         {/* Loyalty Points Redemption */}
                         {(customer.loyalty_points || customer.loyaltyPoints || 0) >= 10000 && (
                             <div className="loyalty-section">
-                                <span>🎉 Eligible for ₹{Math.floor((customer.loyalty_points || 0) / 10000) * 1000} discount!</span>
+                                <span>🎉 Eligible for ₹{Math.floor((customer.loyalty_points || 0) / 10000) * 100} discount!</span>
                                 <button className="btn btn-sm btn-success" onClick={() => handleRedeemPoints(customer)}>
                                     Redeem Points
                                 </button>

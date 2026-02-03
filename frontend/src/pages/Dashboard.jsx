@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { TrendingUp, ShoppingBag, Users, AlertTriangle, IndianRupee, ArrowUpRight, Clock, Zap, FileText, Package, Plus, Camera, BarChart3, RefreshCw, WifiOff } from 'lucide-react'
 import realDataService from '../services/realDataService'
 import WhatsAppAgentPanel from '../components/WhatsAppAgentPanel'
+import AIInsightsPanel from '../components/AIInsightsPanel'
 import api from '../services/api'
 
 export default function Dashboard({ addToast, setCurrentPage }) {
@@ -313,15 +314,8 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         </div>
       </div>
 
-      {/* AI Insights Banner */}
-      <div className="ai-insights-banner">
-        <div className="ai-icon"><Zap size={24} /></div>
-        <div className="ai-content">
-          <h4>AI Insight</h4>
-          <p>Your peak sales hour is 11 AM - 12 PM. Consider having extra staff during this time for faster billing.</p>
-        </div>
-        <button className="btn btn-primary" onClick={() => setCurrentPage('analytics')}>View More Insights</button>
-      </div>
+      {/* AI Insights Panel - Advanced AI Analytics */}
+      <AIInsightsPanel addToast={addToast} />
 
       <style>{`
         /* Dashboard Header */

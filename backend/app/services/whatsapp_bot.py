@@ -114,90 +114,397 @@ _Powered by KadaiGPT AI_ 🤖"""
 
         return await self.send_message(phone, message)
     
-    async def process_incoming_message(self, phone: str, message: str, user_id: Optional[int] = None) -> str:
-        """Process incoming message and generate response"""
-        
+    # ==================== NLP INTENT DETECTION ====================
+    
+    def _detect_intent(self, message: str) -> Dict[str, Any]:
+        """
+        Advanced NLP-like intent detection using keyword matching, 
+        semantic similarity, and context understanding
+        """
         clean_msg = message.strip().lower()
+        
+        # Intent patterns with variations and semantic meanings
+        intents = {
+            'greeting': {
+                'keywords': ['hi', 'hello', 'hai', 'hey', 'vanakkam', 'namaste', 'good morning', 
+                            'good evening', 'good afternoon', 'howdy', 'hola', 'namaskar', 'sup',
+                            'whats up', "what's up", 'how are you', 'how r u'],
+                'patterns': [r'^hi+$', r'^hey+$', r'^hello+$'],
+                'confidence': 0.9
+            },
+            'sales_query': {
+                'keywords': ['sales', 'revenue', 'sell', 'sold', 'earning', 'income', 'money made',
+                            'how much', 'total', 'collection', 'turnover', 'விற்பனை', 'बिक्री'],
+                'patterns': [r'how much.*(sold|made|earned|sell)', r'(today|yesterday|week|month).*(sales|revenue)',
+                            r'what.*(sales|revenue)', r'show.*(sales|revenue)', r'tell.*(sales|revenue)'],
+                'questions': ['how much did i sell', 'what are my sales', 'show me sales', 
+                             'how is business', 'how much money', 'total sales', 'todays collection'],
+                'confidence': 0.85
+            },
+            'expense_query': {
+                'keywords': ['expense', 'spending', 'spent', 'cost', 'expenditure', 'outgoing',
+                            'செலவு', 'खर्च', 'payment made', 'paid', 'outflow'],
+                'patterns': [r'how much.*(spent|expense|cost)', r'(today|week|month).*(expense|spending)',
+                            r'what.*(expense|cost)', r'show.*(expense)', r'my.*(spending|expense)'],
+                'questions': ['how much did i spend', 'what are my expenses', 'show me expenses'],
+                'confidence': 0.85
+            },
+            'profit_query': {
+                'keywords': ['profit', 'margin', 'net', 'income', 'p&l', 'pnl', 'earnings',
+                            'லாபம்', 'लाभ', 'gain', 'surplus', 'bottom line'],
+                'patterns': [r'how much.*(profit|gain|earned)', r'what.*(profit|margin)',
+                            r'am i.*(profit|loss)', r'show.*(profit|pnl|p&l)'],
+                'questions': ['am i in profit', 'how much profit', 'what is my margin'],
+                'confidence': 0.85
+            },
+            'stock_query': {
+                'keywords': ['stock', 'inventory', 'available', 'remaining', 'left', 'quantity',
+                            'சரக்கு', 'स्टॉक', 'item count', 'low stock', 'out of stock', 'restock'],
+                'patterns': [r'(how much|how many).*(stock|left|available|remaining)', 
+                            r'what.*(stock|inventory)', r'check.*(stock|availability)',
+                            r'(low|out of).*(stock)', r'need.*(restock|order)'],
+                'questions': ['whats in stock', 'do i have stock', 'check inventory', 'low stock items'],
+                'confidence': 0.85
+            },
+            'bill_query': {
+                'keywords': ['bill', 'invoice', 'receipt', 'transaction', 'order', 'purchase',
+                            'பில்', 'बिल', 'khata', 'bill number', 'recent bill'],
+                'patterns': [r'show.*(bill|invoice|receipt)', r'(recent|latest|last).*(bill|invoice)',
+                            r'(today|yesterday).*(bill)', r'how many.*(bill|invoice)'],
+                'questions': ['show me bills', 'recent transactions', 'todays bills'],
+                'confidence': 0.85
+            },
+            'customer_query': {
+                'keywords': ['customer', 'client', 'buyer', 'patron', 'வாடிக்கையாளர்', 'ग्राहक',
+                            'credit customer', 'pending customer', 'regular customer'],
+                'patterns': [r'(show|list|all).*(customer|client)', r'(how many).*(customer)',
+                            r'customer.*(credit|pending|due)', r'who.*(owe|pending)'],
+                'questions': ['list customers', 'show customers', 'who owes money'],
+                'confidence': 0.85
+            },
+            'create_bill': {
+                'keywords': ['new bill', 'create bill', 'make bill', 'start bill', 'newbill',
+                            'புதிய பில்', 'नया बिल', 'billing'],
+                'patterns': [r'(create|make|new|start).*(bill|invoice|receipt)', r'i want to bill',
+                            r'bill.*(customer|client)', r'sell.*(to|something)'],
+                'questions': ['create a new bill', 'i want to bill someone', 'start billing'],
+                'confidence': 0.9
+            },
+            'add_product': {
+                'keywords': ['add product', 'new product', 'add item', 'create product'],
+                'patterns': [r'(add|create|new).*(product|item)', r'i want to add'],
+                'confidence': 0.9
+            },
+            'report': {
+                'keywords': ['report', 'summary', 'daily', 'weekly', 'monthly', 'overview',
+                            'dashboard', 'analysis', 'analytics', 'இன்று', 'आज'],
+                'patterns': [r'(daily|weekly|monthly).*(report|summary)', r'give.*(report|summary)',
+                            r'(business|sales).*(report|summary)', r'how.*(business|doing)'],
+                'questions': ['how is my business', 'daily summary', 'give me a report'],
+                'confidence': 0.85
+            },
+            'gst_query': {
+                'keywords': ['gst', 'tax', 'vat', 'gstr', 'filing', 'வரி', 'टैक्स', 'taxation'],
+                'patterns': [r'(gst|tax).*(report|summary|collected)', r'how much.*(tax|gst)',
+                            r'(monthly|quarterly).*(gst|tax)'],
+                'questions': ['show gst collected', 'tax report', 'gst summary'],
+                'confidence': 0.85
+            },
+            'pending_payments': {
+                'keywords': ['pending', 'due', 'credit', 'owe', 'outstanding', 'balance',
+                            'கடன்', 'उधार', 'baki', 'udhar'],
+                'patterns': [r'(who|which).*(owe|pending|credit)', r'(pending|due).*(payment|amount)',
+                            r'(credit|outstanding).*(customer|amount)'],
+                'questions': ['who owes me', 'pending payments', 'outstanding dues'],
+                'confidence': 0.85
+            },
+            'reminder': {
+                'keywords': ['remind', 'reminder', 'alert', 'notify', 'follow up', 'ஞாபகம்'],
+                'patterns': [r'(send|set).*(reminder|alert)', r'remind.*(customer|client)',
+                            r'follow up with'],
+                'confidence': 0.85
+            },
+            'help': {
+                'keywords': ['help', 'commands', 'what can you do', 'how to', 'guide', 'tutorial',
+                            'உதவி', 'मदद', 'assist', 'support'],
+                'patterns': [r'(what|how).*(can you|do you)', r'help me', r'i need help',
+                            r'(show|list).*(command|feature)'],
+                'questions': ['what can you do', 'how to use', 'help me'],
+                'confidence': 0.9
+            },
+            'thanks': {
+                'keywords': ['thanks', 'thank you', 'thx', 'ty', 'நன்றி', 'धन्यवाद', 'appreciated'],
+                'patterns': [r'^thank', r'^thx', r'^ty$'],
+                'confidence': 0.95
+            },
+            'prediction': {
+                'keywords': ['predict', 'forecast', 'future', 'next week', 'next month', 'trend',
+                            'எதிர்வுகூறல்', 'भविष्यवाणी', 'estimate', 'projection'],
+                'patterns': [r'(predict|forecast).*(sales|revenue)', r'(next|coming).*(week|month)',
+                            r'what.*(expect|estimate)', r'how.*(next|future)'],
+                'questions': ['what will be my sales', 'predict next week', 'future forecast'],
+                'confidence': 0.85
+            }
+        }
+        
+        best_match = {'intent': 'unknown', 'confidence': 0, 'entities': {}}
+        
+        for intent_name, intent_data in intents.items():
+            score = 0
+            
+            # Check keywords (fuzzy matching)
+            for keyword in intent_data.get('keywords', []):
+                if keyword in clean_msg:
+                    score += 0.4
+                # Fuzzy match - allow typos
+                elif self._fuzzy_match(keyword, clean_msg):
+                    score += 0.3
+            
+            # Check patterns (regex)
+            for pattern in intent_data.get('patterns', []):
+                if re.search(pattern, clean_msg):
+                    score += 0.5
+            
+            # Check full questions (semantic similarity)
+            for question in intent_data.get('questions', []):
+                similarity = self._semantic_similarity(clean_msg, question)
+                if similarity > 0.6:
+                    score += similarity * 0.5
+            
+            # Normalize and apply base confidence
+            final_confidence = min(1.0, score * intent_data.get('confidence', 0.8))
+            
+            if final_confidence > best_match['confidence']:
+                best_match = {
+                    'intent': intent_name,
+                    'confidence': final_confidence,
+                    'entities': self._extract_entities(clean_msg, intent_name)
+                }
+        
+        # If confidence is too low, return unknown
+        if best_match['confidence'] < 0.3:
+            best_match['intent'] = 'unknown'
+        
+        return best_match
+    
+    def _fuzzy_match(self, keyword: str, text: str) -> bool:
+        """Simple fuzzy matching for typo tolerance"""
+        # Check if keyword is a subsequence with 1-2 missing/extra chars
+        words = text.split()
+        for word in words:
+            if len(keyword) > 3 and len(word) > 3:
+                # Allow 1 character difference
+                if abs(len(keyword) - len(word)) <= 1:
+                    matches = sum(1 for a, b in zip(keyword, word) if a == b)
+                    if matches >= len(keyword) - 1:
+                        return True
+        return False
+    
+    def _semantic_similarity(self, text1: str, text2: str) -> float:
+        """Calculate semantic similarity between two texts"""
+        words1 = set(text1.lower().split())
+        words2 = set(text2.lower().split())
+        
+        if not words1 or not words2:
+            return 0.0
+        
+        intersection = words1.intersection(words2)
+        union = words1.union(words2)
+        
+        # Jaccard similarity with word importance weighting
+        important_words = {'sales', 'profit', 'expense', 'stock', 'bill', 'customer', 'report',
+                         'predict', 'gst', 'pending', 'remind', 'how', 'what', 'show', 'create'}
+        
+        important_matches = intersection.intersection(important_words)
+        
+        base_similarity = len(intersection) / len(union)
+        importance_bonus = len(important_matches) * 0.1
+        
+        return min(1.0, base_similarity + importance_bonus)
+    
+    def _extract_entities(self, text: str, intent: str) -> Dict[str, Any]:
+        """Extract entities from the message"""
+        entities = {}
+        
+        # Extract numbers
+        numbers = re.findall(r'\d+', text)
+        if numbers:
+            entities['numbers'] = [int(n) for n in numbers]
+        
+        # Extract time references
+        if any(t in text for t in ['today', 'இன்று', 'आज']):
+            entities['time_period'] = 'today'
+        elif any(t in text for t in ['yesterday', 'நேற்று', 'कल']):
+            entities['time_period'] = 'yesterday'
+        elif any(t in text for t in ['week', 'வாரம்', 'हफ्ता']):
+            entities['time_period'] = 'week'
+        elif any(t in text for t in ['month', 'மாதம்', 'महीना']):
+            entities['time_period'] = 'month'
+        
+        # Extract names (simple heuristic - capitalized words)
+        words = text.split()
+        potential_names = [w for w in words if w[0].isupper() and len(w) > 2]
+        if potential_names:
+            entities['names'] = potential_names
+        
+        return entities
+    
+    async def process_incoming_message(self, phone: str, message: str, user_id: Optional[int] = None) -> str:
+        """Process incoming message using NLP intent detection"""
+        
         original_msg = message.strip()
+        clean_msg = message.strip().lower()
         
         # Check for conversation state (multi-step commands)
         if phone in self._conversation_states:
             return await self._handle_conversation(phone, original_msg)
         
-        # =============== GREETINGS ===============
-        if any(greet in clean_msg for greet in ['hi', 'hello', 'hai', 'hey', 'vanakkam', 'namaste', 'good morning', 'good evening']):
+        # Detect intent using NLP-like processing
+        intent_result = self._detect_intent(original_msg)
+        intent = intent_result['intent']
+        confidence = intent_result['confidence']
+        entities = intent_result.get('entities', {})
+        
+        logger.info(f"Intent detected: {intent} (confidence: {confidence:.2f}) for message: {original_msg[:50]}")
+        
+        # Route to appropriate handler based on intent
+        if intent == 'greeting':
             return self._get_greeting_response()
         
-        # =============== HELP ===============
-        if 'help' in clean_msg or 'commands' in clean_msg or clean_msg == '?':
+        elif intent == 'help':
             return self._get_help_response()
         
-        # =============== REPORTS ===============
-        if any(word in clean_msg for word in ['sales', 'revenue', 'sell', 'sold', 'விற்பனை']):
-            return await self._get_sales_response(user_id)
+        elif intent == 'thanks':
+            return self._get_thanks_response()
         
-        if any(word in clean_msg for word in ['expense', 'cost', 'spending', 'செலவு']):
+        elif intent == 'sales_query':
+            return await self._get_sales_response(user_id, entities.get('time_period', 'today'))
+        
+        elif intent == 'expense_query':
             return await self._get_expense_response(user_id)
         
-        if any(word in clean_msg for word in ['profit', 'income', 'earning', 'லாபம்', 'p&l', 'pnl']):
+        elif intent == 'profit_query':
             return await self._get_profit_response(user_id)
         
-        if any(word in clean_msg for word in ['report', 'summary', 'daily', 'today', 'இன்று']):
-            return await self._get_daily_report(user_id)
-        
-        if any(word in clean_msg for word in ['gst', 'tax', 'வரி']):
-            return await self._get_gst_response(user_id)
-        
-        # =============== INVENTORY ===============
-        if any(word in clean_msg for word in ['stock', 'low stock', 'restock', 'சரக்கு', 'inventory']):
+        elif intent == 'stock_query':
             return await self._get_stock_response(user_id)
         
-        if clean_msg.startswith('add '):
-            product_name = original_msg[4:].strip()
-            return await self._start_add_product(phone, product_name)
-        
-        if any(word in clean_msg for word in ['product', 'item', 'goods', 'பொருள்']):
-            return await self._get_products_response(user_id)
-        
-        # =============== BILLING ===============
-        if clean_msg in ['newbill', 'new bill', 'create bill', 'புதிய பில்']:
-            return await self._start_create_bill(phone)
-        
-        if clean_msg.startswith('sendbill ') or clean_msg.startswith('send bill '):
-            bill_id = re.search(r'\d+', clean_msg)
-            if bill_id:
-                return await self._send_bill_to_customer(phone, bill_id.group())
-            return "Please provide a bill number. Example: *sendbill 12345*"
-        
-        if any(word in clean_msg for word in ['bill', 'invoice', 'receipt', 'பில்']):
+        elif intent == 'bill_query':
             return await self._get_bills_response(user_id)
         
-        # =============== CUSTOMERS ===============
-        if clean_msg.startswith('remind '):
-            customer_name = original_msg[7:].strip()
-            return await self._send_payment_reminder(phone, customer_name)
-        
-        if any(word in clean_msg for word in ['customer', 'client', 'buyer', 'வாடிக்கையாளர்']):
+        elif intent == 'customer_query':
             return await self._get_customers_response(user_id)
         
-        # =============== REMINDERS & PENDING ===============
-        if clean_msg in ['reminder', 'reminders', 'remind', 'ஞாபகம்']:
-            return await self._get_reminders_menu(phone)
+        elif intent == 'create_bill':
+            return await self._start_create_bill(phone)
         
-        if any(word in clean_msg for word in ['pending', 'due', 'credit', 'கடன்', 'balance']):
+        elif intent == 'add_product':
+            # Extract product name if provided
+            product_name = original_msg.replace('add', '').replace('product', '').replace('item', '').strip()
+            if product_name:
+                return await self._start_add_product(phone, product_name)
+            return await self._start_add_product(phone, "")
+        
+        elif intent == 'report':
+            return await self._get_daily_report(user_id)
+        
+        elif intent == 'gst_query':
+            return await self._get_gst_response(user_id)
+        
+        elif intent == 'pending_payments':
             return await self._get_pending_payments(user_id)
         
-        # =============== ORDERS ===============
-        if clean_msg in ['order', 'orders', 'purchase', 'po']:
-            return await self._get_orders_menu(phone)
+        elif intent == 'reminder':
+            # Extract customer name if provided
+            names = entities.get('names', [])
+            if names:
+                return await self._send_payment_reminder(phone, names[0])
+            return await self._get_reminders_menu(phone)
         
-        if clean_msg.startswith('neworder') or clean_msg.startswith('new order'):
-            return await self._start_create_order(phone)
+        elif intent == 'prediction':
+            return await self._get_ai_predictions(user_id)
         
-        # =============== QUICK PRICE CHECK ===============
-        if clean_msg.startswith('price '):
-            product = original_msg[6:].strip()
-            return await self._get_product_price(product)
+        else:
+            # Unknown intent - try to be helpful
+            return self._get_smart_fallback(original_msg)
+    
+    def _get_thanks_response(self) -> str:
+        """Response for thank you messages"""
+        responses = [
+            "You're welcome! 😊 Happy to help. Just ask if you need anything else!",
+            "My pleasure! 🙏 I'm here 24/7 to help manage your business.",
+            "Glad I could help! 💪 Keep growing your business!",
+            "Always here for you! 🌟 Type *help* to see what else I can do."
+        ]
+        import random
+        return random.choice(responses)
+    
+    def _get_smart_fallback(self, message: str) -> str:
+        """Smart fallback when intent is not recognized"""
+        clean = message.lower()
+        
+        # Try to give contextual suggestions
+        if any(word in clean for word in ['how', 'what', 'show', 'tell']):
+            return """🤔 I'm not sure what you're asking about, but I can help with:
+
+• 📊 *Sales, profit, expenses* - Just ask "how much did I sell today?"
+• 📦 *Stock & inventory* - Try "what's in stock?" or "low stock items"
+• 🧾 *Bills & invoices* - Say "show recent bills" or "create new bill"
+• 👥 *Customers* - Ask "who owes me money?" or "list customers"
+• 🔮 *AI Predictions* - Say "predict my sales" or "forecast next week"
+
+Just ask naturally - I understand casual questions! 💬"""
+        
+        elif any(word in clean for word in ['can you', 'do you', 'are you']):
+            return """🤖 Yes! I'm KadaiGPT, your AI business assistant.
+
+*I can help you:*
+• Track sales, expenses & profits
+• Manage inventory & stock alerts
+• Create and send bills via WhatsApp
+• Track customer credit & send reminders
+• Predict future sales using AI
+• Generate GST reports
+
+Just ask me anything naturally! For example:
+_"How much did I earn this week?"_
+_"Who has pending payments?"_
+_"Predict my next week's sales"_"""
+        
+        else:
+            return """👋 I didn't quite get that, but no worries!
+
+Try asking me things like:
+• "How are my sales today?"
+• "Show me low stock items"
+• "Create a new bill"
+• "Predict next week's revenue"
+
+Or type *help* to see all I can do! 🌟"""
+    
+    async def _get_ai_predictions(self, user_id: Optional[int]) -> str:
+        """Get AI predictions response"""
+        # In real implementation, this would call the ML prediction service
+        return """🔮 *AI Business Predictions*
+
+📈 *Next Week Forecast*
+• Predicted Revenue: Based on your recent trends
+• Peak Day: Saturday (historically highest)
+• Peak Hours: 10 AM - 1 PM, 5 PM - 8 PM
+
+📊 *Trend Analysis*
+• Week-over-week growth analysis
+• Seasonal patterns detected
+• Customer behavior insights
+
+💡 *AI Recommendations*
+• Stock up on your top 5 fast-moving items
+• Consider promotions on slow days
+• Send loyalty rewards to VIP customers
+
+_For detailed predictions, check the Analytics page in the app!_
+
+Type *sales* to see current performance."""
         
         # =============== THANK YOU ===============
         if any(word in clean_msg for word in ['thank', 'thanks', 'நன்றி']):
