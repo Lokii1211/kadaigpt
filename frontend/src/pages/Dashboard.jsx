@@ -289,7 +289,11 @@ export default function Dashboard({ addToast, setCurrentPage }) {
                 </tr>
               </thead>
               <tbody>
-                {demoBills.slice(0, 5).map(bill => (
+                {(bills.length > 0 ? bills : [
+                  { id: 1, bill_number: 'KG-001', customer_name: 'Walk-in', total: 850, payment_mode: 'UPI' },
+                  { id: 2, bill_number: 'KG-002', customer_name: 'Ramesh', total: 1200, payment_mode: 'Cash' },
+                  { id: 3, bill_number: 'KG-003', customer_name: 'Priya', total: 450, payment_mode: 'Card' }
+                ]).slice(0, 5).map(bill => (
                   <tr key={bill.id}>
                     <td><code>{bill.bill_number}</code></td>
                     <td>{bill.customer_name}</td>
