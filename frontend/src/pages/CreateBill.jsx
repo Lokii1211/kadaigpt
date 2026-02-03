@@ -611,7 +611,32 @@ export default function CreateBill({ addToast, setCurrentPage }) {
 
             <style>{`
         .bill-layout { display: grid; grid-template-columns: 1fr 400px; gap: 24px; }
-        @media (max-width: 1024px) { .bill-layout { grid-template-columns: 1fr; } }
+        @media (max-width: 1024px) { 
+          .bill-layout { 
+            grid-template-columns: 1fr; 
+            padding-bottom: 180px; /* Space for sticky cart */
+          }
+          .cart-section {
+            position: fixed;
+            bottom: 70px;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-subtle);
+            max-height: 50vh;
+            overflow-y: auto;
+          }
+          .cart-card {
+            height: auto !important;
+            position: relative !important;
+            top: 0 !important;
+          }
+          .cart-items {
+            max-height: 150px;
+          }
+        }
         
         .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
         .product-item {
@@ -632,6 +657,9 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           opacity: 0; transition: opacity var(--transition-fast);
         }
         .product-item:hover .add-btn { opacity: 1; }
+        @media (max-width: 768px) {
+          .add-btn { opacity: 1; } /* Always show on mobile */
+        }
 
         .cart-card { display: flex; flex-direction: column; height: calc(100vh - 180px); position: sticky; top: 24px; }
         .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
@@ -677,6 +705,12 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .payment-btn { padding: 12px; background: var(--bg-tertiary); border: 2px solid transparent; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: all var(--transition-fast); color: var(--text-primary); }
         .payment-btn:hover { border-color: var(--border-default); }
         .payment-btn.active { border-color: var(--primary-400); background: rgba(249, 115, 22, 0.1); color: var(--primary-400); }
+        
+        .billing-controls { display: flex; gap: 12px; margin: 12px 0; flex-wrap: wrap; }
+        .control-row { display: flex; align-items: center; gap: 8px; }
+        .control-row label { font-size: 0.8125rem; color: var(--text-secondary); }
+        .discount-input { display: flex; gap: 4px; }
+        .form-input.small { width: 70px; padding: 6px 8px; }
         
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
