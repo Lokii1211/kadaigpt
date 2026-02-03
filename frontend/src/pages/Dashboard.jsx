@@ -10,7 +10,10 @@ import AutoRestockAgent from '../components/AutoRestockAgent'
 import RevenueForecastAgent from '../components/RevenueForecastAgent'
 import CustomerEngagementAgent from '../components/CustomerEngagementAgent'
 import AnomalyDetectionAgent from '../components/AnomalyDetectionAgent'
+import DailyActionPlanner from '../components/DailyActionPlanner'
+import SmartPricingAgent from '../components/SmartPricingAgent'
 import api from '../services/api'
+
 
 export default function Dashboard({ addToast, setCurrentPage }) {
   const [stats, setStats] = useState({
@@ -347,6 +350,12 @@ export default function Dashboard({ addToast, setCurrentPage }) {
       <div className="ai-agents-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: '24px' }}>
         <CustomerEngagementAgent addToast={addToast} />
         <AnomalyDetectionAgent addToast={addToast} />
+      </div>
+
+      {/* Daily Action Planner & Smart Pricing */}
+      <div className="ai-agents-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: '24px' }}>
+        <DailyActionPlanner addToast={addToast} setCurrentPage={setCurrentPage} />
+        <SmartPricingAgent addToast={addToast} />
       </div>
 
       {/* Profit Margin Analyzer */}
