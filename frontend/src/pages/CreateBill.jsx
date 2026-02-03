@@ -198,105 +198,123 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         }
 
         const billData = getBillData()
+        console.log('📝 Creating bill with payment mode:', paymentMode)
+        console.log('📝 Bill data:', billData)
 
         try {
-            // Save bill to API
+            // Save bill to API with correct payment_mode
             const result = await api.createBill({
                 ...billData,
-                payment_mode: paymentMode,
+                payment_mode: paymentMode.toLowerCase(), // Ensure lowercase for API
                 total: total
             })
+            console.log('✅ Bill created:', result)
 
             const newBillNumber = result.bill_number || `INV-${Date.now().toString().slice(-6)}`
             setBillNumber(newBillNumber)
 
-            // Update stock for each item sold
+            // UPDATE STOCK for each item sold
+            console.log('📦 Updating stock for', cart.length, 'items')
             for (const item of cart) {
                 try {
-                    const newStock = Math.max(0, (item.stock || 0) - item.quantity)
-                    await api.updateProduct(item.id, { current_stock: newStock })
+                    const currentStock = item.stock || item.current_stock || 0
+                    const newStock = Math.max(0, currentStock - item.quantity)
+                    console.log(`  📦 ${item.name}: ${currentStock} → ${newStock}`)
+
+                    await api.updateProduct(item.id, {
+                        current_stock: newStock,
+                        stock: newStock // Send both field names
+                    })
+                    console.log(`  ✅ Stock updated for ${item.name}`)
                 } catch (stockError) {
-                    console.log('Stock update via API failed, updating locally')
+                    console.error('  ❌ Stock update failed:', stockError)
                 }
             }
 
-            // Update local products state
-            setProducts(products.map(p => {
+            // Update local products state immediately
+            setProducts(prev => prev.map(p => {
                 const cartItem = cart.find(c => c.id === p.id)
                 if (cartItem) {
-                    return { ...p, stock: Math.max(0, p.stock - cartItem.quantity) }
+                    const newStock = Math.max(0, (p.stock || p.current_stock || 0) - cartItem.quantity)
+                    return { ...p, stock: newStock, current_stock: newStock }
                 }
                 return p
             }))
 
-            // AUTO-ADD OR UPDATE CUSTOMER WITH LOYALTY POINTS
+            // ADD OR UPDATE CUSTOMER
             if (customer.phone && customer.phone.length >= 10) {
+                console.log('👤 Processing customer:', customer.phone)
                 try {
-                    // Calculate loyalty points: 10 points per ₹100
                     const loyaltyPointsEarned = Math.floor(total / 100) * 10
                     const pointsToDeduct = redeemPoints || 0
 
-                    // Check if customer exists by phone
+                    // Fetch existing customers
                     let existingCustomers = []
                     try {
                         existingCustomers = await api.getCustomers() || []
+                        console.log('👥 Found', existingCustomers.length, 'existing customers')
                     } catch (e) {
                         console.log('Could not fetch customers:', e)
                     }
 
+                    // Match by phone (with or without country code)
                     const matchedCustomer = existingCustomers.find(c =>
-                        c.phone === customer.phone || c.phone === `+91${customer.phone}`
+                        c.phone === customer.phone ||
+                        c.phone === `+91${customer.phone}` ||
+                        c.phone?.replace(/\D/g, '') === customer.phone.replace(/\D/g, '')
                     )
 
                     if (matchedCustomer) {
-                        // UPDATE existing customer
-                        const creditToAdd = paymentMode === 'credit' ? total : 0
-                        const newLoyaltyPoints = Math.max(0, (matchedCustomer.loyalty_points || 0) + loyaltyPointsEarned - pointsToDeduct)
+                        console.log('👤 Updating existing customer:', matchedCustomer.id)
+                        const creditToAdd = paymentMode.toLowerCase() === 'credit' ? total : 0
+                        const newLoyalty = Math.max(0, (matchedCustomer.loyalty_points || 0) + loyaltyPointsEarned - pointsToDeduct)
 
                         await api.updateCustomer(matchedCustomer.id, {
                             total_purchases: (matchedCustomer.total_purchases || 0) + total,
                             credit: (matchedCustomer.credit || 0) + creditToAdd,
-                            loyalty_points: newLoyaltyPoints,
+                            loyalty_points: newLoyalty,
                             last_purchase: new Date().toISOString()
                         })
-                        addToast(`+${loyaltyPointsEarned} points earned, ${pointsToDeduct} redeemed!`, 'success')
+                        console.log('✅ Customer updated')
+                        addToast(`+${loyaltyPointsEarned} points earned!`, 'success')
                     } else {
-                        // CREATE new customer
-                        const creditAmount = paymentMode === 'credit' ? total : 0
-                        await api.createCustomer({
+                        console.log('👤 Creating new customer')
+                        const creditAmount = paymentMode.toLowerCase() === 'credit' ? total : 0
+
+                        const newCustomer = await api.createCustomer({
                             name: customer.name || 'Walk-in Customer',
                             phone: customer.phone,
+                            email: '',
+                            address: '',
                             credit: creditAmount,
                             loyalty_points: loyaltyPointsEarned,
                             total_purchases: total,
                             last_purchase: new Date().toISOString()
                         })
+                        console.log('✅ Customer created:', newCustomer)
                         addToast(`New customer added with ${loyaltyPointsEarned} points!`, 'success')
                     }
                 } catch (custError) {
-                    console.error('Customer update failed:', custError)
-                    addToast('Customer saved locally, will sync later', 'warning')
+                    console.error('❌ Customer operation failed:', custError)
+                    addToast('Customer will be synced later', 'warning')
                 }
             }
 
-            addToast('Bill saved & stock updated!', 'success')
+            addToast('Bill saved successfully!', 'success')
             setShowPayment(true)
 
-            // Auto-send bill to WhatsApp if customer phone is provided
+            // Auto-send to WhatsApp if phone provided
             if (customer.phone && customer.phone.length >= 10) {
                 const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
                 const loyaltyPoints = Math.floor(total / 100) * 10
                 const itemsList = cart.map(i => `• ${i.name} x${i.quantity} = ₹${i.price * i.quantity}`).join('\n')
-                const whatsappMessage = `🧾 *BILL - ${newBillNumber}*\n📍 ${storeName}\n\n${itemsList}\n\n💰 *Total: ₹${total.toFixed(2)}*\n📱 Payment: ${paymentMode}\n⭐ Loyalty Points Earned: +${loyaltyPoints}\n\nThank you for shopping! 🙏\n_Powered by KadaiGPT_`
+                const whatsappMessage = `🧾 *BILL - ${newBillNumber}*\n📍 ${storeName}\n\n${itemsList}\n\n💰 *Total: ₹${total.toFixed(2)}*\n📱 Payment: ${paymentMode}\n⭐ Loyalty Points: +${loyaltyPoints}\n\nThank you! 🙏\n_Powered by KadaiGPT_`
 
-                // Open WhatsApp with pre-filled message
                 const waUrl = `https://wa.me/91${customer.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
                 window.open(waUrl, '_blank')
-                addToast('Bill sent to WhatsApp!', 'success')
             }
         } catch (error) {
-            console.error('Error saving bill:', error)
-            // Fallback - still show as saved locally
+            console.error('❌ Error saving bill:', error)
             const newBillNumber = `INV-${Date.now().toString().slice(-6)}`
             setBillNumber(newBillNumber)
             addToast('Bill saved locally', 'info')

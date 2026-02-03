@@ -254,15 +254,15 @@ export default function AICopilot({ currentPage, addToast }) {
 const copilotStyles = `
     .copilot-panel {
         position: fixed;
-        bottom: 100px;
-        left: 280px;
-        width: 280px;
-        max-height: 400px;
+        top: 80px;
+        right: 20px;
+        width: 300px;
+        max-height: 450px;
         background: var(--bg-card);
         border: 1px solid var(--border-default);
         border-radius: 16px;
         box-shadow: var(--shadow-xl);
-        z-index: 900;
+        z-index: 1000;
         overflow: hidden;
     }
 
@@ -386,10 +386,10 @@ const copilotStyles = `
     /* Minimized state */
     .copilot-minimized {
         position: fixed;
-        bottom: 100px;
-        left: 280px;
-        width: 44px;
-        height: 44px;
+        top: 80px;
+        right: 20px;
+        width: 48px;
+        height: 48px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -399,7 +399,7 @@ const copilotStyles = `
         color: white;
         cursor: pointer;
         box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
-        z-index: 900;
+        z-index: 1000;
     }
 
     .suggestion-count {
