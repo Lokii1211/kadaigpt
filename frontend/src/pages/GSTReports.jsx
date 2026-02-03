@@ -34,6 +34,10 @@ export default function GSTReports({ addToast }) {
             let totalSales = 0
             let totalCgst = 0
             let totalSgst = 0
+            let exemptSales = 0
+
+            // Category breakdown
+            const categoryBreakdown = {}
 
             const invoices = bills.map(bill => {
                 const billTotal = bill.total || 0
@@ -44,6 +48,15 @@ export default function GSTReports({ addToast }) {
                 totalSales += taxableAmount
                 totalCgst += cgst
                 totalSgst += sgst
+
+                // Track category breakdown
+                const category = 'General' // Default category
+                if (!categoryBreakdown[category]) {
+                    categoryBreakdown[category] = { sales: 0, cgst: 0, sgst: 0, gstRate: defaultGstRate }
+                }
+                categoryBreakdown[category].sales += taxableAmount
+                categoryBreakdown[category].cgst += cgst
+                categoryBreakdown[category].sgst += sgst
 
                 // Safe date parsing
                 let dateStr = 'N/A'
@@ -65,26 +78,48 @@ export default function GSTReports({ addToast }) {
                 }
             })
 
+            // Convert breakdown to array
+            const breakdown = Object.entries(categoryBreakdown).map(([category, data]) => ({
+                category,
+                sales: Math.round(data.sales),
+                gstRate: data.gstRate,
+                cgst: Math.round(data.cgst),
+                sgst: Math.round(data.sgst)
+            }))
+
+            // Generate monthly periods
+            const now = new Date()
+            const months = []
+            for (let i = 0; i < 6; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+                months.push({ month: d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) })
+            }
+
             setGstData({
                 summary: {
                     totalSales: Math.round(totalSales),
+                    taxableAmount: Math.round(totalSales),
                     cgst: Math.round(totalCgst),
                     sgst: Math.round(totalSgst),
                     igst: 0,
                     totalTax: Math.round(totalCgst + totalSgst),
+                    totalGST: Math.round(totalCgst + totalSgst),
+                    exemptSales: Math.round(exemptSales),
                     netPayable: Math.round(totalCgst + totalSgst)
                 },
-                monthly: [],
-                invoices
+                monthly: months,
+                invoices,
+                breakdown
             })
         } catch (error) {
             console.error('Failed to load GST data:', error)
             addToast?.('Failed to load GST data', 'error')
             // Set empty data on error
             setGstData({
-                summary: { totalSales: 0, cgst: 0, sgst: 0, igst: 0, totalTax: 0, netPayable: 0 },
-                monthly: [],
-                invoices: []
+                summary: { totalSales: 0, taxableAmount: 0, cgst: 0, sgst: 0, igst: 0, totalTax: 0, totalGST: 0, exemptSales: 0, netPayable: 0 },
+                monthly: [{ month: 'Jan 2026' }],
+                invoices: [],
+                breakdown: []
             })
         } finally {
             setLoading(false)

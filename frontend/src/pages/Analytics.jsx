@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { TrendingUp, ShoppingBag, Users, IndianRupee, ArrowUpRight, ArrowDownRight, Minus, Zap, BarChart3, PieChart, Loader2, Sparkles, Calendar, WifiOff } from 'lucide-react'
 import realDataService from '../services/realDataService'
 import BusinessHealthCard from '../components/BusinessHealthCard'
+import PricePredictions from '../components/PricePredictions'
 import api from '../services/api'
+
 
 export default function Analytics({ addToast }) {
     const [period, setPeriod] = useState('week')
@@ -249,10 +251,10 @@ export default function Analytics({ addToast }) {
             {/* Price Predictions Section */}
             <div className="predictions-section">
                 <PricePredictions
-                    products={isDemoMode ? demoProducts : topProducts.map(p => ({
-                        id: p.id,
+                    products={topProducts.map(p => ({
+                        id: p.id || Math.random().toString(),
                         name: p.name,
-                        price: p.revenue / (p.sales || 1),
+                        price: p.revenue ? (p.revenue / (p.quantity || 1)) : 100,
                         category: p.category || 'General',
                         unit: p.unit || 'unit'
                     }))}
@@ -260,6 +262,7 @@ export default function Analytics({ addToast }) {
                     onAlertSet={(product) => addToast?.(`Price alert set for ${product.name}`, 'success')}
                 />
             </div>
+
 
             <style>{`
         .header-filters { 

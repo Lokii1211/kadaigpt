@@ -1962,3 +1962,381 @@ body.no-pull-refresh {
     background-position: -200% 0;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CROSS-PLATFORM UI ALIGNMENT
+   Mobile, iOS, Desktop compatibility fixes
+═══════════════════════════════════════════════════════════════════ */
+
+/* Analytics & GST Pages */
+.analytics-page,
+.gst-page {
+  padding-bottom: 100px;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.analytics-page .kpi-grid,
+.gst-page .gst-stats {
+  display: grid;
+  gap: 16px;
+}
+
+/* GST Stats Grid */
+.gst-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.gst-stats .stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.gst-stats .stat-card.highlight {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.05));
+  border-color: rgba(124, 58, 237, 0.3);
+}
+
+.gst-stats .stat-card .value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.gst-stats .stat-card .label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+/* Store Info Card */
+.store-info-card {
+  margin-bottom: 24px;
+}
+
+.store-info {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.store-info>div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.store-info .label {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.store-info .value {
+  font-weight: 600;
+}
+
+.store-info .gstin {
+  font-family: var(--font-mono);
+  color: var(--primary-400);
+}
+
+/* Export Dropdown */
+.export-dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  min-width: 160px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.dropdown-menu button {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.dropdown-menu button:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Rate badges */
+.rate-badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.rate-badge.rate-0 {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.rate-badge.rate-5 {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.rate-badge.rate-12 {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.rate-badge.rate-18 {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.total-gst {
+  font-weight: 700;
+  color: var(--primary-400);
+}
+
+/* GST Grid Layout */
+.gst-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 24px;
+}
+
+/* Header Actions */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* iOS Safe Area */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .app-container {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .mobile-nav {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .fab-button {
+    bottom: calc(90px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Tablet Breakpoint */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .gst-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .gst-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-agents-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Mobile Breakpoint */
+@media (max-width: 768px) {
+  .gst-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .gst-stats .stat-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .gst-stats .stat-card .value {
+    font-size: 1.1rem;
+  }
+
+  .gst-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .store-info {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .page-header .header-actions {
+    flex-wrap: wrap;
+  }
+
+  /* Table scrolling on mobile */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-container table {
+    min-width: 600px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .gst-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .header-actions .btn {
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+  }
+
+  .header-actions .btn span {
+    display: none;
+  }
+}
+
+/* Desktop hover states */
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    border-color: var(--border-default);
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  table tbody tr:hover {
+    background: var(--bg-tertiary);
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+
+  .card,
+  .stat-card,
+  .btn {
+    transition: none;
+  }
+
+  /* Larger touch targets */
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Remove hover effects */
+  .card:hover,
+  .stat-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* All page containers with proper scrolling */
+.analytics-page,
+.gst-page,
+.products-page,
+.customers-page,
+.bills-page,
+.settings-page,
+.loyalty-page,
+.staff-page {
+  min-height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  padding-bottom: 120px;
+}
+
+/* Empty state styling */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-tertiary);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  border-radius: inherit;
+}
+
+/* Better scrollbar for webkit */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-600);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-600) var(--bg-secondary);
+}
