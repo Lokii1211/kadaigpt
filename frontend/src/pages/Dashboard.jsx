@@ -6,6 +6,8 @@ import AIInsightsPanel from '../components/AIInsightsPanel'
 import SmartGoals from '../components/SmartGoals'
 import ChurnPrediction from '../components/ChurnPrediction'
 import ProfitMarginAnalyzer from '../components/ProfitMarginAnalyzer'
+import AutoRestockAgent from '../components/AutoRestockAgent'
+import RevenueForecastAgent from '../components/RevenueForecastAgent'
 import api from '../services/api'
 
 export default function Dashboard({ addToast, setCurrentPage }) {
@@ -331,6 +333,12 @@ export default function Dashboard({ addToast, setCurrentPage }) {
       <div className="ai-features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: '24px' }}>
         <SmartGoals addToast={addToast} />
         <ChurnPrediction addToast={addToast} />
+      </div>
+
+      {/* AI Agents Row */}
+      <div className="ai-agents-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: '24px' }}>
+        <AutoRestockAgent addToast={addToast} />
+        <RevenueForecastAgent addToast={addToast} />
       </div>
 
       {/* Profit Margin Analyzer */}
