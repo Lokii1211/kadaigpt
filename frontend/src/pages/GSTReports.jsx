@@ -228,15 +228,15 @@ export default function GSTReports({ addToast }) {
                         <div class="summary">
                             <div class="summary-box">
                                 <h3>Total Sales</h3>
-                                <p>₹${gstData.summary.totalSales.toLocaleString()}</p>
+                                <p>₹${(gstData?.summary?.totalSales || 0).toLocaleString()}</p>
                             </div>
                             <div class="summary-box">
                                 <h3>CGST Collected</h3>
-                                <p>₹${gstData.summary.cgst.toLocaleString()}</p>
+                                <p>₹${(gstData?.summary?.cgst || 0).toLocaleString()}</p>
                             </div>
                             <div class="summary-box">
                                 <h3>SGST Collected</h3>
-                                <p>₹${gstData.summary.sgst.toLocaleString()}</p>
+                                <p>₹${(gstData?.summary?.sgst || 0).toLocaleString()}</p>
                             </div>
                         </div>
                         <h2>Invoice Details</h2>
@@ -249,14 +249,14 @@ export default function GSTReports({ addToast }) {
                                 <th>SGST</th>
                                 <th>Total</th>
                             </tr>
-                            ${gstData.invoices.map(inv => `
+                            ${(gstData?.invoices || []).map(inv => `
                                 <tr>
-                                    <td>${inv.invoiceNo}</td>
-                                    <td>${inv.date}</td>
-                                    <td>₹${inv.taxableAmount.toLocaleString()}</td>
-                                    <td>₹${inv.cgst.toLocaleString()}</td>
-                                    <td>₹${inv.sgst.toLocaleString()}</td>
-                                    <td>₹${inv.total.toLocaleString()}</td>
+                                    <td>${inv?.invoiceNo || 'N/A'}</td>
+                                    <td>${inv?.date || 'N/A'}</td>
+                                    <td>₹${(inv?.taxableAmount || 0).toLocaleString()}</td>
+                                    <td>₹${(inv?.cgst || 0).toLocaleString()}</td>
+                                    <td>₹${(inv?.sgst || 0).toLocaleString()}</td>
+                                    <td>₹${(inv?.total || 0).toLocaleString()}</td>
                                 </tr>
                             `).join('')}
                         </table>
@@ -456,17 +456,23 @@ export default function GSTReports({ addToast }) {
                         <h3 className="card-title"><Calendar size={20} /> Filing History</h3>
                     </div>
                     <div className="filing-history">
-                        {gstData.monthly.map((record, i) => (
-                            <div key={i} className="filing-item">
-                                <div className="filing-info">
-                                    <span className="filing-month">{record.month}</span>
-                                    <span className="filing-amount">₹{record.sales.toLocaleString()} | GST: ₹{record.gst.toLocaleString()}</span>
+                        {(gstData?.monthly || []).length > 0 ? (
+                            (gstData?.monthly || []).map((record, i) => (
+                                <div key={i} className="filing-item">
+                                    <div className="filing-info">
+                                        <span className="filing-month">{record?.month || 'N/A'}</span>
+                                        <span className="filing-amount">₹{(record?.sales || 0).toLocaleString()} | GST: ₹{(record?.gst || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className={`filing-status ${record?.filed ? 'filed' : 'pending'}`}>
+                                        {record?.filed ? <><Check size={14} /> Filed</> : <><Clock size={14} /> Pending</>}
+                                    </div>
                                 </div>
-                                <div className={`filing-status ${record.filed ? 'filed' : 'pending'}`}>
-                                    {record.filed ? <><Check size={14} /> Filed</> : <><Clock size={14} /> Pending</>}
-                                </div>
+                            ))
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-tertiary)' }}>
+                                No filing history available yet.
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             </div>

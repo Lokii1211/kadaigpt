@@ -95,6 +95,10 @@ const translations = {
 
 // Simulated ML-based price predictions
 const generatePredictions = (products) => {
+    if (!products || !Array.isArray(products) || products.length === 0) {
+        return []
+    }
+
     const factors = [
         'Seasonal demand increase',
         'Festival approaching',
@@ -106,11 +110,12 @@ const generatePredictions = (products) => {
         'Import/export policy changes'
     ]
 
-    return products.map(product => {
+    return products.filter(p => p && p.price).map(product => {
+        const price = product.price || 100
         const change = (Math.random() * 30 - 10) // -10% to +20%
         const trend = change > 2 ? 'rising' : change < -2 ? 'falling' : 'stable'
         const confidence = Math.floor(70 + Math.random() * 25) // 70-95%
-        const predictedPrice = Math.round(product.price * (1 + change / 100))
+        const predictedPrice = Math.round(price * (1 + change / 100))
 
         // Generate recommendation based on trend
         let recommendation
@@ -123,11 +128,11 @@ const generatePredictions = (products) => {
         }
 
         return {
-            id: product.id,
-            name: product.name,
+            id: product.id || Math.random().toString(),
+            name: product.name || 'Unknown Product',
             category: product.category || 'General',
             unit: product.unit || 'kg',
-            currentPrice: product.price,
+            currentPrice: price,
             predictedPrice,
             changePercent: change.toFixed(1),
             trend,
@@ -184,7 +189,7 @@ export default function PricePredictions({
         setLoading(false)
     }
 
-    const formatCurrency = (amount) => `₹${amount.toLocaleString('en-IN')}`
+    const formatCurrency = (amount) => `₹${(amount || 0).toLocaleString('en-IN')}`
 
     const getTrendIcon = (trend) => {
         switch (trend) {
