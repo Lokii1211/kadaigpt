@@ -347,7 +347,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                 <p className="page-subtitle">Add products and generate invoice</p>
             </div>
 
-            <div className="bill-layout">
+            <div className="bill-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '24px' }}>
                 {/* Products Section */}
                 <div className="products-section">
                     {/* Search */}
