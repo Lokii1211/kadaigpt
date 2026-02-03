@@ -1,17 +1,18 @@
 """
 KadaiGPT - Customers Router
 Manage customer credit book (Khata) and customer relationships
+Now using DATABASE for persistence!
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, or_
 from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime
 
 from app.database import get_db
-from app.models import User, Store
+from app.models import User, Customer
 from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/customers", tags=["Customers"])
@@ -25,7 +26,9 @@ class CustomerCreate(BaseModel):
     phone: str
     email: Optional[str] = None
     address: Optional[str] = None
-    credit: Optional[float] = 0.0  # Initial credit (opening balance)
+    credit: Optional[float] = 0.0
+    loyalty_points: Optional[int] = 0
+    total_purchases: Optional[float] = 0.0
 
 
 class CustomerUpdate(BaseModel):
@@ -34,6 +37,10 @@ class CustomerUpdate(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     address: Optional[str] = None
+    credit: Optional[float] = None
+    loyalty_points: Optional[int] = None
+    total_purchases: Optional[float] = None
+    last_purchase: Optional[str] = None
 
 
 class CustomerPayment(BaseModel):
@@ -47,40 +54,6 @@ class CustomerCredit(BaseModel):
     notes: Optional[str] = None
 
 
-class CustomerResponse(BaseModel):
-    """Response schema for customer"""
-    id: int
-    name: str
-    phone: str
-    email: Optional[str] = None
-    address: Optional[str] = None
-    credit: float
-    total_purchases: float
-    last_purchase: Optional[str] = None
-    is_paid: bool
-    created_at: str
-
-    class Config:
-        from_attributes = True
-
-
-# In-memory storage (will be replaced with database model)
-# For now, store per-user customers
-_customer_storage = {}
-
-
-def get_user_customers(user_id: int) -> list:
-    """Get customers for a specific user"""
-    if user_id not in _customer_storage:
-        _customer_storage[user_id] = []
-    return _customer_storage[user_id]
-
-
-def save_user_customers(user_id: int, customers: list):
-    """Save customers for a specific user"""
-    _customer_storage[user_id] = customers
-
-
 # ==================== ROUTES ====================
 
 @router.get("/stats/summary", response_model=dict)
@@ -88,15 +61,17 @@ async def get_customer_stats(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get customer statistics
-    """
-    customers = get_user_customers(current_user.id)
+    """Get customer statistics from database"""
+    # Get all customers for this store
+    result = await db.execute(
+        select(Customer).where(Customer.store_id == current_user.store_id)
+    )
+    customers = result.scalars().all()
     
     total_customers = len(customers)
-    total_credit = sum(c['credit'] for c in customers)
-    customers_with_credit = sum(1 for c in customers if c['credit'] > 0)
-    total_business = sum(c['total_purchases'] for c in customers)
+    total_credit = sum(c.credit or 0 for c in customers)
+    customers_with_credit = sum(1 for c in customers if (c.credit or 0) > 0)
+    total_business = sum(c.total_purchases or 0 for c in customers)
     
     return {
         "total_customers": total_customers,
@@ -113,23 +88,46 @@ async def get_customers(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get all customers for the current user's store
-    """
-    customers = get_user_customers(current_user.id)
+    """Get all customers for the current user's store from database"""
+    query = select(Customer).where(Customer.store_id == current_user.store_id)
     
-    # Apply filters
+    # Apply search filter
     if search:
-        search_lower = search.lower()
-        customers = [c for c in customers if search_lower in c['name'].lower() or search in c['phone']]
+        search_term = f"%{search}%"
+        query = query.where(
+            or_(
+                Customer.name.ilike(search_term),
+                Customer.phone.ilike(search_term)
+            )
+        )
     
+    # Apply credit filter
     if has_credit is not None:
         if has_credit:
-            customers = [c for c in customers if c['credit'] > 0]
+            query = query.where(Customer.credit > 0)
         else:
-            customers = [c for c in customers if c['credit'] == 0]
+            query = query.where(Customer.credit == 0)
     
-    return customers
+    query = query.order_by(desc(Customer.created_at))
+    result = await db.execute(query)
+    customers = result.scalars().all()
+    
+    return [
+        {
+            "id": c.id,
+            "name": c.name,
+            "phone": c.phone,
+            "email": c.email,
+            "address": c.address,
+            "credit": c.credit or 0,
+            "total_purchases": c.total_purchases or 0,
+            "loyalty_points": c.loyalty_points or 0,
+            "last_purchase": c.last_purchase.isoformat() if c.last_purchase else None,
+            "is_paid": (c.credit or 0) == 0,
+            "created_at": c.created_at.isoformat() if c.created_at else None
+        }
+        for c in customers
+    ]
 
 
 @router.post("", response_model=dict)
@@ -138,35 +136,50 @@ async def create_customer(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Create a new customer
-    """
-    customers = get_user_customers(current_user.id)
-    
+    """Create a new customer in database"""
     # Check if phone already exists
-    if any(c['phone'] == customer.phone for c in customers):
+    existing = await db.execute(
+        select(Customer).where(
+            Customer.store_id == current_user.store_id,
+            Customer.phone == customer.phone
+        )
+    )
+    if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Customer with this phone already exists"
         )
     
-    new_customer = {
-        "id": len(customers) + 1 if customers else 1,
-        "name": customer.name,
-        "phone": customer.phone,
-        "email": customer.email,
-        "address": customer.address,
-        "credit": customer.credit or 0.0,  # Use initial credit from request
-        "total_purchases": 0.0,
-        "last_purchase": None,
-        "is_paid": (customer.credit or 0) == 0,  # Not paid if has initial credit
-        "created_at": datetime.utcnow().isoformat()
+    # Create new customer
+    new_customer = Customer(
+        store_id=current_user.store_id,
+        name=customer.name,
+        phone=customer.phone,
+        email=customer.email,
+        address=customer.address,
+        credit=customer.credit or 0.0,
+        loyalty_points=customer.loyalty_points or 0,
+        total_purchases=customer.total_purchases or 0.0,
+        last_purchase=datetime.utcnow() if customer.total_purchases else None
+    )
+    
+    db.add(new_customer)
+    await db.commit()
+    await db.refresh(new_customer)
+    
+    return {
+        "id": new_customer.id,
+        "name": new_customer.name,
+        "phone": new_customer.phone,
+        "email": new_customer.email,
+        "address": new_customer.address,
+        "credit": new_customer.credit,
+        "total_purchases": new_customer.total_purchases,
+        "loyalty_points": new_customer.loyalty_points,
+        "last_purchase": new_customer.last_purchase.isoformat() if new_customer.last_purchase else None,
+        "is_paid": new_customer.credit == 0,
+        "created_at": new_customer.created_at.isoformat()
     }
-    
-    customers.insert(0, new_customer)
-    save_user_customers(current_user.id, customers)
-    
-    return new_customer
 
 
 @router.get("/{customer_id}", response_model=dict)
@@ -175,11 +188,14 @@ async def get_customer(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get a specific customer by ID
-    """
-    customers = get_user_customers(current_user.id)
-    customer = next((c for c in customers if c['id'] == customer_id), None)
+    """Get a specific customer by ID from database"""
+    result = await db.execute(
+        select(Customer).where(
+            Customer.id == customer_id,
+            Customer.store_id == current_user.store_id
+        )
+    )
+    customer = result.scalar_one_or_none()
     
     if not customer:
         raise HTTPException(
@@ -187,7 +203,19 @@ async def get_customer(
             detail="Customer not found"
         )
     
-    return customer
+    return {
+        "id": customer.id,
+        "name": customer.name,
+        "phone": customer.phone,
+        "email": customer.email,
+        "address": customer.address,
+        "credit": customer.credit,
+        "total_purchases": customer.total_purchases,
+        "loyalty_points": customer.loyalty_points,
+        "last_purchase": customer.last_purchase.isoformat() if customer.last_purchase else None,
+        "is_paid": customer.credit == 0,
+        "created_at": customer.created_at.isoformat()
+    }
 
 
 @router.put("/{customer_id}", response_model=dict)
@@ -197,31 +225,55 @@ async def update_customer(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Update a customer
-    """
-    customers = get_user_customers(current_user.id)
-    customer_index = next((i for i, c in enumerate(customers) if c['id'] == customer_id), None)
+    """Update a customer in database"""
+    result = await db.execute(
+        select(Customer).where(
+            Customer.id == customer_id,
+            Customer.store_id == current_user.store_id
+        )
+    )
+    customer = result.scalar_one_or_none()
     
-    if customer_index is None:
+    if not customer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Customer not found"
         )
     
-    # Update fields
+    # Update fields if provided
     if customer_update.name is not None:
-        customers[customer_index]['name'] = customer_update.name
+        customer.name = customer_update.name
     if customer_update.phone is not None:
-        customers[customer_index]['phone'] = customer_update.phone
+        customer.phone = customer_update.phone
     if customer_update.email is not None:
-        customers[customer_index]['email'] = customer_update.email
+        customer.email = customer_update.email
     if customer_update.address is not None:
-        customers[customer_index]['address'] = customer_update.address
+        customer.address = customer_update.address
+    if customer_update.credit is not None:
+        customer.credit = customer_update.credit
+    if customer_update.loyalty_points is not None:
+        customer.loyalty_points = customer_update.loyalty_points
+    if customer_update.total_purchases is not None:
+        customer.total_purchases = customer_update.total_purchases
+    if customer_update.last_purchase is not None:
+        customer.last_purchase = datetime.fromisoformat(customer_update.last_purchase.replace('Z', '+00:00'))
     
-    save_user_customers(current_user.id, customers)
+    await db.commit()
+    await db.refresh(customer)
     
-    return customers[customer_index]
+    return {
+        "id": customer.id,
+        "name": customer.name,
+        "phone": customer.phone,
+        "email": customer.email,
+        "address": customer.address,
+        "credit": customer.credit,
+        "total_purchases": customer.total_purchases,
+        "loyalty_points": customer.loyalty_points,
+        "last_purchase": customer.last_purchase.isoformat() if customer.last_purchase else None,
+        "is_paid": customer.credit == 0,
+        "created_at": customer.created_at.isoformat()
+    }
 
 
 @router.delete("/{customer_id}")
@@ -230,22 +282,25 @@ async def delete_customer(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Delete a customer
-    """
-    customers = get_user_customers(current_user.id)
-    customer_index = next((i for i, c in enumerate(customers) if c['id'] == customer_id), None)
+    """Delete a customer from database"""
+    result = await db.execute(
+        select(Customer).where(
+            Customer.id == customer_id,
+            Customer.store_id == current_user.store_id
+        )
+    )
+    customer = result.scalar_one_or_none()
     
-    if customer_index is None:
+    if not customer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Customer not found"
         )
     
-    deleted_customer = customers.pop(customer_index)
-    save_user_customers(current_user.id, customers)
+    await db.delete(customer)
+    await db.commit()
     
-    return {"message": f"Customer '{deleted_customer['name']}' deleted successfully"}
+    return {"message": "Customer deleted successfully"}
 
 
 @router.post("/{customer_id}/payment", response_model=dict)
@@ -255,35 +310,32 @@ async def record_payment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Record a payment from customer
-    """
-    customers = get_user_customers(current_user.id)
-    customer_index = next((i for i, c in enumerate(customers) if c['id'] == customer_id), None)
+    """Record a payment from customer (reduces credit)"""
+    result = await db.execute(
+        select(Customer).where(
+            Customer.id == customer_id,
+            Customer.store_id == current_user.store_id
+        )
+    )
+    customer = result.scalar_one_or_none()
     
-    if customer_index is None:
+    if not customer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Customer not found"
         )
     
-    if payment.amount <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Payment amount must be positive"
-        )
+    # Reduce credit by payment amount
+    customer.credit = max(0, (customer.credit or 0) - payment.amount)
     
-    customer = customers[customer_index]
-    new_credit = max(0, customer['credit'] - payment.amount)
-    customer['credit'] = new_credit
-    customer['is_paid'] = new_credit == 0
-    
-    save_user_customers(current_user.id, customers)
+    await db.commit()
+    await db.refresh(customer)
     
     return {
-        "message": f"Payment of ₹{payment.amount} recorded",
-        "new_credit": new_credit,
-        "customer": customer
+        "id": customer.id,
+        "name": customer.name,
+        "credit": customer.credit,
+        "message": f"Payment of ₹{payment.amount} recorded"
     }
 
 
@@ -294,35 +346,30 @@ async def add_credit(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Add credit (udhar) for a customer
-    """
-    customers = get_user_customers(current_user.id)
-    customer_index = next((i for i, c in enumerate(customers) if c['id'] == customer_id), None)
+    """Add credit to customer account"""
+    result = await db.execute(
+        select(Customer).where(
+            Customer.id == customer_id,
+            Customer.store_id == current_user.store_id
+        )
+    )
+    customer = result.scalar_one_or_none()
     
-    if customer_index is None:
+    if not customer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Customer not found"
         )
     
-    if credit.amount <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Credit amount must be positive"
-        )
+    # Add to credit
+    customer.credit = (customer.credit or 0) + credit.amount
     
-    customer = customers[customer_index]
-    customer['credit'] += credit.amount
-    customer['is_paid'] = False
-    customer['total_purchases'] += credit.amount
-    customer['last_purchase'] = datetime.utcnow().isoformat()
-    
-    save_user_customers(current_user.id, customers)
+    await db.commit()
+    await db.refresh(customer)
     
     return {
-        "message": f"₹{credit.amount} added to credit",
-        "new_credit": customer['credit'],
-        "customer": customer
+        "id": customer.id,
+        "name": customer.name,
+        "credit": customer.credit,
+        "message": f"Credit of ₹{credit.amount} added"
     }
-

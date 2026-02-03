@@ -128,19 +128,33 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
 
     const getBillData = () => ({
+        // For preview/print
         bill_number: billNumber || `INV-${Date.now().toString().slice(-6)}`,
         store_name: localStorage.getItem('kadai_store_name') || 'KadaiGPT Store',
         store_address: localStorage.getItem('kadai_store_address') || '',
         store_phone: localStorage.getItem('kadai_store_phone') || '',
         gstin: localStorage.getItem('kadai_gstin') || '',
+
+        // Customer info
         customer_name: customer.name || 'Walk-in Customer',
         customer_phone: customer.phone || '',
+
+        // API requires payment_method enum (lowercase)
+        payment_method: paymentMode.toLowerCase(),
+        amount_paid: total,
+
+        // Items in API format
         items: cart.map(item => ({
+            product_id: item.id || null,
             product_name: item.name,
-            quantity: item.quantity,
+            product_sku: item.sku || '',
             unit_price: item.price,
-            total: item.price * item.quantity
+            quantity: item.quantity,
+            discount_percent: 0,
+            tax_rate: gstRate || 0
         })),
+
+        // Legacy fields for print/preview
         subtotal,
         discount: discountAmount,
         discount_type: discountType,

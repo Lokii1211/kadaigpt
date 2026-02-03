@@ -372,3 +372,32 @@ class DailySummary(Base):
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Customer(Base):
+    """Customer model with loyalty and credit tracking"""
+    __tablename__ = "customers"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
+    
+    # Basic Info
+    name = Column(String(200), nullable=False)
+    phone = Column(String(20), nullable=False, index=True)
+    email = Column(String(200))
+    address = Column(Text)
+    
+    # Financial
+    credit = Column(Float, default=0.0)
+    total_purchases = Column(Float, default=0.0)
+    
+    # Loyalty
+    loyalty_points = Column(Integer, default=0)
+    last_purchase = Column(DateTime)
+    
+    # Status
+    is_active = Column(Boolean, default=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
