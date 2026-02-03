@@ -395,6 +395,165 @@ class RealDataService {
             return { pointsPerRupee: 1, pointsValue: 0.1, tiers: [] }
         }
     }
+
+    // ==================== ADVANCED AI PREDICTIONS ====================
+    async getAIPredictions() {
+        try {
+            const [bills, products, customers] = await Promise.all([
+                this.getBills(),
+                this.getProducts(),
+                this.getCustomers()
+            ])
+
+            const now = new Date()
+            const dayOfWeek = now.getDay()
+            const hour = now.getHours()
+
+            // Calculate trends from last 30 days
+            const last30Days = bills.filter(b => {
+                const date = new Date(b.createdAt || b.created_at)
+                return date >= new Date(now - 30 * 24 * 60 * 60 * 1000)
+            })
+
+            const last7Days = bills.filter(b => {
+                const date = new Date(b.createdAt || b.created_at)
+                return date >= new Date(now - 7 * 24 * 60 * 60 * 1000)
+            })
+
+            // Daily averages
+            const avg30Day = last30Days.reduce((sum, b) => sum + (b.total || 0), 0) / 30
+            const avg7Day = last7Days.reduce((sum, b) => sum + (b.total || 0), 0) / 7
+
+            // Growth trend
+            const weeklyGrowth = avg30Day > 0 ? ((avg7Day - avg30Day) / avg30Day * 100) : 0
+
+            // Day-wise analysis for seasonality
+            const dayWiseSales = {}
+            last30Days.forEach(bill => {
+                const day = new Date(bill.createdAt || bill.created_at).getDay()
+                dayWiseSales[day] = (dayWiseSales[day] || 0) + (bill.total || 0)
+            })
+            const peakDay = Object.entries(dayWiseSales).sort((a, b) => b[1] - a[1])[0]
+            const slowDay = Object.entries(dayWiseSales).sort((a, b) => a[1] - b[1])[0]
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+            // Hour-wise analysis
+            const hourWiseSales = {}
+            last30Days.forEach(bill => {
+                const h = new Date(bill.createdAt || bill.created_at).getHours()
+                hourWiseSales[h] = (hourWiseSales[h] || 0) + (bill.total || 0)
+            })
+            const peakHour = Object.entries(hourWiseSales).sort((a, b) => b[1] - a[1])[0]
+
+            // Customer segmentation
+            const customerSpending = {}
+            last30Days.forEach(bill => {
+                const phone = bill.customer_phone || bill.customerPhone || 'walkin'
+                customerSpending[phone] = (customerSpending[phone] || 0) + (bill.total || 0)
+            })
+            const sortedCustomers = Object.entries(customerSpending).sort((a, b) => b[1] - a[1])
+            const vipCustomers = sortedCustomers.slice(0, 5)
+            const totalFromVIP = vipCustomers.reduce((sum, [_, val]) => sum + val, 0)
+            const totalSales30 = last30Days.reduce((sum, b) => sum + (b.total || 0), 0)
+
+            // Product predictions
+            const productSales = {}
+            last30Days.forEach(bill => {
+                (bill.items || []).forEach(item => {
+                    const name = item.product_name || item.name
+                    productSales[name] = (productSales[name] || 0) + (item.quantity || 1)
+                })
+            })
+            const fastMoving = Object.entries(productSales).sort((a, b) => b[1] - a[1]).slice(0, 5)
+            const lowStock = products.filter(p => (p.stock || 0) <= (p.minStock || 5))
+
+            // Revenue forecast using weighted moving average
+            const weights = [0.4, 0.3, 0.2, 0.1] // More recent = higher weight
+            const weeklyRevenues = []
+            for (let w = 0; w < 4; w++) {
+                const start = new Date(now - (w + 1) * 7 * 24 * 60 * 60 * 1000)
+                const end = new Date(now - w * 7 * 24 * 60 * 60 * 1000)
+                const weekRev = bills.filter(b => {
+                    const d = new Date(b.createdAt || b.created_at)
+                    return d >= start && d < end
+                }).reduce((sum, b) => sum + (b.total || 0), 0)
+                weeklyRevenues.push(weekRev)
+            }
+            const forecastNextWeek = weeklyRevenues.reduce((sum, rev, i) => sum + rev * (weights[i] || 0.1), 0) * 1.05
+            const forecastNextMonth = forecastNextWeek * 4.2
+
+            return {
+                summary: {
+                    weeklyGrowth: parseFloat(weeklyGrowth.toFixed(1)),
+                    trend: weeklyGrowth >= 0 ? 'up' : 'down',
+                    avgDailySales: Math.round(avg7Day),
+                    totalBillsLast30Days: last30Days.length
+                },
+                seasonality: {
+                    peakDay: dayNames[parseInt(peakDay?.[0]) || 6],
+                    peakDayRevenue: Math.round(peakDay?.[1] || 0),
+                    slowDay: dayNames[parseInt(slowDay?.[0]) || 0],
+                    slowDayRevenue: Math.round(slowDay?.[1] || 0),
+                    peakHour: `${peakHour?.[0] || 11}:00`,
+                    peakHourRevenue: Math.round(peakHour?.[1] || 0)
+                },
+                customerInsights: {
+                    vipCustomerCount: vipCustomers.length,
+                    vipContribution: totalSales30 > 0 ? Math.round((totalFromVIP / totalSales30) * 100) : 0,
+                    avgTransactionValue: last30Days.length > 0 ? Math.round(totalSales30 / last30Days.length) : 0
+                },
+                inventory: {
+                    fastMovingProducts: fastMoving.map(([name, qty]) => ({ name, quantity: qty })),
+                    lowStockCount: lowStock.length,
+                    stockAlerts: lowStock.slice(0, 5).map(p => p.name),
+                    reorderSuggestions: fastMoving.filter(([name]) =>
+                        lowStock.some(ls => ls.name === name)
+                    ).map(([name]) => name)
+                },
+                forecasts: {
+                    nextWeekRevenue: Math.round(forecastNextWeek),
+                    nextMonthRevenue: Math.round(forecastNextMonth),
+                    confidence: last30Days.length >= 30 ? 'high' : last30Days.length >= 14 ? 'medium' : 'low'
+                },
+                actionItems: this._generateActionItems(weeklyGrowth, lowStock, peakDay, vipCustomers, avg7Day)
+            }
+        } catch (error) {
+            console.error('AI Predictions failed:', error)
+            return {
+                summary: { weeklyGrowth: 0, trend: 'neutral', avgDailySales: 0 },
+                forecasts: { nextWeekRevenue: 0, confidence: 'low' },
+                actionItems: ['Start creating bills to unlock AI predictions!']
+            }
+        }
+    }
+
+    _generateActionItems(growth, lowStock, peakDay, vipCustomers, avgDaily) {
+        const items = []
+
+        if (growth < -10) {
+            items.push('📉 Sales declining - consider running a promotion!')
+        } else if (growth > 20) {
+            items.push('🚀 Great growth! Consider stocking up on fast-moving items.')
+        }
+
+        if (lowStock.length > 3) {
+            items.push(`⚠️ ${lowStock.length} products need restocking urgently!`)
+        }
+
+        if (vipCustomers.length > 0) {
+            items.push('💎 Send loyalty rewards to your top 5 customers.')
+        }
+
+        if (avgDaily < 1000 && avgDaily > 0) {
+            items.push('💡 Tip: Offer combo deals to increase average bill value.')
+        }
+
+        if (items.length === 0) {
+            items.push('✨ Business running smoothly! Keep up the great work.')
+        }
+
+        return items
+    }
 }
 
 // Export singleton instance

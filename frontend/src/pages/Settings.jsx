@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Settings as SettingsIcon, Printer, RefreshCw, Check, AlertCircle, Wifi, WifiOff, Database, Key, Store, Bell, Sun, Moon, Palette, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { Settings as SettingsIcon, Printer, RefreshCw, Check, AlertCircle, Wifi, WifiOff, Database, Key, Store, Bell, Sun, Moon, Palette, CheckCircle, XCircle, Loader2, Globe } from 'lucide-react'
 import api from '../services/api'
 import gstService from '../services/gstService'
 import { useTheme } from '../contexts/ThemeContext'
+import { useLanguage, LanguageSelector } from '../contexts/LanguageContext'
 import WhatsAppSettings from '../components/WhatsAppSettings'
 
 export default function Settings({ addToast }) {
     const { theme, toggleTheme } = useTheme()
+    const { language, setLanguage, t, availableLanguages } = useLanguage()
     const [printers, setPrinters] = useState([])
     const [loadingPrinters, setLoadingPrinters] = useState(false)
     const [selectedPrinter, setSelectedPrinter] = useState('auto')
@@ -242,6 +244,43 @@ export default function Settings({ addToast }) {
 
                 {/* WhatsApp Integration Settings */}
                 <WhatsAppSettings addToast={addToast} />
+
+                {/* Language Settings */}
+                <div className="card settings-card">
+                    <div className="card-header">
+                        <h3 className="card-title"><Globe size={20} /> Language Settings</h3>
+                    </div>
+                    <div className="settings-form">
+                        <div className="form-group">
+                            <label className="form-label">App Language</label>
+                            <select
+                                className="form-input"
+                                value={language}
+                                onChange={(e) => {
+                                    setLanguage(e.target.value)
+                                    addToast(`Language changed to ${availableLanguages.find(l => l.code === e.target.value)?.name || e.target.value}`, 'success')
+                                }}
+                            >
+                                {availableLanguages.map(lang => (
+                                    <option key={lang.code} value={lang.code}>
+                                        {lang.flag} {lang.name} ({lang.native})
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="form-hint">Changes app display language. WhatsApp bot supports multi-lingual commands.</p>
+                        </div>
+                        <div className="language-preview" style={{
+                            padding: '16px',
+                            background: 'var(--bg-tertiary)',
+                            borderRadius: 'var(--radius-md)',
+                            marginTop: '12px'
+                        }}>
+                            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                <strong>Preview:</strong> {t('welcome') || 'Welcome to KadaiGPT!'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Printer Settings */}
                 <div className="card settings-card">
