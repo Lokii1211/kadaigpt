@@ -1,11 +1,11 @@
-# 🎯 VyaparAI Hackathon Presentation Outline
+# 🎯 KadaiGPT Hackathon Presentation Outline
 
 ## 📋 Slide Structure (15 Minutes Total)
 
 ---
 
 ## SLIDE 1: Title (30 seconds)
-**VyaparAI - India's First Agentic AI Retail Platform**
+**KadaiGPT - India's First Agentic AI Retail Platform**
 
 - Team Name & Members
 - Hackathon: National Level | Sponsored by RH Infos
@@ -38,14 +38,14 @@
 
 ## SLIDE 3: Our Solution (2 minutes)
 
-### Introducing VyaparAI
+### Introducing KadaiGPT
 
 > "An Agentic AI-powered retail operations platform that makes billing 10x faster and 10x smarter"
 
 ### What Makes Us Different: AGENTIC AI
 
 Traditional Software → User does everything
-**VyaparAI** → AI Agents work autonomously
+**KadaiGPT** → AI Agents work autonomously
 
 **6 Autonomous AI Agents:**
 1. 🖨️ **Print Agent** - Silent thermal printing with auto-retry
@@ -128,7 +128,7 @@ Traditional Software → User does everything
 
 ### Perfect Match for RH Infos Focus Areas
 
-| RH Infos Focus | VyaparAI Delivers |
+| RH Infos Focus | KadaiGPT Delivers |
 |----------------|-------------------|
 | ERP Solutions | Complete Retail ERP |
 | Inventory Management | Real-time + Predictive |
@@ -146,9 +146,9 @@ Traditional Software → User does everything
 
 ## SLIDE 7: Impact & Metrics (1 minute)
 
-### Before vs After VyaparAI
+### Before vs After KadaiGPT
 
-| Metric | Manual | VyaparAI | Improvement |
+| Metric | Manual | KadaiGPT | Improvement |
 |--------|--------|----------|-------------|
 | Bill Creation | 2-3 min | 15 sec | **90% faster** |
 | Handwritten Entry | 5 min | 2 sec | **99% faster** |
@@ -207,14 +207,14 @@ Traditional Software → User does everything
 
 ## SLIDE 10: Call to Action (30 seconds)
 
-### Try VyaparAI Now
+### Try KadaiGPT Now
 
-**GitHub**: github.com/yourusername/vyaparai
+**GitHub**: github.com/yourusername/KadaiGPT
 **Live Demo**: Click "Try Demo Mode" - No signup needed!
 
 ### Thank You! 🙏
 
-*"VyaparAI - Bill Karo, AI Sambhalo"*
+*"KadaiGPT - Bill Karo, AI Sambhalo"*
 
 Questions?
 
@@ -226,7 +226,7 @@ Questions?
 - Vyapar App: No OCR, limited offline
 - Khatabook: Credit only, no billing
 - Zoho Invoice: Too complex, not kirana-focused
-- **VyaparAI**: All-in-one + AI Agents
+- **KadaiGPT**: All-in-one + AI Agents
 
 ### B2: Team Details
 - Names, backgrounds, roles

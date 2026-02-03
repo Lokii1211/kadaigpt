@@ -263,7 +263,7 @@ class ReceiptBuilder:
         p.text("Thank You for Shopping!", align="center", bold=True)
         p.text("Visit Again!", align="center")
         p.blank()
-        p.text("Powered by VyaparAI", align="center")
+        p.text("Powered by KadaiGPT", align="center")
         p.text("Bill Karo, AI Sambhalo", align="center")
         
         return p.get_content()

@@ -1,8 +1,8 @@
-# 🚀 VyaparAI - Complete Pitch Document
+# 🚀 KadaiGPT - Complete Pitch Document
 
 ## 🎯 ELEVATOR PITCH (30 seconds)
 
-> "India has 12 million Kirana stores generating ₹900 billion in revenue, but only 3% are digitized. VyaparAI is India's first **Agentic AI-powered retail platform** that transforms traditional shops into smart stores. With AI-powered bill scanning, voice-first ordering, WhatsApp automation, and offline-first architecture, we make digital transformation accessible to every shopkeeper in Bharat."
+> "India has 12 million Kirana stores generating ₹900 billion in revenue, but only 3% are digitized. KadaiGPT is India's first **Agentic AI-powered retail platform** that transforms traditional shops into smart stores. With AI-powered bill scanning, voice-first ordering, WhatsApp automation, and offline-first architecture, we make digital transformation accessible to every shopkeeper in Bharat."
 
 ---
 
@@ -37,11 +37,11 @@
 
 ---
 
-## ✨ OUR SOLUTION: VyaparAI
+## ✨ OUR SOLUTION: KadaiGPT
 
 ### The Core Idea
 
-**VyaparAI is an Agentic AI platform that thinks, acts, and automates** - so shopkeepers can focus on what they do best: selling and serving customers.
+**KadaiGPT is an Agentic AI platform that thinks, acts, and automates** - so shopkeepers can focus on what they do best: selling and serving customers.
 
 ### What is "Agentic AI"?
 
@@ -50,7 +50,7 @@ Traditional Software → User does everything manually
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    VyaparAI Agent Swarm                      │
+│                    KadaiGPT Agent Swarm                      │
 ├─────────┬─────────┬─────────┬─────────┬─────────┬──────────┤
 │  Print  │   OCR   │ Offline │Inventory│WhatsApp │  Voice   │
 │  Agent  │  Agent  │  Agent  │  Agent  │  Agent  │  Agent   │
@@ -142,7 +142,7 @@ Customer buys ₹100 → Earns 10 points
 
 Based on research of **RH Infos, Kuniyamuthur, Coimbatore**:
 
-| RH Infos Expertise | VyaparAI Alignment |
+| RH Infos Expertise | KadaiGPT Alignment |
 |--------------------|-------------------|
 | ERP Solutions | Complete retail ERP with 12 modules |
 | Inventory Management | Real-time + AI predictions |
@@ -305,7 +305,7 @@ Year 5: 500,000 stores = ₹300 Crore ARR
 
 ## 📈 COMPETITIVE ANALYSIS
 
-| Feature | VyaparAI | Vyapar App | Khatabook | Zoho Invoice |
+| Feature | KadaiGPT | Vyapar App | Khatabook | Zoho Invoice |
 |---------|----------|------------|-----------|--------------|
 | AI OCR | ✅ Gemini | ❌ No | ❌ No | ❌ No |
 | Voice Billing | ✅ Yes | ❌ No | ❌ No | ❌ No |
@@ -370,18 +370,18 @@ Year 5: 500,000 stores = ₹300 Crore ARR
 
 ## 🙏 CLOSING STATEMENT
 
-> "Every Kirana store owner deserves the power of AI. VyaparAI brings enterprise-grade technology to the neighborhood shop - in their language, at their budget, working even without internet.
+> "Every Kirana store owner deserves the power of AI. KadaiGPT brings enterprise-grade technology to the neighborhood shop - in their language, at their budget, working even without internet.
 >
 > 12 million stores. ₹72,000 crore market. 1% can change India's retail forever.
 >
-> **VyaparAI - Bill Karo, AI Sambhalo**
+> **KadaiGPT - Bill Karo, AI Sambhalo**
 > (Bill it, AI handles it)"
 
 ---
 
 ## 📞 CONTACT
 
-**Team VyaparAI**
+**Team KadaiGPT**
 
 Ready to transform India's retail, one Kirana at a time.
 

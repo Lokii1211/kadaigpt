@@ -401,3 +401,79 @@ async def get_whatsapp_stats():
         "bills_shared": 0,
         "last_message": None
     }
+
+
+# ==================== USER MANAGEMENT FOR WHATSAPP BOT ====================
+
+# In-memory user store (replace with DB in production)
+whatsapp_users = {}
+
+
+class WhatsAppUserRegister(BaseModel):
+    """WhatsApp user registration"""
+    phone: str
+    store_name: str
+    user_name: str
+
+
+class ProcessMessageRequest(BaseModel):
+    """Process incoming message"""
+    phone: str
+    message: str
+
+
+@router.get("/user/{phone}")
+async def get_whatsapp_user(phone: str):
+    """Check if user is registered via WhatsApp"""
+    # Clean phone number
+    clean_phone = phone.replace("+", "").replace(" ", "").replace("-", "")
+    
+    if clean_phone in whatsapp_users:
+        return {"user": whatsapp_users[clean_phone]}
+    
+    # TODO: Check database
+    return {"user": None}
+
+
+@router.post("/register")
+async def register_whatsapp_user(request: WhatsAppUserRegister):
+    """Register a new user via WhatsApp"""
+    clean_phone = request.phone.replace("+", "").replace(" ", "").replace("-", "")
+    
+    user = {
+        "phone": clean_phone,
+        "name": request.user_name,
+        "store": request.store_name,
+        "registered_at": datetime.now().isoformat(),
+        "plan": "free_trial"
+    }
+    
+    whatsapp_users[clean_phone] = user
+    
+    # TODO: Save to database
+    logger.info(f"New WhatsApp user registered: {clean_phone} - {request.store_name}")
+    
+    return {"success": True, "user": user}
+
+
+@router.post("/process")
+async def process_whatsapp_message(request: ProcessMessageRequest):
+    """Process incoming WhatsApp message and return response"""
+    try:
+        response = await whatsapp_bot.process_incoming_message(
+            request.phone, 
+            request.message
+        )
+        return {"response": response}
+    except Exception as e:
+        logger.error(f"Error processing message: {e}")
+        return {"response": "Sorry, something went wrong. Please try again."}
+
+
+@router.get("/connected-users")
+async def get_connected_users():
+    """Get list of connected WhatsApp users"""
+    return {
+        "total": len(whatsapp_users),
+        "users": list(whatsapp_users.values())
+    }

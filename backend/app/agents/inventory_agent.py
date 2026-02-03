@@ -1,5 +1,5 @@
 """
-VyaparAI - Inventory Intelligence Agent
+KadaiGPT - Inventory Intelligence Agent
 Predictive stock management and business insights
 """
 

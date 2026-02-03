@@ -1,6 +1,6 @@
 """
 ╔═══════════════════════════════════════════════════════════════════╗
-║                         VYAPAR AI                                 ║
+║                         KADAIGPT                                 ║
 ║     India's First Agentic AI-Powered Retail Operations Platform  ║
 ║                                                                   ║
 ║     "Bill Karo, AI Sambhalo" (Bill it, AI handles it)            ║

@@ -1,5 +1,5 @@
 """
-VyaparAI - Offline-Online Orchestration Agent
+KadaiGPT - Offline-Online Orchestration Agent
 Ensures seamless operation during network disruptions
 """
 

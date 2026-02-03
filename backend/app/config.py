@@ -60,6 +60,9 @@ class Settings(BaseSettings):
     EVOLUTION_INSTANCE_NAME: str = "kadaigpt"  # Instance name
     WHATSAPP_VERIFY_TOKEN: str = "kadaigpt_verify_token"  # For Meta API verification
     
+    # Telegram Bot Settings (Easy & Reliable!)
+    TELEGRAM_BOT_TOKEN: Optional[str] = None  # Get from @BotFather
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

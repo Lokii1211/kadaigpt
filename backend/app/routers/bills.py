@@ -366,7 +366,7 @@ async def print_bill(
     bill_for_print = {
         "id": bill.id,
         "bill_number": bill.bill_number,
-        "store_name": store.name if store else "VyaparAI Store",
+        "store_name": store.name if store else "KadaiGPT Store",
         "items": [
             {
                 "product_name": item.product_name,

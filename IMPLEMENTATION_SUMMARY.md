@@ -1,8 +1,8 @@
-# 📋 VyaparAI - Complete Implementation Summary
+# 📋 KadaiGPT - Complete Implementation Summary
 
 ## 🎯 Project Overview
 
-VyaparAI is a comprehensive **Agentic AI-powered retail operations platform** designed specifically for Indian Kirana stores. This document summarizes all features implemented for the National Level Hackathon sponsored by RH Infos, Coimbatore.
+KadaiGPT is a comprehensive **Agentic AI-powered retail operations platform** designed specifically for Indian Kirana stores. This document summarizes all features implemented for the National Level Hackathon sponsored by RH Infos, Coimbatore.
 
 ---
 
@@ -219,7 +219,7 @@ VyaparAI is a comprehensive **Agentic AI-powered retail operations platform** de
 ## 📁 File Structure
 
 ```
-VyaparAI/
+KadaiGPT/
 ├── backend/
 │   ├── app/
 │   │   ├── agents/
@@ -323,7 +323,7 @@ npm run dev
 
 ## 🎯 RH Infos Alignment
 
-| RH Infos Focus | VyaparAI Feature |
+| RH Infos Focus | KadaiGPT Feature |
 |----------------|------------------|
 | ERP Solutions | Complete retail ERP with 15+ modules |
 | Inventory Management | Real-time stock + AI predictions |

@@ -32,6 +32,7 @@ from app.routers import (
     notifications_router
 )
 from app.routers.bulk import router as bulk_router
+from app.routers.telegram import router as telegram_router
 from app.services.scheduler import router as scheduler_router
 
 settings = get_settings()
@@ -161,6 +162,7 @@ app.include_router(analytics_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")
 app.include_router(bulk_router, prefix="/api/v1")
 app.include_router(scheduler_router, prefix="/api/v1")
+app.include_router(telegram_router, prefix="/api/v1")
 
 
 # Serve static files from frontend build (assets like JS, CSS, images)

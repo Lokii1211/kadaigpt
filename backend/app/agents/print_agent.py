@@ -1,5 +1,5 @@
 """
-VyaparAI - Print Decision & Control Agent
+KadaiGPT - Print Decision & Control Agent
 Autonomous agent for intelligent print management
 """
 
@@ -346,7 +346,7 @@ class PrintAgent:
         """
         Generate formatted receipt content for thermal printers
         """
-        store_name = bill_data.get("store_name", "VyaparAI Store")
+        store_name = bill_data.get("store_name", "KadaiGPT Store")
         bill_number = bill_data.get("bill_number", "N/A")
         items = bill_data.get("items", [])
         total = bill_data.get("total_amount", 0)
@@ -371,7 +371,7 @@ class PrintAgent:
         receipt.append(f"{'TOTAL':>20} {total:>10.2f}")
         receipt.append("=" * 32)
         receipt.append(f"{'Thank You!':^32}")
-        receipt.append(f"{'Powered by VyaparAI':^32}")
+        receipt.append(f"{'Powered by KadaiGPT':^32}")
         receipt.append("")
         
         return "\n".join(receipt)

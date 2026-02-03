@@ -1,5 +1,5 @@
 """
-VyaparAI - OCR & Bill Digitization Agent
+KadaiGPT - OCR & Bill Digitization Agent
 AI-powered extraction from handwritten bills using Gemini Vision
 """
 
