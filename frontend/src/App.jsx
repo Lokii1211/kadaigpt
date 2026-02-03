@@ -6,6 +6,7 @@ import OnboardingWizard from './components/OnboardingWizard'
 import CommandPalette from './components/CommandPalette'
 import UnifiedAIAssistant from './components/UnifiedAIAssistant'
 import VoiceCommandAgent from './components/VoiceCommandAgent'
+import AICopilot from './components/AICopilot'
 import Dashboard from './pages/Dashboard'
 import Bills from './pages/Bills'
 import OCRCapture from './pages/OCRCapture'
@@ -388,6 +389,12 @@ function App() {
             <VoiceCommandAgent
                 addToast={addToast}
                 setCurrentPage={setCurrentPage}
+            />
+
+            {/* AI Copilot - Context-aware suggestions */}
+            <AICopilot
+                currentPage={currentPage}
+                addToast={addToast}
             />
 
             {/* Toast Notifications */}

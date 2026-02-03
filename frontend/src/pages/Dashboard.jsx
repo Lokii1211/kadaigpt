@@ -8,6 +8,8 @@ import ChurnPrediction from '../components/ChurnPrediction'
 import ProfitMarginAnalyzer from '../components/ProfitMarginAnalyzer'
 import AutoRestockAgent from '../components/AutoRestockAgent'
 import RevenueForecastAgent from '../components/RevenueForecastAgent'
+import CustomerEngagementAgent from '../components/CustomerEngagementAgent'
+import AnomalyDetectionAgent from '../components/AnomalyDetectionAgent'
 import api from '../services/api'
 
 export default function Dashboard({ addToast, setCurrentPage }) {
@@ -339,6 +341,12 @@ export default function Dashboard({ addToast, setCurrentPage }) {
       <div className="ai-agents-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: '24px' }}>
         <AutoRestockAgent addToast={addToast} />
         <RevenueForecastAgent addToast={addToast} />
+      </div>
+
+      {/* Customer & Anomaly Agents */}
+      <div className="ai-agents-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: '24px' }}>
+        <CustomerEngagementAgent addToast={addToast} />
+        <AnomalyDetectionAgent addToast={addToast} />
       </div>
 
       {/* Profit Margin Analyzer */}
