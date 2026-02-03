@@ -54,21 +54,29 @@ export default function Sidebar({ currentPage, setCurrentPage, isOnline, user, o
 
         {/* Navigation */}
         <nav className="sidebar-nav">
-          {menuItems.map(item => (
-            <button
-              key={item.id}
-              className={`nav-item ${currentPage === item.id ? 'active' : ''} ${item.highlight ? 'highlight' : ''}`}
-              onClick={() => handleNavClick(item.id)}
-            >
-              <item.icon size={20} />
-              <span>{item.label}</span>
-              {item.id === 'whatsapp' && <span className="nav-badge green">New</span>}
-              {item.id === 'loyalty' && <span className="nav-badge orange">New</span>}
-              {item.id === 'ai-insights' && <span className="nav-badge hot">🔥 Hot</span>}
-              {item.id === 'daily-summary' && <span className="nav-badge blue">New</span>}
-              {item.id === 'admin' && <span className="nav-badge purple">Pro</span>}
-            </button>
-          ))}
+          {menuItems
+            .filter(item => {
+              // Hide admin panel from non-admin users
+              if (item.id === 'admin' && localStorage.getItem('kadai_user_role') !== 'admin') {
+                return false;
+              }
+              return true;
+            })
+            .map(item => (
+              <button
+                key={item.id}
+                className={`nav-item ${currentPage === item.id ? 'active' : ''} ${item.highlight ? 'highlight' : ''}`}
+                onClick={() => handleNavClick(item.id)}
+              >
+                <item.icon size={20} />
+                <span>{item.label}</span>
+                {item.id === 'whatsapp' && <span className="nav-badge green">New</span>}
+                {item.id === 'loyalty' && <span className="nav-badge orange">New</span>}
+                {item.id === 'ai-insights' && <span className="nav-badge hot">🔥 AI</span>}
+                {item.id === 'daily-summary' && <span className="nav-badge blue">New</span>}
+                {item.id === 'admin' && <span className="nav-badge purple">Admin</span>}
+              </button>
+            ))}
         </nav>
 
         {/* User Section */}
