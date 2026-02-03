@@ -25,6 +25,7 @@ class CustomerCreate(BaseModel):
     phone: str
     email: Optional[str] = None
     address: Optional[str] = None
+    credit: Optional[float] = 0.0  # Initial credit (opening balance)
 
 
 class CustomerUpdate(BaseModel):
@@ -155,10 +156,10 @@ async def create_customer(
         "phone": customer.phone,
         "email": customer.email,
         "address": customer.address,
-        "credit": 0.0,
+        "credit": customer.credit or 0.0,  # Use initial credit from request
         "total_purchases": 0.0,
         "last_purchase": None,
-        "is_paid": True,
+        "is_paid": (customer.credit or 0) == 0,  # Not paid if has initial credit
         "created_at": datetime.utcnow().isoformat()
     }
     

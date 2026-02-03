@@ -1,381 +1,423 @@
-# 🚀 KadaiGPT - AI-Powered Retail Intelligence Platform
-
-## National Level Hackathon Presentation Guide
-
----
-
-# 🎯 ELEVATOR PITCH (30 Seconds)
-
-> **"KadaiGPT is India's first AI-powered retail intelligence platform that transforms how 12 Million+ Kirana stores operate. Using WhatsApp as the primary interface, we bring enterprise-grade AI capabilities to small retailers in their own language - Tamil, Hindi, or English. Our agentic AI handles everything from inventory management to sales predictions, making every Kirana owner a smart business operator."**
+# 🏆 KadaiGPT - AI-Powered Retail Intelligence for Bharat
+## National Hackathon Presentation Guide
 
 ---
 
-# 📊 SLIDE-BY-SLIDE GUIDE
+# 🎯 ELEVATOR PITCH (30 seconds)
 
-## SLIDE 1: Title Slide
-
-### KadaiGPT கடைGPT
-**AI-Powered Retail Intelligence for Bharat**
-
-*"கடை சிறியது, கனவுகள் பெரியது"*
-*"The shop may be small, but dreams are big"*
-
-**Team:** [Your Team Name]
-**Hackathon:** National Level 2026
+> "KadaiGPT is India's first AI-powered retail assistant that transforms how 12 million kirana stores manage their business. Using WhatsApp as the interface, store owners can check sales, inventory, and profits just by sending a message in Hindi, Tamil, or English. No app downloads, no learning curve - just WhatsApp. We're not just a billing software, we're an AI business partner that predicts what to stock, when to stock, and helps prevent losses - all accessible to the 60% of shopkeepers who've never used a computer."
 
 ---
 
-## SLIDE 2: The Problem (Pain Points)
+# 📊 SLIDE-BY-SLIDE CONTENT
 
-### 🔴 The ₹1.2 Trillion Problem
+## Slide 1: Title
+**KadaiGPT**
+*AI-Powered Retail Intelligence for Bharat*
 
-**India has 12 Million+ Kirana stores facing:**
+Team: LOKESHKUMAR D, KISHAN SG, PRANESH DP
+College: [Your College Name]
+Event: VEL IDEAFORGE 2K26
+
+---
+
+## Slide 2: The Problem (Make Judges Feel It)
+
+### 📍 The Reality of Indian Retail
+
+**12 Million Kirana Stores** struggle with:
 
 | Problem | Impact |
 |---------|--------|
-| 📝 Manual record keeping | 3-4 hours/day wasted |
-| 📦 No inventory tracking | ₹50,000+ annual losses from stockouts |
-| 📊 Zero business insights | Missed 40% profit opportunities |
-| 💬 No digital presence | Losing customers to D2C apps |
-| 🌐 Language barrier | 78% can't use English apps |
+| 📝 Manual Paper Records | ₹50,000+ lost yearly to errors |
+| 🤷 No Inventory Visibility | 15-20% stock wastage |
+| 💸 Unpaid Customer Credit | ₹25,000 avg bad debt per store |
+| ⏰ No Time for Analysis | 12+ hours daily just managing |
 
-**Real Story:**
-*"Ramesh owns a Kirana store in Chennai. Every day he loses ₹2,000 because he doesn't know which products to stock. He writes bills by hand, forgets customer credits, and has no idea if he's profitable."*
+**"My father runs a shop. He loses sleep over unpaid credits and expired stock. He doesn't need another app - he needs a partner who speaks his language."**
 
 ---
 
-## SLIDE 3: Our Solution
+## Slide 3: Our Solution
 
-### ✅ KadaiGPT: AI in Your Pocket
+### 🤖 KadaiGPT - Your AI Business Partner
 
-**India's First Vernacular AI Retail Assistant**
+**Not just software. An AI Agent that:**
+- 💬 Responds on WhatsApp (Already on every phone!)
+- 🗣️ Understands Hindi, Tamil, English naturally
+- 📊 Analyzes patterns and predicts demand
+- ⚠️ Proactively alerts before problems occur
+- 🧾 Handles billing, inventory, and accounting
 
-🗣️ **Voice-First Interface**
-- Speak in Tamil, Hindi, Telugu, English
-- "ஐந்து கிலோ அரிசி போட்டு பில் போடு" (Add 5kg rice and create bill)
-
-📱 **WhatsApp Integration**
-- Works on any ₹5,000 smartphone
-- No app download needed
-- 24/7 AI assistant
-
-🤖 **Agentic AI Capabilities**
-- Proactive inventory alerts
-- Automatic reorder suggestions
-- Customer credit reminders
-- Daily profit summaries
+**"Imagine asking your phone 'aaj ki bikri kitni hui?' and getting instant insights"**
 
 ---
 
-## SLIDE 4: Key Features
-
-### 🎯 Feature Highlights
-
-| Feature | Capability | Impact |
-|---------|------------|--------|
-| 🗣️ Voice Commands | Multilingual voice billing | 80% faster billing |
-| 📸 OCR Scanning | Scan handwritten bills | Digitize in <5 seconds |
-| 📦 Smart Inventory | AI-powered stock tracking | 35% less stockouts |
-| 📊 Predictive Analytics | Demand forecasting | 25% better margins |
-| 💬 WhatsApp Bot | 24/7 AI assistant | Always available |
-| 🧾 GST Billing | Compliant invoicing | Legal protection |
-| 📈 Business Insights | Real-time dashboards | Data-driven decisions |
-| 👥 Customer CRM | Loyalty & credit tracking | 40% repeat customers |
-
----
-
-## SLIDE 5: Technology Stack
-
-### 🛠️ Built with Modern Tech
+## Slide 4: How It Works (User Journey)
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   KADAIGPT ARCHITECTURE              │
-├─────────────────────────────────────────────────────┤
-│                                                      │
-│   ┌─────────────┐    ┌─────────────┐                │
-│   │  WhatsApp   │    │   Web App   │                │
-│   │    Bot      │    │   (React)   │                │
-│   └──────┬──────┘    └──────┬──────┘                │
-│          │                  │                        │
-│          └────────┬─────────┘                        │
-│                   ▼                                  │
-│   ┌───────────────────────────────────┐             │
-│   │      FastAPI Backend              │             │
-│   │   (Python + Async + PostgreSQL)   │             │
-│   └───────────────┬───────────────────┘             │
-│                   ▼                                  │
-│   ┌───────────────────────────────────┐             │
-│   │      AI/ML Engine                 │             │
-│   │  • Google Gemini (NLP/OCR)        │             │
-│   │  • Scikit-learn (Predictions)     │             │
-│   │  • Custom NLP (Vernacular)        │             │
-│   └───────────────────────────────────┘             │
-│                                                      │
-└─────────────────────────────────────────────────────┘
+1️⃣ REGISTER → Sign up with phone number
+         ↓
+2️⃣ WHATSAPP CONNECT → Link WhatsApp (Scan QR once)
+         ↓
+3️⃣ START SELLING → Create bills, add products
+         ↓
+4️⃣ AI TAKES OVER → Auto-alerts, predictions, insights
+         ↓
+5️⃣ QUERY ANYTIME → "stock kitna hai?" → Instant answer
 ```
 
-**Stack:**
-- **Frontend:** React + Vite + PWA
-- **Backend:** FastAPI + Python
-- **Database:** PostgreSQL
-- **AI:** Google Gemini + Custom NLP
-- **WhatsApp:** Baileys (Open Source)
-- **Hosting:** Railway (Auto-scaling)
+---
+
+## Slide 5: Key Features
+
+### 🌟 What Makes Us Different
+
+| Feature | Traditional Apps | KadaiGPT |
+|---------|-----------------|----------|
+| Interface | Complex App | WhatsApp Chat |
+| Language | English Only | Hindi/Tamil/English |
+| Insights | Manual Reports | AI Predictions |
+| Alerts | None | Proactive Notifications |
+| Learning Curve | Weeks | 5 Minutes |
+| Works Offline | No | Yes (PWA) |
 
 ---
 
-## SLIDE 6: WhatsApp AI Agent Demo
+## Slide 6: AI Features Deep Dive
 
-### 💬 The Heart of KadaiGPT
+### 🧠 Artificial Intelligence at Core
 
-**WhatsApp Bot Capabilities:**
+1. **Natural Language Processing**
+   - Understands "sugar ka stock?" or "சர்க்கரை stock?"
+   - No training needed - just talk naturally
+
+2. **Predictive Analytics**
+   - Forecasts next week's demand
+   - Suggests restock quantities
+   - Identifies seasonal patterns
+
+3. **Proactive Alerts**
+   - Low stock before you notice
+   - Credit reminders before they're forgotten
+   - GST filing reminders
+
+4. **Smart Recommendations**
+   - "Customers who buy X also buy Y"
+   - Optimal pricing suggestions
+   - Slow-moving stock identification
+
+---
+
+## Slide 7: Technology Stack
+
+### ⚡ Modern, Scalable Architecture
 
 ```
-User: "Hi"
-Bot: "🙏 Vanakkam! Welcome to KadaiGPT AI!
-      Commands: sales, stock, help..."
-
-User: "sales"  
-Bot: "📊 Today's Sales
-      💰 Total: ₹12,450
-      🧾 Bills: 28
-      📈 +12% vs yesterday"
-
-User: "Which products are running low?"
-Bot: "⚠️ Low Stock Alerts:
-      1. Sugar 1kg - 5 left
-      2. Milk - 8 left
-      Order these today!"
-
-User: "What will tomorrow's sales be?"
-Bot: "🔮 AI Prediction:
-      Tomorrow: ₹14,200 (+14%)
-      Stock up on Rice & Oil!"
+┌─────────────────────────────────────────────┐
+│                  FRONTEND                    │
+│  React + Vite | PWA | Responsive Design     │
+└─────────────────┬───────────────────────────┘
+                  │ REST API
+┌─────────────────▼───────────────────────────┐
+│                  BACKEND                     │
+│  FastAPI (Python) | JWT Auth | Async I/O    │
+└─────────────────┬───────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────┐
+│               DATABASE                       │
+│  PostgreSQL | Secure | ACID Compliant       │
+└─────────────────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────┐
+│            WHATSAPP AI AGENT                 │
+│  Baileys (Node.js) | 24/7 | AI Responses    │
+└─────────────────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────┐
+│              DEPLOYMENT                      │
+│  Railway.app | Auto-scaling | SSL           │
+└─────────────────────────────────────────────┘
 ```
 
-**Features:**
-✅ Natural Language Processing
-✅ Multilingual (Tamil/Hindi/English)
-✅ Real-time data sync
-✅ AI-powered predictions
-✅ User registration flow
-✅ 24/7 availability
+---
+
+## Slide 8: Technologies Used
+
+### 🛠️ Tech Stack Details
+
+| Layer | Technology | Why? |
+|-------|------------|------|
+| **Frontend** | React 18 + Vite | Fast, Modern UI |
+| **Styling** | CSS3 + Animations | Premium Look |
+| **Backend** | FastAPI (Python) | Async, Fast, Type-safe |
+| **Database** | PostgreSQL | Reliable, Free tier |
+| **WhatsApp** | Baileys + Node.js | Real WhatsApp integration |
+| **AI/NLP** | Custom + Intent Matching | Multilingual support |
+| **Hosting** | Railway.app | Free, Auto-deploy |
+| **Auth** | JWT + bcrypt | Secure |
+| **OCR** | Tesseract.js | Bill scanning |
 
 ---
 
-## SLIDE 7: Market Opportunity
+## Slide 9: API Architecture
 
-### 📈 Massive Market Potential
+### 🔌 RESTful API Design
 
-| Metric | Value |
-|--------|-------|
-| Total Kirana Stores in India | 12 Million+ |
-| Annual Retail Market | ₹84 Lakh Crore |
-| Stores with NO digital tools | 89% |
-| Potential Revenue (SaaS) | ₹36,000 Crore/year |
+```
+POST /api/auth/register     → User registration
+POST /api/auth/login        → JWT token auth
+GET  /api/products          → List inventory
+POST /api/bills             → Create bill
+GET  /api/dashboard/stats   → Real-time stats
+POST /api/whatsapp/webhook  → Bot messages
+GET  /api/analytics/sales   → Sales analytics
+GET  /api/gst/report        → GST calculations
+```
 
-**TAM, SAM, SOM:**
-- **TAM:** 12M stores × ₹500/month = ₹7,200 Cr/year
-- **SAM:** 2M tech-ready stores = ₹1,200 Cr/year
-- **SOM (Year 1):** 50,000 stores = ₹30 Cr/year
-
----
-
-## SLIDE 8: Business Model
-
-### 💰 Revenue Streams
-
-| Plan | Price | Features |
-|------|-------|----------|
-| **Free** | ₹0 | Basic billing, 50 bills/month |
-| **Starter** | ₹299/mo | Unlimited bills, inventory, WhatsApp |
-| **Growth** | ₹599/mo | +Analytics, +Predictions, +Multi-user |
-| **Enterprise** | ₹999/mo | +API, +Custom reports, +Priority support |
-
-**Additional Revenue:**
-- 💳 Payment processing: 0.5% per transaction
-- 📊 Premium reports: ₹49/report
-- 🤖 Custom AI training: ₹2,999 one-time
+**All APIs are:**
+- ✅ Authenticated (JWT)
+- ✅ Rate-limited
+- ✅ Validated (Pydantic)
+- ✅ Documented (Swagger)
 
 ---
 
-## SLIDE 9: Competitive Advantage
+## Slide 10: Database Design
 
-### 🏆 Why KadaiGPT Wins
+### 📊 Relational Schema
 
-| Feature | KadaiGPT | Competitors |
-|---------|----------|-------------|
-| WhatsApp Bot | ✅ Built-in | ❌ None |
-| Voice Commands | ✅ Multilingual | ❌ Limited |
-| AI Predictions | ✅ ML-powered | ❌ Basic |
-| Vernacular Support | ✅ Tamil/Hindi/Telugu | ❌ English only |
-| Offline Mode | ✅ PWA | ❌ Online only |
-| Pricing | ✅ ₹299/mo | ⚠️ ₹999+/mo |
-
-**Unique Selling Points:**
-1. 🗣️ **First vernacular AI retail platform**
-2. 💬 **WhatsApp-first approach** - No app download
-3. 🤖 **Agentic AI** - Proactive, not reactive
-4. 💰 **Affordable** - 70% cheaper than competitors
+```sql
+users (id, email, password_hash, store_name, role)
+    └── products (id, user_id, name, price, stock, min_stock)
+    └── customers (id, user_id, name, phone, credit_balance)
+    └── bills (id, user_id, customer_id, total, payment_mode)
+         └── bill_items (id, bill_id, product_id, quantity, price)
+    └── expenses (id, user_id, category, amount, date)
+    └── suppliers (id, user_id, name, phone, email)
+```
 
 ---
 
-## SLIDE 10: Traction & Metrics
+## Slide 11: Security & Compliance
 
-### 📊 Current Progress
+### 🔒 Enterprise-Grade Security
 
-| Metric | Value |
-|--------|-------|
-| Development Status | ✅ Production Ready |
-| WhatsApp Bot | ✅ Live & Working |
-| Web Platform | ✅ Deployed (Railway) |
-| Features Implemented | 15+ core features |
-| Languages Supported | 4 (EN, TA, HI, TE) |
-| API Endpoints | 40+ |
-
-**Demo Ready:**
-- 🌐 Live URL: [kadaigpt.up.railway.app](https://kadaigpt.up.railway.app)
-- 💬 WhatsApp Bot: Active
-- 📱 Mobile PWA: Installable
+- **Authentication**: JWT tokens with expiry
+- **Passwords**: bcrypt hashing (salt rounds: 12)
+- **API**: HTTPS only, CORS configured
+- **Database**: SSL connection, encrypted at rest
+- **Sessions**: Secure, httpOnly cookies
+- **GSTIN**: Indian GST compliance built-in
 
 ---
 
-## SLIDE 11: Roadmap
+## Slide 12: Demo Screenshots
 
-### 🗓️ Growth Plan
+### 📱 Beautiful, Intuitive Interface
 
-**Phase 1 (Current):** MVP Launch
-- ✅ Core billing & inventory
-- ✅ WhatsApp AI bot
-- ✅ Voice commands
-- ✅ Basic analytics
-
-**Phase 2 (3 months):** Market Entry
-- 📍 50 pilot stores in Chennai
-- 🤝 Distributor partnerships
-- 📱 iOS/Android apps
-
-**Phase 3 (6 months):** Scale
-- 🌍 Pan-India expansion
-- 💳 Payment integration (UPI)
-- 🏪 B2B marketplace
-
-**Phase 4 (12 months):** Dominance
-- 🤖 Advanced AI features
-- 📊 Industry benchmarking
-- 🌐 API marketplace
+[Show your actual screenshots here]
+- Dashboard with real-time stats
+- WhatsApp conversation
+- Bill creation flow
+- Inventory management
 
 ---
 
-## SLIDE 12: Team
+## Slide 13: Market Opportunity
+
+### 📈 TAM/SAM/SOM Analysis
+
+| Market | Size |
+|--------|------|
+| **TAM** (Total Addressable) | 12M Kirana Stores |
+| **SAM** (Serviceable) | 3M Tech-ready stores |
+| **SOM** (Obtainable in 3 yrs) | 100K stores |
+
+**Revenue Model:**
+- Free Tier: Basic features (acquire users)
+- Pro: ₹299/month (advanced analytics)
+- Enterprise: ₹999/month (multi-store, API)
+
+**Potential ARR in 3 years: ₹30 Crore**
+
+---
+
+## Slide 14: Competitive Advantage
+
+### 🏆 Why We Win
+
+| Competitor | Weakness | KadaiGPT Edge |
+|------------|----------|---------------|
+| Khatabook | No AI, English-centric | AI + Vernacular |
+| Vyapar | Complex UI, no WhatsApp | WhatsApp-first |
+| Zoho | Expensive, overkill | Simple, affordable |
+| Busy | Desktop only | Mobile + Cloud |
+
+**Our Moat: WhatsApp AI Agent + Vernacular NLP**
+
+---
+
+## Slide 15: Future Roadmap
+
+### 🚀 What's Next
+
+**Phase 1 (Current)**: MVP ✅
+- Web app, WhatsApp bot, Basic AI
+
+**Phase 2 (3 months)**:
+- Voice commands ("Ok KadaiGPT, add sugar 10kg")
+- UPI payment integration
+- AI-powered pricing
+
+**Phase 3 (6 months)**:
+- Supplier marketplace
+- Credit scoring for customers
+- Multi-store franchise management
+
+**Phase 4 (12 months)**:
+- Financial services (loans, insurance)
+- Government scheme integration
+- Expansion to Southeast Asia
+
+---
+
+## Slide 16: Team
 
 ### 👥 The Builders
 
-| Role | Name | Expertise |
-|------|------|-----------|
-| Tech Lead | [Your Name] | Full-stack, AI/ML |
-| Product | [Name] | UX, Business Strategy |
-| AI Engineer | [Name] | NLP, Computer Vision |
+**LOKESHKUMAR D** - Full Stack Developer
+- Backend, AI/ML, System Architecture
 
-**Advisors:**
-- Industry mentor from retail sector
-- Technical advisor from AI startup
+**KISHAN SG** - Product & Business
+- UX Design, Market Research, Strategy
 
----
+**PRANESH DP** - Frontend & Mobile
+- React, PWA, User Experience
 
-## SLIDE 13: Ask
-
-### 🎯 What We Need
-
-**From This Hackathon:**
-1. 🏆 Recognition & validation
-2. 🤝 Industry connections
-3. 💰 Seed funding opportunities
-4. 🌟 Pilot store partnerships
-
-**Investment Ask (Future):**
-- Seeking ₹50 Lakhs seed round
-- For: Team expansion, marketing, 500 store pilots
+*United by one mission: Empowering Indian retail with AI*
 
 ---
 
-## SLIDE 14: Closing
+## Slide 17: Call to Action
 
-### 🌟 The Vision
+### 🎯 The Ask
 
-> **"In 5 years, every Kirana store in India will have an AI assistant. KadaiGPT will be that assistant - speaking their language, understanding their business, and growing with them."**
+**We're looking for:**
+1. 🏆 Recognition at this hackathon
+2. 💡 Mentorship for scaling
+3. 🤝 Pilot partnerships with retail associations
+4. 💰 Pre-seed funding for expansion
 
-**Impact Promise:**
-- 📈 30% increase in profits for users
-- ⏰ 3 hours saved daily
-- 💰 ₹50,000 annual savings per store
+**"Every kirana store owner deserves an AI assistant. Help us make it happen."**
+
+---
+
+# ❓ ANTICIPATED Q&A
+
+## Technical Questions
+
+**Q: How does the WhatsApp bot work without official API?**
+> We use Baileys library which connects as a web client. For production, we'll migrate to WhatsApp Business API with Meta's official access. The architecture is designed for easy migration.
+
+**Q: How do you handle multiple languages?**
+> Our NLP layer uses intent matching with transliterated dictionaries. We detect language from input patterns and respond accordingly. Example: "stock kitna?" maps to the stock intent regardless of script.
+
+**Q: What happens when internet is down?**
+> KadaiGPT is a Progressive Web App (PWA). Bills can be created offline and sync when online. Critical data is cached locally using IndexedDB.
+
+**Q: How scalable is this?**
+> Very. FastAPI handles 10K+ concurrent connections. PostgreSQL can scale to millions of records. Railway auto-scales based on traffic.
+
+**Q: How do you ensure data security?**
+> All data is encrypted in transit (HTTPS) and at rest. Passwords are hashed with bcrypt. JWT tokens expire in 24 hours. We follow OWASP security guidelines.
+
+## Business Questions
+
+**Q: Why would shopkeepers pay when Khatabook is free?**
+> Khatabook is a ledger. KadaiGPT is an AI assistant. The proactive alerts and predictions alone save ₹5,000+/month. The ₹299 plan pays for itself in week one.
+
+**Q: How will you acquire customers?**
+> 1) Referral program (₹100 credit per referral), 2) Partnerships with FMCG distributors, 3) YouTube/WhatsApp marketing in vernacular, 4) Retail association tie-ups.
+
+**Q: What's your unfair advantage?**
+> Three things: WhatsApp-first (no app downloads), AI that speaks their language, and a team that understands the kirana ecosystem firsthand.
+
+**Q: Competition from big players?**
+> Big players focus on organized retail. Kirana is fragmented and needs local understanding. We're building for Bharat, not for metros.
+
+---
+
+# 🔑 DEMO TIPS
+
+## What to Show (2-minute demo)
+
+1. **Login** → Show the dashboard
+2. **Create a bill** → Quick and easy
+3. **WhatsApp demo** → Send "sales" to the bot
+4. **AI response** → Show the intelligent reply
+5. **Low stock alert** → Trigger from dashboard The proactive nature
+6. **Multilingual** → Show Hindi/Tamil response
+
+## What NOT to Do
+- ❌ Don't apologize for any feature
+- ❌ Don't show error screens
+- ❌ Don't go too deep into code
+- ❌ Don't exceed time limit
+- ❌ Don't read from slides
 
 ---
 
 # 🎤 PRESENTATION TIPS
 
-## Opening (30 seconds)
-*"Imagine a Kirana store owner who doubles his profit, just by chatting on WhatsApp. Today, I'll show you how KadaiGPT makes this possible for 12 million stores across India."*
+## Delivery
 
-## Key Talking Points
+1. **Start with a story** - "My father's shop..."
+2. **Show, don't tell** - Live demo beats slides
+3. **Make eye contact** - Engage all judges
+4. **Be enthusiastic** - If you're excited, they'll be too
+5. **Know your numbers** - TAM, SAM, revenue ready
+6. **End strong** - Clear call to action
 
-1. **Problem is REAL** - Share Ramesh's story emotionally
-2. **Demo is LIVE** - Show the working WhatsApp bot
-3. **Tech is SOLID** - Mention the AI/ML stack confidently
-4. **Market is HUGE** - ₹84 lakh crore opportunity
-5. **Team is CAPABLE** - Highlight unique skills
+## Body Language
+- Stand confident, feet shoulder-width
+- Use hand gestures to emphasize
+- Move around (don't be a statue)
+- Smile genuinely
 
-## Demo Flow
-1. Open WhatsApp, send "Hi" to the bot
-2. Ask "sales" - show sales report
-3. Ask "stock" - show inventory
-4. Ask "What should I order today?" - show AI prediction
-5. Open web dashboard - show beautiful UI
-
-## Handling Q&A
-
-| Question | Answer |
-|----------|--------|
-| "How is this different from Khatabook?" | "We're AI-first with proactive insights. Khatabook is just digital ledger. We predict, suggest, and automate." |
-| "Why WhatsApp?" | "90% smartphone users in India have WhatsApp. No learning curve. Works on any ₹5000 phone." |
-| "How will you scale?" | "Distributor partnerships. They already visit stores weekly. We add value to their visits." |
-| "What's your moat?" | "Vernacular NLP + Retail-specific AI. We understand 'arisi' means rice in Tamil." |
+## Voice
+- Speak clearly, not too fast
+- Pause after key points
+- Vary your tone (not monotonous)
+- Project confidence
 
 ---
 
-# 📁 SUPPORTING MATERIALS
+# ✅ PRE-DEMO CHECKLIST
 
-## Files Included
-- `/frontend` - React web application
-- `/backend` - FastAPI server
-- `/whatsapp-gateway` - AI-powered WhatsApp bot
-
-## Live Demo
-- Web: https://kadaigpt.up.railway.app
-- WhatsApp: Working bot (scan QR)
-
-## Tech Highlights
-- 40+ API endpoints
-- Real-time sync
-- PWA installable
-- Offline-first design
-- Multi-language NLP
+- [ ] Website is live (check Railway)
+- [ ] WhatsApp bot is connected
+- [ ] Test account logged in
+- [ ] Demo data ready (products, bills)
+- [ ] Phone ready for WhatsApp demo
+- [ ] Backup screenshots if tech fails
+- [ ] Team knows who speaks when
+- [ ] Timer set for practice runs
 
 ---
 
-# ✨ WINNING FACTORS
+# 🏆 WINNING FACTORS
 
-1. **Working Product** - Not just slides, real demo
-2. **WhatsApp Integration** - Unique feature judges will love
-3. **Vernacular AI** - Speaks to India's heart
-4. **Clear Market Fit** - Solves REAL problem
-5. **Solid Tech Stack** - Modern, scalable
-6. **Business Model** - Clear path to revenue
+**What judges look for:**
+
+1. **Innovation** (25%) - AI + WhatsApp is unique ✅
+2. **Impact** (25%) - Helping 12M stores ✅
+3. **Feasibility** (20%) - Working prototype ✅
+4. **Presentation** (15%) - Practice makes perfect
+5. **Business Model** (15%) - Clear monetization ✅
+
+**You have 4/5 locked. Nail the presentation!**
 
 ---
 
-*Good luck! You're going to WIN this!* 🏆
-
-**KadaiGPT - கடைGPT**
-*AI-Powered Retail Intelligence for Bharat*
+*Good luck! You've built something amazing. Now show it off!* 🚀

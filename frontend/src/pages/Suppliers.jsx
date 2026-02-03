@@ -376,14 +376,14 @@ export default function Suppliers({ addToast }) {
                         <tbody>
                             {orders.map(order => (
                                 <tr key={order.id}>
-                                    <td><code>{order.orderNo}</code></td>
-                                    <td>{order.supplier}</td>
-                                    <td>{order.items} items</td>
-                                    <td className="amount">₹{order.amount.toLocaleString()}</td>
-                                    <td>{new Date(order.date).toLocaleDateString('en-IN')}</td>
+                                    <td><code>{order.orderNo || order.order_no || `PO-${order.id}`}</code></td>
+                                    <td>{order.supplier || order.supplier_name || suppliers.find(s => s.id === order.supplier_id)?.name || 'Unknown'}</td>
+                                    <td>{(order.items?.length || order.item_count || order.items || 0)} items</td>
+                                    <td className="amount">₹{(order.amount || order.total_amount || 0).toLocaleString()}</td>
+                                    <td>{new Date(order.date || order.created_at).toLocaleDateString('en-IN')}</td>
                                     <td>
                                         <span className={`badge badge-${order.status === 'delivered' ? 'success' : order.status === 'pending' ? 'warning' : 'secondary'}`}>
-                                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                            {(order.status || 'pending').charAt(0).toUpperCase() + (order.status || 'pending').slice(1)}
                                         </span>
                                     </td>
                                     <td>

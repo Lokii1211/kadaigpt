@@ -145,10 +145,13 @@ class RealDataService {
                 phone: c.phone || '',
                 email: c.email || '',
                 address: c.address || '',
+                credit: c.credit || c.outstanding || c.pending_amount || 0,
                 totalPurchases: c.total_purchases || 0,
+                total_purchases: c.total_purchases || 0,
                 totalSpent: c.total_spent || 0,
                 loyaltyPoints: c.loyalty_points || 0,
                 lastVisit: c.last_visit || c.updated_at,
+                last_purchase: c.last_purchase || c.last_visit || c.updated_at,
                 createdAt: c.created_at
             }))
         } catch (error) {
