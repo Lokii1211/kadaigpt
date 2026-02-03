@@ -483,92 +483,95 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                             )}
                         </div>
 
-                        {/* Cart Items */}
-                        <div className="cart-items">
-                            {cart.length === 0 ? (
-                                <div className="empty-cart">
-                                    <ShoppingCart size={48} />
-                                    <p>Cart is empty</p>
-                                    <span>Click products to add</span>
-                                </div>
-                            ) : (
-                                cart.map(item => (
-                                    <div key={item.id} className="cart-item">
-                                        <div className="item-info">
-                                            <span className="item-name">{item.name}</span>
-                                            <span className="item-price">₹{item.price} × {item.quantity}</span>
+                        {/* Scrollable Cart Content */}
+                        <div className="cart-scroll-area">
+                            {/* Cart Items */}
+                            <div className="cart-items">
+                                {cart.length === 0 ? (
+                                    <div className="empty-cart">
+                                        <ShoppingCart size={48} />
+                                        <p>Cart is empty</p>
+                                        <span>Click products to add</span>
+                                    </div>
+                                ) : (
+                                    cart.map(item => (
+                                        <div key={item.id} className="cart-item">
+                                            <div className="item-info">
+                                                <span className="item-name">{item.name}</span>
+                                                <span className="item-price">₹{item.price} × {item.quantity}</span>
+                                            </div>
+                                            <div className="item-actions">
+                                                <button className="qty-btn" onClick={() => updateQuantity(item.id, -1)}>
+                                                    <Minus size={14} />
+                                                </button>
+                                                <input
+                                                    type="number"
+                                                    className="qty-input"
+                                                    value={item.quantity}
+                                                    onChange={(e) => {
+                                                        const newQty = parseInt(e.target.value) || 1
+                                                        setCart(cart.map(i =>
+                                                            i.id === item.id ? { ...i, quantity: Math.max(1, newQty) } : i
+                                                        ))
+                                                    }}
+                                                    min="1"
+                                                />
+                                                <button className="qty-btn" onClick={() => updateQuantity(item.id, 1)}>
+                                                    <Plus size={14} />
+                                                </button>
+                                                <button className="remove-btn" onClick={() => removeFromCart(item.id)}>
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                            <div className="item-total">₹{item.price * item.quantity}</div>
                                         </div>
-                                        <div className="item-actions">
-                                            <button className="qty-btn" onClick={() => updateQuantity(item.id, -1)}>
-                                                <Minus size={14} />
-                                            </button>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Discount & GST Controls */}
+                            {cart.length > 0 && (
+                                <div className="billing-controls">
+                                    <div className="control-row">
+                                        <label>Discount</label>
+                                        <div className="discount-input">
                                             <input
                                                 type="number"
-                                                className="qty-input"
-                                                value={item.quantity}
-                                                onChange={(e) => {
-                                                    const newQty = parseInt(e.target.value) || 1
-                                                    setCart(cart.map(i =>
-                                                        i.id === item.id ? { ...i, quantity: Math.max(1, newQty) } : i
-                                                    ))
-                                                }}
-                                                min="1"
+                                                className="form-input small"
+                                                value={discount}
+                                                onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                                                min="0"
+                                                max={discountType === 'percentage' ? 100 : subtotal}
                                             />
-                                            <button className="qty-btn" onClick={() => updateQuantity(item.id, 1)}>
-                                                <Plus size={14} />
-                                            </button>
-                                            <button className="remove-btn" onClick={() => removeFromCart(item.id)}>
-                                                <Trash2 size={14} />
-                                            </button>
+                                            <select
+                                                className="form-input small"
+                                                value={discountType}
+                                                onChange={(e) => setDiscountType(e.target.value)}
+                                            >
+                                                <option value="percentage">%</option>
+                                                <option value="fixed">₹</option>
+                                            </select>
                                         </div>
-                                        <div className="item-total">₹{item.price * item.quantity}</div>
                                     </div>
-                                ))
-                            )}
-                        </div>
-
-                        {/* Discount & GST Controls */}
-                        {cart.length > 0 && (
-                            <div className="billing-controls">
-                                <div className="control-row">
-                                    <label>Discount</label>
-                                    <div className="discount-input">
-                                        <input
-                                            type="number"
-                                            className="form-input small"
-                                            value={discount}
-                                            onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
-                                            min="0"
-                                            max={discountType === 'percentage' ? 100 : subtotal}
-                                        />
+                                    <div className="control-row">
+                                        <label>GST Rate</label>
                                         <select
                                             className="form-input small"
-                                            value={discountType}
-                                            onChange={(e) => setDiscountType(e.target.value)}
+                                            value={gstRate}
+                                            onChange={(e) => setGstRate(parseInt(e.target.value))}
                                         >
-                                            <option value="percentage">%</option>
-                                            <option value="fixed">₹</option>
+                                            <option value="0">0% (Exempt)</option>
+                                            <option value="5">5%</option>
+                                            <option value="12">12%</option>
+                                            <option value="18">18%</option>
+                                            <option value="28">28%</option>
                                         </select>
                                     </div>
                                 </div>
-                                <div className="control-row">
-                                    <label>GST Rate</label>
-                                    <select
-                                        className="form-input small"
-                                        value={gstRate}
-                                        onChange={(e) => setGstRate(parseInt(e.target.value))}
-                                    >
-                                        <option value="0">0% (Exempt)</option>
-                                        <option value="5">5%</option>
-                                        <option value="12">12%</option>
-                                        <option value="18">18%</option>
-                                        <option value="28">28%</option>
-                                    </select>
-                                </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
 
-                        {/* Totals */}
+                        {/* Totals - Always visible */}
                         {cart.length > 0 && (
                             <div className="cart-totals">
                                 <div className="total-row">
@@ -577,28 +580,16 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                                 </div>
                                 {discountAmount > 0 && (
                                     <div className="total-row discount">
-                                        <span>Discount ({discountType === 'percentage' ? `${discount}%` : '₹'})</span>
+                                        <span>Discount</span>
                                         <span className="text-success">-₹{discountAmount.toLocaleString('en-IN')}</span>
                                     </div>
                                 )}
                                 {pointsDiscount > 0 && (
                                     <div className="total-row discount">
-                                        <span>⭐ Points Redeemed ({redeemPoints}pts)</span>
+                                        <span>⭐ Points</span>
                                         <span className="text-success">-₹{pointsDiscount.toLocaleString('en-IN')}</span>
                                     </div>
                                 )}
-                                <div className="total-row">
-                                    <span>Taxable Amount</span>
-                                    <span>₹{taxableAmount.toLocaleString('en-IN')}</span>
-                                </div>
-                                <div className="total-row tax-row">
-                                    <span>CGST ({gstRate / 2}%)</span>
-                                    <span>₹{cgst.toLocaleString('en-IN')}</span>
-                                </div>
-                                <div className="total-row tax-row">
-                                    <span>SGST ({gstRate / 2}%)</span>
-                                    <span>₹{sgst.toLocaleString('en-IN')}</span>
-                                </div>
                                 <div className="total-row grand">
                                     <span>Total</span>
                                     <span>₹{total.toLocaleString('en-IN')}</span>
@@ -606,13 +597,13 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                             </div>
                         )}
 
-                        {/* Actions */}
+                        {/* Actions - Always visible at bottom */}
                         <div className="cart-actions">
                             <button className="btn btn-ghost" onClick={handlePreview} disabled={cart.length === 0}>
-                                <Eye size={18} /> Preview
+                                <Eye size={16} /> Preview
                             </button>
                             <button className="btn btn-primary" onClick={handleSaveBill} disabled={cart.length === 0}>
-                                <Save size={18} /> Save Bill
+                                <Save size={16} /> Save Bill
                             </button>
                         </div>
                     </div>
@@ -792,13 +783,22 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .cart-card { 
           display: flex; 
           flex-direction: column; 
-          flex: 1;
+          height: calc(100vh - 160px);
+          max-height: calc(100vh - 160px);
           overflow: hidden;
           background: var(--bg-card);
           border-radius: var(--radius-lg);
           border: 1px solid var(--border-subtle);
-          padding: 16px;
+          padding: 12px;
         }
+        
+        .cart-scroll-area {
+          flex: 1;
+          overflow-y: auto;
+          min-height: 0;
+        }
+        .cart-scroll-area::-webkit-scrollbar { width: 4px; }
+        .cart-scroll-area::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 2px; }
         
         .cart-header { 
           display: flex; 
@@ -971,11 +971,13 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         
         .cart-actions { 
           display: flex; 
-          gap: 10px; 
-          padding-top: 12px;
+          gap: 8px; 
+          padding: 10px 0 0 0;
+          margin-top: auto;
           flex-shrink: 0;
+          border-top: 1px solid var(--border-subtle);
         }
-        .cart-actions .btn { flex: 1; padding: 10px; font-size: 0.85rem; }
+        .cart-actions .btn { flex: 1; padding: 10px; font-size: 0.8rem; }
 
         /* MOBILE LAYOUT */
         @media (max-width: 900px) {
