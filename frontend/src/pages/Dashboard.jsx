@@ -225,11 +225,7 @@ export default function Dashboard({ addToast, setCurrentPage }) {
             <h3 className="card-title"><Zap size={20} /> Live Activity</h3>
           </div>
           <div className="activity-feed">
-            {(activity.length > 0 ? activity : [
-              { id: 1, type: 'sale', message: 'Sale completed', time: 'Just now', amount: 450 },
-              { id: 2, type: 'stock', message: 'Low stock alert: Sugar 1kg', time: '5 min ago' },
-              { id: 3, type: 'sale', message: 'Bill #1234 created', time: '10 min ago', amount: 850 }
-            ]).map(item => (
+            {activity.length > 0 ? activity.map(item => (
               <div key={item.id} className={`activity-item ${item.type}`}>
                 <div className="activity-dot"></div>
                 <div className="activity-content">
@@ -238,7 +234,12 @@ export default function Dashboard({ addToast, setCurrentPage }) {
                 </div>
                 {item.amount && <span className="activity-amount">₹{item.amount}</span>}
               </div>
-            ))}
+            )) : (
+              <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>
+                <Zap size={24} style={{ marginBottom: '8px', opacity: 0.5 }} />
+                <p style={{ margin: 0 }}>No activity yet. Start creating bills!</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

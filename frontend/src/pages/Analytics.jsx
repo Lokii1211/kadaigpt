@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { TrendingUp, ShoppingBag, Users, IndianRupee, ArrowUpRight, ArrowDownRight, Minus, Zap, BarChart3, PieChart, Loader2, Sparkles, Calendar, WifiOff } from 'lucide-react'
 import realDataService from '../services/realDataService'
+import BusinessHealthCard from '../components/BusinessHealthCard'
 import api from '../services/api'
 
 export default function Analytics({ addToast }) {
@@ -134,6 +135,11 @@ export default function Analytics({ addToast }) {
                         </div>
                     </div>
                 ))}
+            </div>
+
+            {/* Business Health Score */}
+            <div style={{ marginBottom: '24px' }}>
+                <BusinessHealthCard addToast={addToast} />
             </div>
 
             <div className="analytics-grid">

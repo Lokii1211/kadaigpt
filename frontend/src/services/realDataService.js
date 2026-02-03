@@ -554,6 +554,167 @@ class RealDataService {
 
         return items
     }
+
+    // ==================== BUSINESS HEALTH SCORE ====================
+    async getBusinessHealthScore() {
+        try {
+            const [bills, products, customers] = await Promise.all([
+                this.getBills(),
+                this.getProducts(),
+                this.getCustomers()
+            ])
+
+            const now = new Date()
+
+            // Last 30 days bills
+            const last30Days = bills.filter(b => {
+                const date = new Date(b.createdAt || b.created_at)
+                return date >= new Date(now - 30 * 24 * 60 * 60 * 1000)
+            })
+
+            const last7Days = bills.filter(b => {
+                const date = new Date(b.createdAt || b.created_at)
+                return date >= new Date(now - 7 * 24 * 60 * 60 * 1000)
+            })
+
+            const metrics = {}
+            let totalScore = 0
+            let maxScore = 0
+
+            // 1. Sales Growth Score (0-15 points)
+            const weeklyRevenue = last7Days.reduce((sum, b) => sum + (b.total || 0), 0)
+            const prevWeekRevenue = bills.filter(b => {
+                const date = new Date(b.createdAt || b.created_at)
+                return date >= new Date(now - 14 * 24 * 60 * 60 * 1000) && date < new Date(now - 7 * 24 * 60 * 60 * 1000)
+            }).reduce((sum, b) => sum + (b.total || 0), 0)
+
+            const growthRate = prevWeekRevenue > 0 ? ((weeklyRevenue - prevWeekRevenue) / prevWeekRevenue) * 100 : 0
+            const growthScore = Math.min(15, Math.max(0, 7.5 + (growthRate * 0.5)))
+            metrics.growth = { score: growthScore, max: 15, value: `${growthRate >= 0 ? '+' : ''}${growthRate.toFixed(1)}%`, status: growthRate >= 10 ? 'excellent' : growthRate >= 0 ? 'good' : 'needs_attention' }
+            totalScore += growthScore
+            maxScore += 15
+
+            // 2. Inventory Health (0-15 points)
+            const totalProducts = products.length
+            const lowStockProducts = products.filter(p => (p.stock || 0) <= (p.minStock || 5)).length
+            const outOfStockProducts = products.filter(p => (p.stock || 0) === 0).length
+            const inventoryScore = totalProducts > 0 ? Math.max(0, 15 - (lowStockProducts * 2) - (outOfStockProducts * 5)) : 15
+            metrics.inventory = { score: Math.min(15, inventoryScore), max: 15, value: `${lowStockProducts} low, ${outOfStockProducts} out`, status: outOfStockProducts === 0 && lowStockProducts <= 3 ? 'excellent' : lowStockProducts <= 5 ? 'good' : 'needs_attention' }
+            totalScore += Math.min(15, inventoryScore)
+            maxScore += 15
+
+            // 3. Customer Retention (0-15 points)
+            const repeatCustomers = customers.filter(c => (c.visit_count || c.visits || 0) > 1).length
+            const retentionRate = customers.length > 0 ? (repeatCustomers / customers.length) * 100 : 0
+            const retentionScore = (retentionRate / 100) * 15
+            metrics.retention = { score: retentionScore, max: 15, value: `${retentionRate.toFixed(0)}%`, status: retentionRate >= 60 ? 'excellent' : retentionRate >= 30 ? 'good' : 'needs_attention' }
+            totalScore += retentionScore
+            maxScore += 15
+
+            // 4. Average Bill Value (0-10 points)
+            const avgBill = last30Days.length > 0 ? last30Days.reduce((sum, b) => sum + (b.total || 0), 0) / last30Days.length : 0
+            const avgBillScore = Math.min(10, avgBill / 50) // ₹500+ gets full score
+            metrics.avgBill = { score: avgBillScore, max: 10, value: `₹${avgBill.toFixed(0)}`, status: avgBill >= 400 ? 'excellent' : avgBill >= 200 ? 'good' : 'needs_attention' }
+            totalScore += avgBillScore
+            maxScore += 10
+
+            // 5. Transaction Frequency (0-10 points)
+            const dailyTransactions = last30Days.length / 30
+            const frequencyScore = Math.min(10, dailyTransactions * 2) // 5+ transactions/day = full score
+            metrics.frequency = { score: frequencyScore, max: 10, value: `${dailyTransactions.toFixed(1)}/day`, status: dailyTransactions >= 5 ? 'excellent' : dailyTransactions >= 2 ? 'good' : 'needs_attention' }
+            totalScore += frequencyScore
+            maxScore += 10
+
+            // 6. Payment Collection (0-10 points)
+            const creditBills = last30Days.filter(b => b.payment_mode === 'credit' || b.payment_mode === 'Credit').length
+            const creditRatio = last30Days.length > 0 ? (creditBills / last30Days.length) * 100 : 0
+            const collectionScore = Math.max(0, 10 - (creditRatio * 0.5))
+            metrics.collection = { score: collectionScore, max: 10, value: `${creditRatio.toFixed(0)}% credit`, status: creditRatio <= 10 ? 'excellent' : creditRatio <= 30 ? 'good' : 'needs_attention' }
+            totalScore += collectionScore
+            maxScore += 10
+
+            // 7. Product Diversity (0-10 points)
+            const uniqueProductsSold = new Set()
+            last30Days.forEach(bill => {
+                (bill.items || []).forEach(item => {
+                    uniqueProductsSold.add(item.product_id || item.product_name)
+                })
+            })
+            const diversityRatio = totalProducts > 0 ? (uniqueProductsSold.size / totalProducts) * 100 : 0
+            const diversityScore = (diversityRatio / 100) * 10
+            metrics.diversity = { score: diversityScore, max: 10, value: `${uniqueProductsSold.size}/${totalProducts}`, status: diversityRatio >= 50 ? 'excellent' : diversityRatio >= 25 ? 'good' : 'needs_attention' }
+            totalScore += diversityScore
+            maxScore += 10
+
+            // 8. Customer Credit Health (0-10 points)
+            const customersWithCredit = customers.filter(c => (c.credit || 0) > 0)
+            const totalCredit = customersWithCredit.reduce((sum, c) => sum + (c.credit || 0), 0)
+            const creditHealthScore = Math.max(0, 10 - (customersWithCredit.length * 0.5))
+            metrics.creditHealth = { score: creditHealthScore, max: 10, value: `₹${totalCredit.toLocaleString()}`, status: customersWithCredit.length <= 3 ? 'excellent' : customersWithCredit.length <= 10 ? 'good' : 'needs_attention' }
+            totalScore += creditHealthScore
+            maxScore += 10
+
+            // 9. Consistency Score (0-5 points)
+            const daysWithSales = new Set(last30Days.map(b => new Date(b.createdAt || b.created_at).toDateString())).size
+            const consistencyRatio = daysWithSales / 30
+            const consistencyScore = consistencyRatio * 5
+            metrics.consistency = { score: consistencyScore, max: 5, value: `${daysWithSales}/30 days`, status: daysWithSales >= 25 ? 'excellent' : daysWithSales >= 15 ? 'good' : 'needs_attention' }
+            totalScore += consistencyScore
+            maxScore += 5
+
+            // Calculate overall score
+            const overallScore = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0
+
+            // Determine grade
+            let grade, gradeColor, recommendation
+            if (overallScore >= 90) {
+                grade = 'A+'
+                gradeColor = '#22c55e'
+                recommendation = 'Exceptional! Your business is thriving. Focus on scaling and expansion.'
+            } else if (overallScore >= 80) {
+                grade = 'A'
+                gradeColor = '#22c55e'
+                recommendation = 'Excellent performance! Minor optimizations can push you to A+.'
+            } else if (overallScore >= 70) {
+                grade = 'B'
+                gradeColor = '#84cc16'
+                recommendation = 'Good health! Focus on areas marked as "needs attention".'
+            } else if (overallScore >= 60) {
+                grade = 'C'
+                gradeColor = '#f59e0b'
+                recommendation = 'Fair performance. Prioritize inventory and customer retention.'
+            } else if (overallScore >= 50) {
+                grade = 'D'
+                gradeColor = '#f97316'
+                recommendation = 'Needs improvement. Focus on increasing daily transactions.'
+            } else {
+                grade = 'F'
+                gradeColor = '#ef4444'
+                recommendation = 'Critical! Immediate action required on multiple fronts.'
+            }
+
+            return {
+                score: overallScore,
+                grade,
+                gradeColor,
+                recommendation,
+                metrics,
+                lastUpdated: new Date().toISOString(),
+                dataPoints: last30Days.length
+            }
+        } catch (error) {
+            console.error('Failed to calculate business health:', error)
+            return {
+                score: 0,
+                grade: 'N/A',
+                gradeColor: '#6b7280',
+                recommendation: 'Start creating bills to calculate your business health score!',
+                metrics: {},
+                lastUpdated: new Date().toISOString(),
+                dataPoints: 0
+            }
+        }
+    }
 }
 
 // Export singleton instance
