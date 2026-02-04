@@ -110,16 +110,20 @@ class RealDataService {
             return bills.map(b => ({
                 id: b.id,
                 billNumber: b.bill_number || `BILL-${b.id}`,
+                bill_number: b.bill_number || `BILL-${b.id}`,
                 customerName: b.customer_name || b.customer?.name || 'Walk-in',
+                customer_name: b.customer_name || b.customer?.name || 'Walk-in',
                 customerId: b.customer_id,
                 total: b.total_amount || b.total || 0,
                 subtotal: b.subtotal || b.total || 0,
                 tax: b.tax_amount || b.tax || 0,
                 discount: b.discount_amount || b.discount || 0,
-                paymentMethod: b.payment_method || 'cash',
+                paymentMethod: b.payment_mode || b.payment_method || 'cash',
+                payment_mode: b.payment_mode || b.payment_method || 'cash',
                 status: b.status || 'completed',
                 items: b.items || [],
                 createdAt: b.created_at,
+                created_at: b.created_at,
                 createdBy: b.created_by
             }))
         } catch (error) {

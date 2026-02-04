@@ -12,6 +12,7 @@ import CustomerEngagementAgent from '../components/CustomerEngagementAgent'
 import AnomalyDetectionAgent from '../components/AnomalyDetectionAgent'
 import DailyActionPlanner from '../components/DailyActionPlanner'
 import SmartPricingAgent from '../components/SmartPricingAgent'
+import FloatingActionButton from '../components/FloatingActionButton'
 import api from '../services/api'
 
 
@@ -110,9 +111,35 @@ export default function Dashboard({ addToast, setCurrentPage }) {
     { label: 'Analytics', icon: BarChart3, page: 'analytics', color: 'secondary' },
   ]
 
+  // Navigation items for top bar
+  const navItems = [
+    { label: 'Products', page: 'products', icon: Package },
+    { label: 'Customers', page: 'customers', icon: Users },
+    { label: 'GST', page: 'gst', icon: FileText },
+    { label: 'Suppliers', page: 'suppliers', icon: TrendingUp },
+    { label: 'Loyalty', page: 'loyalty', icon: Zap },
+    { label: 'Expenses', page: 'expenses', icon: IndianRupee },
+  ]
+
   return (
     <div className="dashboard">
-      {/* Header with Time */}
+      {/* Top Navigation Bar - Always visible */}
+      <nav className="top-nav-bar">
+        <div className="top-nav-items">
+          {navItems.map((item, i) => (
+            <button
+              key={i}
+              className="top-nav-item"
+              onClick={() => setCurrentPage(item.page)}
+            >
+              <item.icon size={16} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* Header with Time - Compact */}
       <div className="dashboard-header">
         <div>
           <h1 className="page-title">🏪 Dashboard</h1>
@@ -120,16 +147,16 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         </div>
         <div className="header-right">
           <div className="live-time">
-            <Clock size={18} />
+            <Clock size={16} />
             <span>{formatTime(currentTime)}</span>
           </div>
-          <button className={`btn btn-ghost ${isRefreshing ? 'spin' : ''}`} onClick={refresh}>
-            <RefreshCw size={18} />
+          <button className={`btn btn-ghost btn-sm ${isRefreshing ? 'spin' : ''}`} onClick={refresh}>
+            <RefreshCw size={16} />
           </button>
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Compact horizontal */}
       <div className="quick-actions-grid">
         {quickActions.map((action, i) => (
           <button
@@ -137,62 +164,41 @@ export default function Dashboard({ addToast, setCurrentPage }) {
             className={`quick-action-btn ${action.color}`}
             onClick={() => setCurrentPage(action.page)}
           >
-            <action.icon size={24} />
+            <action.icon size={20} />
             <span>{action.label}</span>
           </button>
         ))}
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - More compact */}
       <div className="stats-grid">
         <div className="stat-card highlight">
-          <div className="stat-icon"><IndianRupee size={28} /></div>
+          <div className="stat-icon"><IndianRupee size={22} /></div>
           <div className="stat-content">
             <span className="stat-value">{formatCurrency(stats.todaySales)}</span>
             <span className="stat-label">Today's Sales</span>
           </div>
-          {stats.todaySales > 0 && (
-            <div className="stat-change positive">
-              <ArrowUpRight size={16} />
-              Active
-            </div>
-          )}
         </div>
         <div className="stat-card">
-          <div className="stat-icon"><ShoppingBag size={28} /></div>
+          <div className="stat-icon"><ShoppingBag size={22} /></div>
           <div className="stat-content">
             <span className="stat-value">{stats.todayBills}</span>
             <span className="stat-label">Total Bills</span>
           </div>
-          {stats.todayBills > 0 && (
-            <div className="stat-change positive">
-              <ArrowUpRight size={16} />
-              {stats.todayBills} today
-            </div>
-          )}
         </div>
         <div className="stat-card">
-          <div className="stat-icon"><TrendingUp size={28} /></div>
+          <div className="stat-icon"><TrendingUp size={22} /></div>
           <div className="stat-content">
             <span className="stat-value">{formatCurrency(stats.avgBillValue)}</span>
-            <span className="stat-label">Avg Bill Value</span>
+            <span className="stat-label">Avg Bill</span>
           </div>
-          {stats.avgBillValue > 0 && (
-            <div className="stat-change positive">
-              <ArrowUpRight size={16} />
-              Per bill
-            </div>
-          )}
         </div>
         <div className={`stat-card ${stats.lowStockCount > 0 ? 'warning' : ''}`}>
-          <div className="stat-icon"><Package size={28} /></div>
+          <div className="stat-icon"><Package size={22} /></div>
           <div className="stat-content">
             <span className="stat-value">{stats.lowStockCount}</span>
-            <span className="stat-label">Low Stock Items</span>
+            <span className="stat-label">Low Stock</span>
           </div>
-          {stats.lowStockCount > 0 && (
-            <button className="btn btn-sm btn-warning" onClick={() => setCurrentPage('products')}>Fix</button>
-          )}
         </div>
       </div>
 
@@ -364,20 +370,81 @@ export default function Dashboard({ addToast, setCurrentPage }) {
       </div>
 
       <style>{`
-        /* Dashboard Header */
+        /* Top Navigation Bar */
+        .top-nav-bar {
+          background: var(--bg-card);
+          border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-lg);
+          padding: 8px;
+          margin-bottom: 16px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        
+        .top-nav-bar::-webkit-scrollbar {
+          height: 4px;
+        }
+        .top-nav-bar::-webkit-scrollbar-thumb {
+          background: var(--primary-400);
+          border-radius: 2px;
+        }
+        
+        .top-nav-items {
+          display: flex;
+          gap: 6px;
+          min-width: max-content;
+        }
+        
+        .top-nav-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 14px;
+          background: transparent;
+          border: 1px solid transparent;
+          border-radius: var(--radius-md);
+          color: var(--text-secondary);
+          font-size: 0.8rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+        
+        .top-nav-item:hover {
+          background: var(--bg-tertiary);
+          color: var(--primary-400);
+          border-color: var(--primary-300);
+        }
+        
+        .top-nav-item:active {
+          transform: scale(0.98);
+        }
+        
+        /* Dashboard Header - Compact */
         .dashboard-header { 
           display: flex; 
           justify-content: space-between; 
-          align-items: flex-start; 
-          margin-bottom: 24px;
+          align-items: center; 
+          margin-bottom: 16px;
           flex-wrap: wrap;
-          gap: 12px;
+          gap: 8px;
+        }
+        
+        .dashboard-header .page-title {
+          font-size: 1.25rem;
+          margin-bottom: 2px;
+        }
+        
+        .dashboard-header .page-subtitle {
+          font-size: 0.8rem;
         }
         
         @media (max-width: 640px) {
           .dashboard-header {
             flex-direction: column;
-            margin-bottom: 16px;
+            align-items: flex-start;
+            margin-bottom: 12px;
           }
           .header-right {
             width: 100%;
@@ -388,42 +455,42 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         .header-right { 
           display: flex; 
           align-items: center; 
-          gap: 12px; 
+          gap: 8px; 
         }
         
         .live-time { 
           display: flex; 
           align-items: center; 
-          gap: 8px; 
-          padding: 8px 16px; 
+          gap: 6px; 
+          padding: 6px 12px; 
           background: var(--bg-card); 
           border: 1px solid var(--border-subtle); 
-          border-radius: var(--radius-lg); 
+          border-radius: var(--radius-md); 
           font-weight: 600; 
-          font-size: 1.125rem; 
+          font-size: 0.9rem; 
         }
         
         @media (max-width: 480px) {
           .live-time {
-            padding: 6px 12px;
-            font-size: 1rem;
+            padding: 4px 10px;
+            font-size: 0.85rem;
           }
         }
         
         .spin svg { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Quick Actions Grid */
+        /* Quick Actions Grid - Compact */
         .quick-actions-grid { 
           display: grid; 
           grid-template-columns: repeat(4, 1fr); 
-          gap: 12px; 
-          margin-bottom: 24px; 
+          gap: 10px; 
+          margin-bottom: 16px; 
         }
         
         @media (max-width: 900px) { 
           .quick-actions-grid { 
-            grid-template-columns: repeat(2, 1fr); 
+            grid-template-columns: repeat(4, 1fr); 
           } 
         }
         
@@ -431,26 +498,26 @@ export default function Dashboard({ addToast, setCurrentPage }) {
           .quick-actions-grid { 
             grid-template-columns: repeat(2, 1fr);
             gap: 8px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
           } 
         }
         
         .quick-action-btn {
           display: flex; 
-          flex-direction: column; 
+          flex-direction: row; 
           align-items: center; 
           justify-content: center;
           gap: 8px; 
-          padding: 20px; 
+          padding: 12px 16px; 
           background: var(--bg-card);
-          border: 2px solid var(--border-subtle); 
-          border-radius: var(--radius-xl);
+          border: 1px solid var(--border-subtle); 
+          border-radius: var(--radius-lg);
           cursor: pointer; 
           transition: all var(--transition-fast);
           font-weight: 600; 
           color: var(--text-secondary);
           -webkit-tap-highlight-color: transparent;
-          min-height: 100px;
+          font-size: 0.85rem;
         }
         
         @media (max-width: 480px) {
@@ -490,12 +557,12 @@ export default function Dashboard({ addToast, setCurrentPage }) {
           opacity: 0.9; 
         }
 
-        /* Stats Grid */
+        /* Stats Grid - Compact */
         .stats-grid { 
           display: grid; 
           grid-template-columns: repeat(4, 1fr); 
-          gap: 16px; 
-          margin-bottom: 24px; 
+          gap: 12px; 
+          margin-bottom: 16px; 
         }
         
         @media (max-width: 1024px) { 
@@ -506,28 +573,28 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         
         @media (max-width: 480px) { 
           .stats-grid { 
-            grid-template-columns: 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
           } 
         }
         
         .stat-card {
           display: flex; 
           align-items: center; 
-          gap: 16px;
-          padding: 20px; 
+          gap: 12px;
+          padding: 14px; 
           background: var(--bg-card);
           border: 1px solid var(--border-subtle); 
-          border-radius: var(--radius-xl);
+          border-radius: var(--radius-lg);
           position: relative; 
           overflow: hidden;
         }
         
         @media (max-width: 480px) {
           .stat-card {
-            padding: 16px;
-            gap: 12px;
+            padding: 12px;
+            gap: 10px;
           }
         }
         
@@ -546,10 +613,10 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         }
         
         .stat-icon { 
-          width: 56px; 
-          height: 56px; 
+          width: 44px; 
+          height: 44px; 
           background: var(--bg-tertiary); 
-          border-radius: var(--radius-lg); 
+          border-radius: var(--radius-md); 
           display: flex; 
           align-items: center; 
           justify-content: center; 
@@ -559,12 +626,12 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         
         @media (max-width: 480px) {
           .stat-icon {
-            width: 48px;
-            height: 48px;
+            width: 40px;
+            height: 40px;
           }
           .stat-icon svg {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
           }
         }
         
@@ -578,8 +645,8 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         }
         
         .stat-value { 
-          font-size: 1.75rem; 
-          font-weight: 800; 
+          font-size: 1.25rem; 
+          font-weight: 700; 
           display: block;
           -webkit-font-smoothing: antialiased;
         }

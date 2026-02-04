@@ -213,13 +213,16 @@ export default function Login({ onLogin }) {
               {/* For Registration - Show Full Name first */}
               {!isLogin && (
                 <div className="form-group">
-                  <label className="form-label">Full Name</label>
+                  <label className="form-label" htmlFor="fullname">Full Name</label>
                   <div className="input-icon">
                     <User size={18} />
                     <input
                       type="text"
+                      id="fullname"
+                      name="fullname"
                       className="form-input"
                       placeholder="Your full name"
+                      autoComplete="name"
                       value={form.username}
                       onChange={(e) => setForm({ ...form, username: e.target.value })}
                       required
@@ -231,13 +234,16 @@ export default function Login({ onLogin }) {
 
               {/* Email - Always shown */}
               <div className="form-group">
-                <label className="form-label">Email Address</label>
+                <label className="form-label" htmlFor="email">Email Address</label>
                 <div className="input-icon">
                   <Mail size={18} />
                   <input
                     type="email"
+                    id="email"
+                    name="email"
                     className="form-input"
                     placeholder="your@email.com"
+                    autoComplete="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     required
@@ -249,13 +255,16 @@ export default function Login({ onLogin }) {
               {/* Store Name - For Store Owners only */}
               {!isLogin && registerType === 'owner' && (
                 <div className="form-group">
-                  <label className="form-label">Store Name</label>
+                  <label className="form-label" htmlFor="storename">Store Name</label>
                   <div className="input-icon">
                     <ShoppingCart size={18} />
                     <input
                       type="text"
+                      id="storename"
+                      name="storename"
                       className="form-input"
                       placeholder="Your Store Name"
+                      autoComplete="organization"
                       value={form.storeName}
                       onChange={(e) => setForm({ ...form, storeName: e.target.value })}
                       required
@@ -286,13 +295,16 @@ export default function Login({ onLogin }) {
               )}
 
               <div className="form-group">
-                <label className="form-label">Password</label>
+                <label className="form-label" htmlFor="password">Password</label>
                 <div className="input-icon password-input">
                   <Lock size={18} />
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    name="password"
                     className="form-input"
                     placeholder="Enter your password"
+                    autoComplete={isLogin ? 'current-password' : 'new-password'}
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     required
@@ -342,7 +354,7 @@ export default function Login({ onLogin }) {
               {isLogin && (
                 <div className="remember-forgot">
                   <label className="remember-me">
-                    <input type="checkbox" />
+                    <input type="checkbox" id="rememberme" name="rememberme" />
                     <span>Remember me</span>
                   </label>
                   <button type="button" className="forgot-link">

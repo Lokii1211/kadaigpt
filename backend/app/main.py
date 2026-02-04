@@ -97,13 +97,21 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS
+# Configure CORS - explicitly allow localhost origins for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+        "https://kadaigpt.up.railway.app",
+        "*"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 
@@ -218,12 +226,18 @@ async def serve_spa(request: Request, full_path: str):
 # Error handlers
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
+    # Log the error for debugging
+    print(f"[Error] {type(exc).__name__}: {str(exc)}")
     return JSONResponse(
         status_code=500,
         content={
             "error": True,
             "message": str(exc),
             "detail": "An unexpected error occurred"
+        },
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": "true",
         }
     )
 

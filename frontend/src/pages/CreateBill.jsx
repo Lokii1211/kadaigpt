@@ -127,9 +127,17 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     const total = taxableAmount + tax
     const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
 
+    // Generate 4-digit invoice number
+    const generateInvoiceNumber = () => {
+        const lastNum = parseInt(localStorage.getItem('kadai_last_invoice') || '0')
+        const newNum = (lastNum + 1) % 10000 // Reset after 9999
+        localStorage.setItem('kadai_last_invoice', newNum.toString())
+        return `INV-${newNum.toString().padStart(4, '0')}`
+    }
+
     const getBillData = () => ({
-        // For preview/print
-        bill_number: billNumber || `INV-${Date.now().toString().slice(-6)}`,
+        // For preview/print - 4 digit invoice number
+        bill_number: billNumber || generateInvoiceNumber(),
         store_name: localStorage.getItem('kadai_store_name') || 'KadaiGPT Store',
         store_address: localStorage.getItem('kadai_store_address') || '',
         store_phone: localStorage.getItem('kadai_store_phone') || '',
@@ -314,8 +322,8 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                 }
             }
 
-            addToast('Bill saved successfully!', 'success')
-            setShowPayment(true)
+            // Success! Bill is created
+            addToast(`✅ Bill ${newBillNumber} created - ₹${total.toFixed(2)} (${paymentMode})`, 'success')
 
             // Auto-send to WhatsApp if phone provided
             if (customer.phone && customer.phone.length >= 10) {
@@ -327,12 +335,19 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                 const waUrl = `https://wa.me/91${customer.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
                 window.open(waUrl, '_blank')
             }
+
+            // Clear cart and prepare for next bill
+            setTimeout(() => {
+                clearCart()
+                addToast('Ready for next bill!', 'info')
+            }, 2000)
+
         } catch (error) {
             console.error('❌ Error saving bill:', error)
             const newBillNumber = `INV-${Date.now().toString().slice(-6)}`
             setBillNumber(newBillNumber)
-            addToast('Bill saved locally', 'info')
-            setShowPayment(true)
+            addToast('Bill saved locally - will sync when connected', 'warning')
+            clearCart()
         }
     }
 
@@ -418,8 +433,25 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     return (
         <div className="create-bill">
             <div className="page-header">
-                <h1 className="page-title">🧾 Create New Bill</h1>
-                <p className="page-subtitle">Add products and generate invoice</p>
+                <div className="header-left">
+                    <h1 className="page-title">🧾 Create New Bill</h1>
+                    <p className="page-subtitle">Add products and generate invoice</p>
+                </div>
+                <div className="header-actions">
+                    {cart.length > 0 && (
+                        <div className="cart-badge">
+                            <ShoppingCart size={20} />
+                            <span className="badge-count">{itemCount}</span>
+                            <span className="badge-total">₹{total.toLocaleString('en-IN')}</span>
+                        </div>
+                    )}
+                    <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => setCurrentPage?.('dashboard')}
+                    >
+                        ← Back
+                    </button>
+                </div>
             </div>
 
             <div className="bill-layout">
@@ -634,9 +666,36 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                                         <span className="text-success">-₹{pointsDiscount.toLocaleString('en-IN')}</span>
                                     </div>
                                 )}
+                                <div className="total-row tax">
+                                    <span>GST ({gstRate}%)</span>
+                                    <span>₹{tax.toLocaleString('en-IN')}</span>
+                                </div>
                                 <div className="total-row grand">
                                     <span>Total</span>
                                     <span>₹{total.toLocaleString('en-IN')}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Payment Mode - MUST SELECT BEFORE GENERATING BILL */}
+                        {cart.length > 0 && (
+                            <div className="payment-mode-section">
+                                <label className="form-label payment-label">💳 Select Payment Mode *</label>
+                                <div className="payment-buttons-inline">
+                                    {['Cash', 'UPI', 'Card', 'Credit'].map(mode => (
+                                        <button
+                                            key={mode}
+                                            className={`payment-mode-btn ${paymentMode === mode ? 'active' : ''}`}
+                                            onClick={() => setPaymentMode(mode)}
+                                            type="button"
+                                        >
+                                            {mode === 'Cash' && '💵'}
+                                            {mode === 'UPI' && '📱'}
+                                            {mode === 'Card' && '💳'}
+                                            {mode === 'Credit' && '📋'}
+                                            {' '}{mode}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         )}
@@ -646,8 +705,8 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                             <button className="btn btn-ghost" onClick={handlePreview} disabled={cart.length === 0}>
                                 <Eye size={16} /> Preview
                             </button>
-                            <button className="btn btn-primary" onClick={handleSaveBill} disabled={cart.length === 0}>
-                                <Save size={16} /> Save Bill
+                            <button className="btn btn-primary btn-lg" onClick={handleSaveBill} disabled={cart.length === 0}>
+                                <Save size={16} /> Generate Bill
                             </button>
                         </div>
                     </div>
@@ -740,6 +799,44 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .page-header {
           flex-shrink: 0;
           padding-bottom: 16px;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        }
+        
+        .header-left {
+          flex: 1;
+        }
+        
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .cart-badge {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+          color: white;
+          padding: 8px 16px;
+          border-radius: var(--radius-lg);
+          font-weight: 600;
+          box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+        }
+        
+        .badge-count {
+          background: white;
+          color: var(--primary-600);
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 0.8rem;
+          font-weight: 700;
+        }
+        
+        .badge-total {
+          font-size: 1rem;
         }
         
         .bill-layout { 
@@ -1093,6 +1190,61 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .payment-btn { padding: 10px 8px; background: var(--bg-tertiary); border: 2px solid transparent; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: all 0.2s; color: var(--text-primary); font-size: 0.8rem; }
         .payment-btn:hover { border-color: var(--border-default); }
         .payment-btn.active { border-color: var(--primary-400); background: rgba(249, 115, 22, 0.1); color: var(--primary-400); }
+        
+        /* Payment Mode Section - IN CART */
+        .payment-mode-section {
+          padding: 12px 0;
+          border-top: 1px solid var(--border-subtle);
+          flex-shrink: 0;
+        }
+        .payment-label {
+          font-size: 0.85rem !important;
+          font-weight: 600 !important;
+          margin-bottom: 8px;
+          display: block;
+          color: var(--text-primary);
+        }
+        .payment-buttons-inline {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 6px;
+        }
+        .payment-mode-btn {
+          padding: 10px 8px;
+          background: var(--bg-tertiary);
+          border: 2px solid var(--border-subtle);
+          border-radius: var(--radius-md);
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          color: var(--text-primary);
+          font-size: 0.75rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+        }
+        .payment-mode-btn:hover {
+          border-color: var(--primary-300);
+          background: var(--bg-secondary);
+        }
+        .payment-mode-btn.active {
+          border-color: var(--primary-400);
+          background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(249, 115, 22, 0.05));
+          color: var(--primary-400);
+          box-shadow: 0 2px 8px rgba(249, 115, 22, 0.2);
+        }
+        
+        .total-row.tax {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+        }
+        
+        .cart-actions .btn.btn-lg {
+          padding: 12px 16px !important;
+          font-size: 0.9rem !important;
+          font-weight: 600;
+        }
         
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }

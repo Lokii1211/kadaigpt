@@ -516,3 +516,64 @@
   margin: 0;
   font-size: 0.875rem;
 }
+
+/* Top Action Bar - Fixed Create Bill Button */
+.top-action-bar {
+  position: fixed;
+  top: 12px;
+  left: 240px;
+  /* After sidebar */
+  right: 12px;
+  display: flex;
+  justify-content: flex-end;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.top-new-bill-btn {
+  pointer-events: auto;
+  padding: 12px 24px !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  border-radius: 50px !important;
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.4);
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+@keyframes subtle-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 4px 16px rgba(249, 115, 22, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 6px 24px rgba(249, 115, 22, 0.6);
+  }
+}
+
+.top-new-bill-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(249, 115, 22, 0.5);
+  animation: none;
+}
+
+/* Mobile: Hide top action bar, show in mobile header instead */
+@media (max-width: 900px) {
+  .top-action-bar {
+    display: none;
+  }
+
+  .quick-new-bill {
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+/* Desktop: Hide mobile header new bill button */
+@media (min-width: 901px) {
+  .quick-new-bill {
+    display: none !important;
+  }
+}

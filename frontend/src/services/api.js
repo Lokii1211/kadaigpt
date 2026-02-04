@@ -1,6 +1,12 @@
 // Complete API Configuration and Service with Offline Sync
 // Uses relative URL for same-host deployment
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
+// For local development, use http://localhost:8000/api/v1
+// For production (Railway), use /api/v1 (relative)
+const API_BASE_URL = import.meta.env.PROD
+    ? '/api/v1'
+    : 'http://localhost:8000/api/v1'
+console.log('[API Config] Mode:', import.meta.env.MODE)
+console.log('[API Config] API_BASE_URL:', API_BASE_URL)
 
 // IndexedDB for offline storage
 const DB_NAME = 'KadaiGPT_DB'

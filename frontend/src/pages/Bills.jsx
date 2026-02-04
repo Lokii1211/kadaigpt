@@ -3,6 +3,7 @@ import { Search, Filter, Download, Eye, Printer, Calendar, X, ChevronDown, FileT
 import realDataService from '../services/realDataService'
 import api from '../services/api'
 import EmptyState from '../components/EmptyState'
+import FloatingActionButton from '../components/FloatingActionButton'
 
 export default function Bills({ addToast, setCurrentPage }) {
     const [bills, setBills] = useState([])
@@ -11,7 +12,7 @@ export default function Bills({ addToast, setCurrentPage }) {
     const [showFilters, setShowFilters] = useState(false)
     const [selectedBill, setSelectedBill] = useState(null)
     const [filters, setFilters] = useState({
-        dateRange: 'today',
+        dateRange: 'all',  // Changed from 'today' to show all bills by default
         paymentMode: 'all',
         minAmount: '',
         maxAmount: '',

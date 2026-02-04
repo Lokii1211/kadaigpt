@@ -3,10 +3,11 @@ import { Search, Plus, Package, AlertTriangle, TrendingUp, TrendingDown, Edit2, 
 import realDataService from '../services/realDataService'
 import api from '../services/api'
 import EmptyState from '../components/EmptyState'
+import FloatingActionButton from '../components/FloatingActionButton'
 
 const categories = ["All", "Grains", "Pulses", "Essentials", "Oils", "Beverages", "Dairy", "General"]
 
-export default function Products({ addToast }) {
+export default function Products({ addToast, setCurrentPage }) {
     const [products, setProducts] = useState([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
@@ -506,6 +507,12 @@ export default function Products({ addToast }) {
           animation: pulse-error 1.5s infinite;
         }
       `}</style>
+
+            {/* Floating Action Button */}
+            <FloatingActionButton
+                onClick={() => setShowAddModal(true)}
+                label="Add Product"
+            />
         </div>
     )
 }

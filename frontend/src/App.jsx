@@ -7,6 +7,7 @@ import CommandPalette from './components/CommandPalette'
 import UnifiedAIAssistant from './components/UnifiedAIAssistant'
 import VoiceCommandAgent from './components/VoiceCommandAgent'
 import AICopilot from './components/AICopilot'
+import FloatingActionButton from './components/FloatingActionButton'
 import Dashboard from './pages/Dashboard'
 import Bills from './pages/Bills'
 import OCRCapture from './pages/OCRCapture'
@@ -298,6 +299,14 @@ function App() {
                     <span>KadaiGPT</span>
                 </div>
                 <div className="mobile-header-actions">
+                    {/* New Bill Quick Action */}
+                    <button
+                        className="btn btn-primary btn-sm quick-new-bill"
+                        onClick={() => setCurrentPage('create-bill')}
+                        style={{ marginRight: '8px' }}
+                    >
+                        <Plus size={18} /> New Bill
+                    </button>
                     <button
                         className="btn btn-ghost btn-icon"
                         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -307,6 +316,16 @@ function App() {
                     </button>
                 </div>
             </header>
+
+            {/* Top Action Bar - Desktop (Always visible) */}
+            <div className="top-action-bar">
+                <button
+                    className="btn btn-primary top-new-bill-btn"
+                    onClick={() => setCurrentPage('create-bill')}
+                >
+                    <Plus size={20} /> Create New Bill
+                </button>
+            </div>
 
             {/* Sidebar Backdrop */}
             <div
@@ -368,15 +387,6 @@ function App() {
                     </button>
                 </div>
             </nav>
-
-            {/* Floating Action Button - Create Bill */}
-            <button
-                className="fab"
-                onClick={() => setCurrentPage('create-bill')}
-                aria-label="Create new bill"
-            >
-                <Plus size={28} />
-            </button>
 
             {/* Unified AI Assistant - All-in-One Command Center */}
             <UnifiedAIAssistant

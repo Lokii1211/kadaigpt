@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { Users, Search, Plus, Phone, IndianRupee, Calendar, X, Send, Check, AlertCircle, Loader2, Edit2, Trash2 } from 'lucide-react'
 import realDataService from '../services/realDataService'
 import api from '../services/api'
+import FloatingActionButton from '../components/FloatingActionButton'
 
-export default function Customers({ addToast }) {
+export default function Customers({ addToast, setCurrentPage }) {
     const [customers, setCustomers] = useState([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
@@ -569,6 +570,12 @@ export default function Customers({ addToast }) {
         .text-danger { color: var(--error) !important; }
         .text-danger:hover { background: rgba(239, 68, 68, 0.1); }
       `}</style>
+
+            {/* Floating Action Button */}
+            <FloatingActionButton
+                onClick={() => setShowAddModal(true)}
+                label="Add Customer"
+            />
         </div>
     )
 }

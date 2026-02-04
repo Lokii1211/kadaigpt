@@ -3,10 +3,11 @@ import { TrendingUp, ShoppingBag, Users, IndianRupee, ArrowUpRight, ArrowDownRig
 import realDataService from '../services/realDataService'
 import BusinessHealthCard from '../components/BusinessHealthCard'
 import PricePredictions from '../components/PricePredictions'
+import FloatingActionButton from '../components/FloatingActionButton'
 import api from '../services/api'
 
 
-export default function Analytics({ addToast }) {
+export default function Analytics({ addToast, setCurrentPage }) {
     const [period, setPeriod] = useState('week')
     const [loading, setLoading] = useState(true)
     const [analytics, setAnalytics] = useState({
