@@ -1,13 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
-import { ShoppingCart, Home, FileText, Camera, Package, Menu, X, BarChart3, Settings as SettingsIcon, Plus, Command, Search } from 'lucide-react'
-import Sidebar from './components/Sidebar'
+import { useState, useEffect } from 'react'
+import { ShoppingCart, Home, FileText, Package, BarChart3, Users, Settings as SettingsIcon, Plus, Command, LogOut, Menu, X, Bell, User, ChevronDown } from 'lucide-react'
 import MobileNav from './components/MobileNav'
 import OnboardingWizard from './components/OnboardingWizard'
 import CommandPalette from './components/CommandPalette'
 import UnifiedAIAssistant from './components/UnifiedAIAssistant'
 import VoiceCommandAgent from './components/VoiceCommandAgent'
 import AICopilot from './components/AICopilot'
-import FloatingActionButton from './components/FloatingActionButton'
 import Dashboard from './pages/Dashboard'
 import Bills from './pages/Bills'
 import OCRCapture from './pages/OCRCapture'
@@ -33,9 +31,7 @@ import './App.css'
 import './styles/mobile.css'
 import './styles/enhancements.css'
 
-
 function App() {
-    // Get initial page from URL hash or default to dashboard
     const getInitialPage = () => {
         const hash = window.location.hash.replace('#', '')
         const validPages = ['dashboard', 'bills', 'create-bill', 'ocr', 'products', 'analytics', 'customers', 'gst', 'whatsapp', 'suppliers', 'loyalty', 'ai-insights', 'expenses', 'daily-summary', 'bulk-operations', 'admin', 'settings', 'admin-login']
@@ -46,20 +42,20 @@ function App() {
     const [isOnline, setIsOnline] = useState(navigator.onLine)
     const [toasts, setToasts] = useState([])
     const [user, setUser] = useState(null)
-    const [userRole, setUserRole] = useState(localStorage.getItem('kadai_user_role') || 'owner') // admin, owner, staff
+    const [userRole, setUserRole] = useState(localStorage.getItem('kadai_user_role') || 'owner')
     const [loading, setLoading] = useState(true)
     const [products] = useState(demoProducts)
-    const [sidebarOpen, setSidebarOpen] = useState(false)
     const [showOnboarding, setShowOnboarding] = useState(false)
     const [showCommandPalette, setShowCommandPalette] = useState(false)
+    const [showUserMenu, setShowUserMenu] = useState(false)
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-    // Custom setCurrentPage that also updates URL hash
     const setCurrentPage = (page) => {
         setCurrentPageState(page)
         window.location.hash = page
+        setMobileMenuOpen(false)
     }
 
-    // Listen for hash changes (back/forward button)
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash.replace('#', '')
@@ -72,7 +68,6 @@ function App() {
     }, [currentPage])
 
     useEffect(() => {
-        // Check for existing session
         const checkAuth = async () => {
             const token = api.getToken()
             if (token) {
@@ -85,38 +80,19 @@ function App() {
             }
             setLoading(false)
 
-            // Check if onboarding is needed for real users
             if (!localStorage.getItem('kadai_onboarding_complete') && !localStorage.getItem('kadai_demo_mode')) {
                 setShowOnboarding(true)
             }
         }
         checkAuth()
 
-        // Keyboard shortcuts
         const handleKeyboard = (e) => {
-            // Command palette (Cmd+K or Ctrl+K)
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                 e.preventDefault()
                 setShowCommandPalette(prev => !prev)
                 return
             }
-
-            if (e.ctrlKey || e.metaKey) {
-                switch (e.key) {
-                    case 'n': e.preventDefault(); setCurrentPage('create-bill'); break;
-                    case 'b': e.preventDefault(); setCurrentPage('bills'); break;
-                    case 'd': e.preventDefault(); setCurrentPage('dashboard'); break;
-                    case 's': e.preventDefault(); setCurrentPage('ocr'); break;
-                }
-            }
-            // F keys for quick access
-            switch (e.key) {
-                case 'F1': e.preventDefault(); setCurrentPage('dashboard'); break;
-                case 'F2': e.preventDefault(); setCurrentPage('create-bill'); break;
-                case 'F3': e.preventDefault(); setCurrentPage('bills'); break;
-                case 'F4': e.preventDefault(); setCurrentPage('products'); break;
-                case 'Escape': setShowCommandPalette(false); break;
-            }
+            if (e.key === 'Escape') setShowCommandPalette(false)
         }
         window.addEventListener('keydown', handleKeyboard)
         return () => window.removeEventListener('keydown', handleKeyboard)
@@ -126,8 +102,6 @@ function App() {
         const handleOnline = () => {
             setIsOnline(true)
             addToast('Back online! Syncing data...', 'success')
-            // Sync offline data when back online
-            api.syncOfflineData?.()
         }
         const handleOffline = () => {
             setIsOnline(false)
@@ -136,17 +110,11 @@ function App() {
 
         window.addEventListener('online', handleOnline)
         window.addEventListener('offline', handleOffline)
-
         return () => {
             window.removeEventListener('online', handleOnline)
             window.removeEventListener('offline', handleOffline)
         }
     }, [])
-
-    // Close sidebar when page changes on mobile
-    useEffect(() => {
-        setSidebarOpen(false)
-    }, [currentPage])
 
     const addToast = (message, type = 'info') => {
         const id = Date.now()
@@ -157,7 +125,6 @@ function App() {
     }
 
     const handleLogin = (userData) => {
-        // Clear demo mode if user is not demo
         if (!userData.isDemo) {
             localStorage.removeItem('kadai_demo_mode')
         }
@@ -167,18 +134,10 @@ function App() {
 
     const handleLogout = () => {
         api.logout()
-        // Clear demo mode flag
         localStorage.removeItem('kadai_demo_mode')
         setUser(null)
         setCurrentPage('dashboard')
         addToast('Logged out successfully', 'info')
-    }
-
-    const handleVoiceCommand = (command) => {
-        if (command.action === 'add_item' && command.product) {
-            addToast(`Added ${command.quantity} ${command.product.unit} of ${command.product.name}`, 'success')
-            // In a full implementation, this would add to cart
-        }
     }
 
     const renderPage = () => {
@@ -204,6 +163,27 @@ function App() {
         }
     }
 
+    // Navigation items
+    const navItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: Home },
+        { id: 'create-bill', label: 'New Bill', icon: Plus, primary: true },
+        { id: 'bills', label: 'Bills', icon: FileText },
+        { id: 'products', label: 'Products', icon: Package },
+        { id: 'customers', label: 'Customers', icon: Users },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    ]
+
+    const moreItems = [
+        { id: 'gst', label: 'GST Reports' },
+        { id: 'suppliers', label: 'Suppliers' },
+        { id: 'loyalty', label: 'Loyalty' },
+        { id: 'expenses', label: 'Expenses' },
+        { id: 'daily-summary', label: 'Daily Report' },
+        { id: 'ai-insights', label: 'AI Insights' },
+        { id: 'whatsapp', label: 'WhatsApp' },
+        { id: 'bulk-operations', label: 'Import/Export' },
+    ]
+
     if (loading) {
         return (
             <div className="loading-screen" style={{
@@ -218,12 +198,12 @@ function App() {
                 <div style={{
                     width: '80px',
                     height: '80px',
-                    background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                    background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
                     borderRadius: '24px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 20px 60px rgba(124, 58, 237, 0.4)',
+                    boxShadow: '0 20px 60px rgba(249, 115, 22, 0.4)',
                     animation: 'pulse 2s ease-in-out infinite'
                 }}>
                     <ShoppingCart size={40} color="white" />
@@ -232,33 +212,15 @@ function App() {
                     <h1 style={{
                         fontSize: '2rem',
                         fontWeight: '800',
-                        background: 'linear-gradient(135deg, #fff 0%, #a78bfa 100%)',
+                        background: 'linear-gradient(135deg, #fff 0%, #f97316 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         marginBottom: '8px'
                     }}>KadaiGPT</h1>
                     <p style={{ color: '#666', fontSize: '0.9375rem' }}>AI-Powered Retail Intelligence</p>
                 </div>
-                <div className="loader" style={{
-                    width: '200px',
-                    height: '4px',
-                    background: 'rgba(255,255,255,0.1)',
-                    borderRadius: '4px',
-                    overflow: 'hidden',
-                    position: 'relative'
-                }}>
-                    <div style={{
-                        position: 'absolute',
-                        height: '100%',
-                        width: '40%',
-                        background: 'linear-gradient(90deg, #7c3aed, #a855f7)',
-                        borderRadius: '4px',
-                        animation: 'loading-bar 1.5s ease-in-out infinite'
-                    }}></div>
-                </div>
                 <style>{`
                     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-                    @keyframes loading-bar { 0% { left: -40%; } 100% { left: 100%; } }
                 `}</style>
             </div>
         )
@@ -269,8 +231,8 @@ function App() {
     }
 
     return (
-        <div className="app-layout">
-            {/* Onboarding Wizard for New Users */}
+        <div className="app-layout no-sidebar">
+            {/* Onboarding Wizard */}
             {showOnboarding && (
                 <OnboardingWizard
                     onComplete={() => {
@@ -280,7 +242,7 @@ function App() {
                 />
             )}
 
-            {/* Command Palette (Cmd+K) */}
+            {/* Command Palette */}
             {showCommandPalette && (
                 <CommandPalette
                     onClose={() => setShowCommandPalette(false)}
@@ -292,120 +254,144 @@ function App() {
                 />
             )}
 
-            {/* Mobile Header */}
-            <header className="mobile-header">
-                <div className="mobile-header-title">
-                    <ShoppingCart size={24} />
-                    <span>KadaiGPT</span>
+            {/* TOP NAVBAR - Main Navigation */}
+            <header className="top-navbar">
+                <div className="navbar-left">
+                    <div className="brand" onClick={() => setCurrentPage('dashboard')}>
+                        <div className="brand-icon">
+                            <ShoppingCart size={22} />
+                        </div>
+                        <span className="brand-name">KadaiGPT</span>
+                    </div>
+
+                    {/* Desktop Navigation */}
+                    <nav className="nav-links desktop-only">
+                        {navItems.map(item => (
+                            <button
+                                key={item.id}
+                                className={`nav-link ${currentPage === item.id ? 'active' : ''} ${item.primary ? 'primary' : ''}`}
+                                onClick={() => setCurrentPage(item.id)}
+                            >
+                                <item.icon size={18} />
+                                <span>{item.label}</span>
+                            </button>
+                        ))}
+
+                        {/* More Dropdown */}
+                        <div className="nav-dropdown">
+                            <button className="nav-link">
+                                More <ChevronDown size={14} />
+                            </button>
+                            <div className="dropdown-menu">
+                                {moreItems.map(item => (
+                                    <button
+                                        key={item.id}
+                                        className="dropdown-item"
+                                        onClick={() => setCurrentPage(item.id)}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </nav>
                 </div>
-                <div className="mobile-header-actions">
-                    {/* New Bill Quick Action */}
-                    <button
-                        className="btn btn-primary btn-sm quick-new-bill"
-                        onClick={() => setCurrentPage('create-bill')}
-                        style={{ marginRight: '8px' }}
-                    >
-                        <Plus size={18} /> New Bill
+
+                <div className="navbar-right">
+                    {/* Online Status */}
+                    <div className={`status-indicator ${isOnline ? 'online' : 'offline'}`}>
+                        <span className="status-dot"></span>
+                        <span className="status-text">{isOnline ? 'Online' : 'Offline'}</span>
+                    </div>
+
+                    {/* Command Palette Trigger */}
+                    <button className="icon-btn" onClick={() => setShowCommandPalette(true)} title="Quick Actions (Ctrl+K)">
+                        <Command size={18} />
                     </button>
-                    <button
-                        className="btn btn-ghost btn-icon"
-                        onClick={() => setSidebarOpen(!sidebarOpen)}
-                        aria-label="Toggle menu"
-                    >
-                        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+
+                    {/* Notifications */}
+                    <button className="icon-btn">
+                        <Bell size={18} />
+                    </button>
+
+                    {/* User Menu */}
+                    <div className="user-menu-wrapper">
+                        <button className="user-btn" onClick={() => setShowUserMenu(!showUserMenu)}>
+                            <div className="user-avatar">
+                                <User size={16} />
+                            </div>
+                            <div className="user-info">
+                                <span className="user-name">{user?.username || 'User'}</span>
+                                <span className="user-role">{userRole}</span>
+                            </div>
+                            <ChevronDown size={14} />
+                        </button>
+
+                        {showUserMenu && (
+                            <div className="user-dropdown">
+                                <div className="dropdown-header">
+                                    <span className="store-name">{localStorage.getItem('kadai_store_name') || 'My Store'}</span>
+                                </div>
+                                <button onClick={() => { setCurrentPage('settings'); setShowUserMenu(false); }}>
+                                    <SettingsIcon size={16} /> Settings
+                                </button>
+                                {userRole === 'admin' && (
+                                    <button onClick={() => { setCurrentPage('admin'); setShowUserMenu(false); }}>
+                                        <User size={16} /> Admin Panel
+                                    </button>
+                                )}
+                                <hr />
+                                <button onClick={handleLogout} className="logout-btn">
+                                    <LogOut size={16} /> Logout
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mobile Menu Toggle */}
+                    <button className="mobile-menu-btn mobile-only" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                        {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
                 </div>
             </header>
 
-            {/* Top Action Bar - Desktop (Always visible) */}
-            <div className="top-action-bar">
-                <button
-                    className="btn btn-primary top-new-bill-btn"
-                    onClick={() => setCurrentPage('create-bill')}
-                >
-                    <Plus size={20} /> Create New Bill
-                </button>
-            </div>
+            {/* Mobile Menu Overlay */}
+            {mobileMenuOpen && (
+                <div className="mobile-menu-overlay" onClick={() => setMobileMenuOpen(false)}>
+                    <nav className="mobile-menu" onClick={e => e.stopPropagation()}>
+                        {navItems.map(item => (
+                            <button
+                                key={item.id}
+                                className={`mobile-nav-link ${currentPage === item.id ? 'active' : ''}`}
+                                onClick={() => setCurrentPage(item.id)}
+                            >
+                                <item.icon size={20} />
+                                <span>{item.label}</span>
+                            </button>
+                        ))}
+                        <hr />
+                        {moreItems.map(item => (
+                            <button
+                                key={item.id}
+                                className={`mobile-nav-link ${currentPage === item.id ? 'active' : ''}`}
+                                onClick={() => setCurrentPage(item.id)}
+                            >
+                                <span>{item.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+            )}
 
-            {/* Sidebar Backdrop */}
-            <div
-                className={`sidebar-backdrop ${sidebarOpen ? 'visible' : ''}`}
-                onClick={() => setSidebarOpen(false)}
-            />
-
-            {/* Sidebar with open state */}
-            <Sidebar
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                isOnline={isOnline}
-                user={user}
-                onLogout={handleLogout}
-                isOpen={sidebarOpen}
-            />
-
-            <main className="main-content">
+            {/* Main Content */}
+            <main className="main-content no-sidebar">
                 {renderPage()}
             </main>
 
-            {/* Bottom Navigation - Mobile Only */}
-            <nav className="bottom-nav">
-                <div className="bottom-nav-items">
-                    <button
-                        className={`bottom-nav-item ${currentPage === 'dashboard' ? 'active' : ''}`}
-                        onClick={() => setCurrentPage('dashboard')}
-                    >
-                        <Home size={24} />
-                        <span>Home</span>
-                    </button>
-                    <button
-                        className={`bottom-nav-item ${currentPage === 'bills' ? 'active' : ''}`}
-                        onClick={() => setCurrentPage('bills')}
-                    >
-                        <FileText size={24} />
-                        <span>Bills</span>
-                    </button>
-                    <button
-                        className={`bottom-nav-item ${currentPage === 'ocr' ? 'active' : ''}`}
-                        onClick={() => setCurrentPage('ocr')}
-                    >
-                        <Camera size={24} />
-                        <span>Scan</span>
-                    </button>
-                    <button
-                        className={`bottom-nav-item ${currentPage === 'products' ? 'active' : ''}`}
-                        onClick={() => setCurrentPage('products')}
-                    >
-                        <Package size={24} />
-                        <span>Products</span>
-                    </button>
-                    <button
-                        className={`bottom-nav-item ${currentPage === 'analytics' ? 'active' : ''}`}
-                        onClick={() => setCurrentPage('analytics')}
-                    >
-                        <BarChart3 size={24} />
-                        <span>Analytics</span>
-                    </button>
-                </div>
-            </nav>
-
-            {/* Unified AI Assistant - All-in-One Command Center */}
-            <UnifiedAIAssistant
-                addToast={addToast}
-                setCurrentPage={setCurrentPage}
-                products={products}
-            />
-
-            {/* Voice Command AI Agent */}
-            <VoiceCommandAgent
-                addToast={addToast}
-                setCurrentPage={setCurrentPage}
-            />
-
-            {/* AI Copilot - Context-aware suggestions */}
-            <AICopilot
-                currentPage={currentPage}
-                addToast={addToast}
-            />
+            {/* AI Assistants */}
+            <UnifiedAIAssistant addToast={addToast} setCurrentPage={setCurrentPage} products={products} />
+            <VoiceCommandAgent addToast={addToast} setCurrentPage={setCurrentPage} />
+            <AICopilot currentPage={currentPage} addToast={addToast} />
 
             {/* Toast Notifications */}
             <div className="toast-container">
@@ -416,19 +402,10 @@ function App() {
                 ))}
             </div>
 
-            {/* Mobile Bottom Navigation */}
+            {/* Mobile Bottom Nav */}
             <MobileNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
 
-            {/* Keyboard Shortcut Hint - Desktop only */}
-            <div className="keyboard-hint" onClick={() => setShowCommandPalette(true)} style={{ cursor: 'pointer' }}>
-                <span className="cmd-k-hint">
-                    <Command size={14} />
-                    <span>K</span>
-                </span>
-                <span>Quick Actions</span>
-            </div>
-
-            {/* Offline Indicator */}
+            {/* Offline Banner */}
             {!isOnline && (
                 <div className="offline-banner">
                     <span>📴 Offline Mode - Data will sync when connected</span>
@@ -439,4 +416,3 @@ function App() {
 }
 
 export default App
-

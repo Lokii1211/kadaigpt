@@ -112,38 +112,12 @@ export default function Dashboard({ addToast, setCurrentPage }) {
     { label: 'Analytics', icon: BarChart3, page: 'analytics', color: 'secondary' },
   ]
 
-  // Navigation items for top bar
-  const navItems = [
-    { label: 'Products', page: 'products', icon: Package },
-    { label: 'Customers', page: 'customers', icon: Users },
-    { label: 'GST', page: 'gst', icon: FileText },
-    { label: 'Suppliers', page: 'suppliers', icon: TrendingUp },
-    { label: 'Loyalty', page: 'loyalty', icon: Zap },
-    { label: 'Expenses', page: 'expenses', icon: IndianRupee },
-  ]
-
   return (
     <div className="dashboard">
-      {/* Top Navigation Bar - Always visible */}
-      <nav className="top-nav-bar">
-        <div className="top-nav-items">
-          {navItems.map((item, i) => (
-            <button
-              key={i}
-              className="top-nav-item"
-              onClick={() => setCurrentPage(item.page)}
-            >
-              <item.icon size={16} />
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
-
       {/* Header with Time - Compact */}
       <div className="dashboard-header">
         <div>
-          <h1 className="page-title">🏪 Dashboard</h1>
+          <h1 className="page-title">Dashboard</h1>
           <p className="page-subtitle">{formatDate(currentTime)}</p>
         </div>
         <div className="header-right">

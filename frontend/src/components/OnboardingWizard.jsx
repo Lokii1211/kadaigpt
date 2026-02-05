@@ -1,13 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Store, Package, Users, Zap, ArrowRight, Check } from 'lucide-react'
 
 export default function OnboardingWizard({ onComplete }) {
-    const [step, setStep] = useState(1)
+    // Check if store data already exists from registration
+    const existingStoreName = localStorage.getItem('kadai_store_name')
+
+    // If store name already exists from registration, skip to step 3
+    const [step, setStep] = useState(existingStoreName ? 3 : 1)
     const [storeData, setStoreData] = useState({
-        storeName: '',
-        storeType: 'grocery',
-        phone: '',
-        city: ''
+        storeName: existingStoreName || '',
+        storeType: localStorage.getItem('kadai_store_type') || 'grocery',
+        phone: localStorage.getItem('kadai_store_phone') || '',
+        city: localStorage.getItem('kadai_store_city') || ''
     })
 
     const handleComplete = () => {
