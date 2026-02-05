@@ -982,25 +982,28 @@ export default function CreateBill({ addToast, setCurrentPage }) {
             )}
 
             <style>{`
-        /* Main layout - Full page billing interface */
+        /* Main layout - Full page billing interface - MAXIMIZED */
         .create-bill {
           display: flex;
           flex-direction: column;
-          height: calc(100vh - 100px);
+          height: calc(100vh - 80px);
           overflow: hidden;
+          padding: 0;
         }
         
         .page-header {
           flex-shrink: 0;
-          padding-bottom: 16px;
+          padding: 10px 0;
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
+          align-items: center;
         }
         
         .header-left {
           flex: 1;
         }
+        .header-left .page-title { margin-bottom: 0; font-size: 1.3rem; }
+        .header-left .page-subtitle { font-size: 0.8rem; margin-top: 2px; }
         
         .header-actions {
           display: flex;
@@ -1035,9 +1038,10 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         
         .bill-layout { 
           display: flex; 
-          gap: 20px;
+          gap: 16px;
           flex: 1;
           overflow: hidden;
+          min-height: 0;
         }
         
         /* Products Section - Scrollable */
@@ -1046,6 +1050,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           display: flex;
           flex-direction: column;
           overflow: hidden;
+          min-width: 0;
         }
         
         /* Product Filters - Search + Categories */
@@ -1228,34 +1233,34 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           color: var(--primary-400);
         }
         
-        /* Cart Section - LARGER for better visibility */
+        /* Cart Section - MUCH LARGER for real billing */
         .cart-section {
-          width: 420px;
-          min-width: 420px;
+          width: 500px;
+          min-width: 500px;
           flex-shrink: 0;
           display: flex;
           flex-direction: column;
-          overflow: visible;
-          margin-right: 20px;
+          height: 100%;
         }
         
         .cart-card { 
           display: flex; 
           flex-direction: column; 
-          height: calc(100vh - 140px);
-          max-height: calc(100vh - 140px);
-          overflow: hidden;
+          height: 100%;
+          min-height: 600px;
           background: var(--bg-card);
           border-radius: var(--radius-lg);
           border: 1px solid var(--border-subtle);
           padding: 16px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
         
         .cart-scroll-area {
           flex: 1;
           overflow-y: auto;
-          min-height: 0;
+          min-height: 250px;
+          display: flex;
+          flex-direction: column;
         }
         .cart-scroll-area::-webkit-scrollbar { width: 4px; }
         .cart-scroll-area::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 2px; }
@@ -1332,14 +1337,14 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .cart-items { 
           flex: 1; 
           overflow-y: auto; 
-          min-height: 150px;
-          max-height: 200px;
+          min-height: 180px;
           border: 1px solid var(--border-subtle);
           border-radius: var(--radius-md);
           background: var(--bg-secondary);
         }
-        .cart-items::-webkit-scrollbar { width: 4px; }
-        .cart-items::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 2px; }
+        .cart-items::-webkit-scrollbar { width: 6px; }
+        .cart-items::-webkit-scrollbar-track { background: var(--bg-tertiary); border-radius: 3px; }
+        .cart-items::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 3px; }
         
         .empty-cart { 
           display: flex; 
