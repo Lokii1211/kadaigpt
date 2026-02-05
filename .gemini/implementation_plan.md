@@ -65,10 +65,39 @@ A simple, AI-powered billing and inventory app that anyone can use. AI features 
 
 ## 🚀 Implementation Steps
 
-1. **Fix Current Bugs** - Bills not saving, data not fetching
-2. **Improve Dashboard Layout** - Group AI panels together
-3. **Add Onboarding Flow** - Teach users how to use
-4. **Implement Freemium** - Subscription tiers
+1. **Fix Current Bugs** ✅ COMPLETED (2026-02-05)
+   - Fixed payment mode filter case mismatch in Bills.jsx
+   - Made payment mode filtering case-insensitive
+   - Removed duplicate CSS in Dashboard.jsx
+   - Removed redundant stock update logic in CreateBill.jsx (backend handles via inventory_agent)
+   - Simplified bill creation flow
+
+2. **Improve Dashboard Layout** ✅ COMPLETED
+   - Role-based dashboard with Owner/Manager/Cashier views
+   - AI panels grouped in collapsible sections
+   - Quick access buttons based on user role
+   - Clean stat cards with proper spacing
+   - Mobile-responsive grid layout
+
+3. **Add Onboarding Flow** ✅ COMPLETED
+   - OnboardingWizard component with 3-step flow:
+     - Step 1: Welcome with feature highlights
+     - Step 2: Store details (name, type, phone, city)
+     - Step 3: Quick start guide
+   - Shows automatically for new users
+   - Saves store data to localStorage
+   - Can be triggered manually from settings
+
+4. **Implement Freemium** ✅ COMPLETED
+   - Subscription page with 4 tiers:
+     - Free: 50 bills/month, basic features, 2 AI insights/day
+     - Pro (₹299/mo): Unlimited bills, WhatsApp, Voice commands
+     - Business (₹999/mo): Up to 5 stores, Staff management
+     - Enterprise (₹2999/mo): Unlimited everything, API access
+   - Monthly/Yearly toggle with 20% discount
+   - Plan stored in localStorage
+   - Upgrade prompts on dashboard
+
 5. **Test & Polish** - Mobile responsive, performance
 
 ---

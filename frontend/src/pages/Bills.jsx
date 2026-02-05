@@ -63,8 +63,8 @@ export default function Bills({ addToast, setCurrentPage }) {
 
         if (!searchMatch) return false
 
-        // Payment mode filter
-        if (filters.paymentMode !== 'all' && bill.payment_mode !== filters.paymentMode) {
+        // Payment mode filter (case-insensitive)
+        if (filters.paymentMode !== 'all' && bill.payment_mode?.toLowerCase() !== filters.paymentMode.toLowerCase()) {
             return false
         }
 
@@ -248,10 +248,10 @@ export default function Bills({ addToast, setCurrentPage }) {
                             <label className="form-label">Payment Mode</label>
                             <select className="form-input" value={filters.paymentMode} onChange={(e) => setFilters({ ...filters, paymentMode: e.target.value })}>
                                 <option value="all">All Modes</option>
-                                <option value="Cash">Cash</option>
-                                <option value="UPI">UPI</option>
-                                <option value="Card">Card</option>
-                                <option value="Credit">Credit</option>
+                                <option value="cash">Cash</option>
+                                <option value="upi">UPI</option>
+                                <option value="card">Card</option>
+                                <option value="credit">Credit</option>
                             </select>
                         </div>
                         <div className="form-group">

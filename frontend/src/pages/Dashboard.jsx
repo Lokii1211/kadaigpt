@@ -381,9 +381,6 @@ export default function Dashboard({ addToast, setCurrentPage }) {
           border-color: #8b5cf6;
           color: white;
         }
-          border-color: #8b5cf6;
-          color: white;
-        }
         .qa-btn.upgrade small { color: rgba(255,255,255,0.8); }
 
         .dash-actions {

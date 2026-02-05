@@ -309,38 +309,14 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     }
 
     try {
-      // Save bill to API with correct payment_method
-      const result = await api.createBill({
-        ...billData,
-        payment_method: paymentMode.toLowerCase(), // Use payment_method for API
-        total: total
-      })
+      // Save bill to API - backend handles stock updates via inventory_agent
+      const result = await api.createBill(billData)
       console.log('✅ Bill created:', result)
 
       const apiNewBillNumber = result.bill_number || newBillNumber
       setBillNumber(apiNewBillNumber)
 
-      // UPDATE STOCK for each item sold (only for real products)
-      console.log('📦 Updating stock for', cart.length, 'items')
-      for (const item of cart) {
-        if (item.isDemo) continue // Skip demo products
-
-        try {
-          const currentStock = item.stock || item.current_stock || 0
-          const newStock = Math.max(0, currentStock - item.quantity)
-          console.log(`  📦 ${item.name}: ${currentStock} → ${newStock}`)
-
-          await api.updateProduct(item.id, {
-            current_stock: newStock,
-            stock: newStock // Send both field names
-          })
-          console.log(`  ✅ Stock updated for ${item.name}`)
-        } catch (stockError) {
-          console.error('  ❌ Stock update failed:', stockError)
-        }
-      }
-
-      // Update local products state immediately
+      // Update local products state for immediate UI feedback
       setProducts(prev => prev.map(p => {
         const cartItem = cart.find(c => c.id === p.id)
         if (cartItem) {
