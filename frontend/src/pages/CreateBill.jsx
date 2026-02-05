@@ -924,8 +924,8 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .cart-card { 
           display: flex; 
           flex-direction: column; 
-          height: calc(100vh - 160px);
-          max-height: calc(100vh - 160px);
+          height: calc(100vh - 140px);
+          max-height: calc(100vh - 140px);
           overflow: hidden;
           background: var(--bg-card);
           border-radius: var(--radius-lg);

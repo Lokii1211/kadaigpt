@@ -507,12 +507,6 @@ export default function Products({ addToast, setCurrentPage }) {
           animation: pulse-error 1.5s infinite;
         }
       `}</style>
-
-            {/* Floating Action Button */}
-            <FloatingActionButton
-                onClick={() => setShowAddModal(true)}
-                label="Add Product"
-            />
         </div>
     )
 }

@@ -94,6 +94,22 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         </div>
       </header>
 
+      {/* Low Stock Alert Banner */}
+      {lowStockProducts.length > 0 && (
+        <div className="low-stock-alert">
+          <div className="alert-icon">
+            <AlertTriangle size={20} />
+          </div>
+          <div className="alert-content">
+            <strong>{lowStockProducts.length} products need restocking!</strong>
+            <span>{lowStockProducts.slice(0, 3).map(p => p.name).join(', ')}{lowStockProducts.length > 3 ? ` +${lowStockProducts.length - 3} more` : ''}</span>
+          </div>
+          <button className="alert-btn" onClick={() => setCurrentPage('products')}>
+            View All →
+          </button>
+        </div>
+      )}
+
       {/* Quick Actions */}
       <section className="dash-actions">
         <button className="dash-btn primary" onClick={() => setCurrentPage('create-bill')}>
@@ -287,6 +303,48 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         .dash-time button:hover { background: var(--primary-500); color: white; border-color: var(--primary-500); }
         .dash-time button.spinning svg { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Low Stock Alert Banner */
+        .low-stock-alert {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 16px 20px;
+          background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.06));
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          border-radius: 14px;
+          margin-bottom: 20px;
+        }
+        .alert-icon {
+          width: 40px;
+          height: 40px;
+          background: rgba(239, 68, 68, 0.2);
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #ef4444;
+        }
+        .alert-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .alert-content strong { color: #ef4444; font-size: 0.95rem; }
+        .alert-content span { color: var(--text-secondary); font-size: 0.8rem; }
+        .alert-btn {
+          padding: 10px 16px;
+          background: #ef4444;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .alert-btn:hover { background: #dc2626; }
 
         .dash-actions {
           display: flex;

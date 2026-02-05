@@ -570,12 +570,6 @@ export default function Customers({ addToast, setCurrentPage }) {
         .text-danger { color: var(--error) !important; }
         .text-danger:hover { background: rgba(239, 68, 68, 0.1); }
       `}</style>
-
-            {/* Floating Action Button */}
-            <FloatingActionButton
-                onClick={() => setShowAddModal(true)}
-                label="Add Customer"
-            />
         </div>
     )
 }
