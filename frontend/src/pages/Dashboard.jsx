@@ -110,29 +110,130 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         </div>
       )}
 
-      {/* Quick Actions */}
-      <section className="dash-actions">
-        <button className="dash-btn primary" onClick={() => setCurrentPage('create-bill')}>
-          <Plus size={18} />
-          New Bill
-        </button>
-        <button className="dash-btn" onClick={() => setCurrentPage('products')}>
-          <Package size={18} />
-          Products
-        </button>
-        <button className="dash-btn" onClick={() => setCurrentPage('customers')}>
-          <Users size={18} />
-          Customers
-        </button>
-        <button className="dash-btn" onClick={() => setCurrentPage('bills')}>
-          <FileText size={18} />
-          Bills
-        </button>
+      {/* Role-Specific Quick Access */}
+      <section className="role-quick-access">
+        {/* Cashier View - Focus on billing */}
+        {(userRole === 'cashier' || userRole === 'staff') && (
+          <div className="quick-access-panel cashier">
+            <div className="panel-header">
+              <span className="role-tag">👤 Cashier Mode</span>
+              <span className="panel-hint">Quick billing tools</span>
+            </div>
+            <div className="quick-access-grid">
+              <button className="qa-btn primary large" onClick={() => setCurrentPage('create-bill')}>
+                <Plus size={28} />
+                <span>New Bill</span>
+                <small>Start billing</small>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('bills')}>
+                <FileText size={22} />
+                <span>Today's Bills</span>
+                <small>{stats.todayBills} bills</small>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('products')}>
+                <Package size={22} />
+                <span>Products</span>
+                <small>View prices</small>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('customers')}>
+                <Users size={22} />
+                <span>Customers</span>
+                <small>Lookup</small>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Manager View - Oversight + Staff */}
+        {userRole === 'manager' && (
+          <div className="quick-access-panel manager">
+            <div className="panel-header">
+              <span className="role-tag">🛡️ Manager Mode</span>
+              <span className="panel-hint">Store oversight tools</span>
+            </div>
+            <div className="quick-access-grid">
+              <button className="qa-btn primary" onClick={() => setCurrentPage('create-bill')}>
+                <Plus size={24} />
+                <span>New Bill</span>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('analytics')}>
+                <TrendingUp size={22} />
+                <span>Analytics</span>
+                <small>Sales data</small>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('staff')}>
+                <UserPlus size={22} />
+                <span>Staff</span>
+                <small>Manage team</small>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('products')}>
+                <Package size={22} />
+                <span>Inventory</span>
+                <small>{stats.lowStockCount} low</small>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('bills')}>
+                <FileText size={22} />
+                <span>Bills</span>
+                <small>Today: {stats.todayBills}</small>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('customers')}>
+                <Users size={22} />
+                <span>Customers</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Owner View - Full control */}
         {(userRole === 'owner' || userRole === 'admin') && (
-          <button className="dash-btn" onClick={() => setCurrentPage('staff')}>
-            <UserPlus size={18} />
-            Staff
-          </button>
+          <div className="quick-access-panel owner">
+            <div className="panel-header">
+              <span className="role-tag">👑 Owner Dashboard</span>
+              <span className={`plan-badge ${userPlan}`}>{userPlan.toUpperCase()}</span>
+            </div>
+            <div className="quick-access-grid">
+              <button className="qa-btn primary large" onClick={() => setCurrentPage('create-bill')}>
+                <Plus size={28} />
+                <span>New Bill</span>
+                <small>Start billing</small>
+              </button>
+              <button className="qa-btn highlight" onClick={() => setCurrentPage('analytics')}>
+                <TrendingUp size={22} />
+                <span>Analytics</span>
+                <small>Business insights</small>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('staff')}>
+                <UserPlus size={22} />
+                <span>Staff</span>
+                <small>Team mgmt</small>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('stores')}>
+                <Store size={22} />
+                <span>Stores</span>
+                <small>Multi-location</small>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('products')}>
+                <Package size={22} />
+                <span>Inventory</span>
+                <small>{products.length} items</small>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('bills')}>
+                <FileText size={22} />
+                <span>Bills</span>
+              </button>
+              <button className="qa-btn" onClick={() => setCurrentPage('customers')}>
+                <Users size={22} />
+                <span>Customers</span>
+              </button>
+              {userPlan === 'free' && (
+                <button className="qa-btn upgrade" onClick={() => setCurrentPage('subscription')}>
+                  <ChevronRight size={22} />
+                  <span>Upgrade</span>
+                  <small>Unlock more</small>
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </section>
 
@@ -345,6 +446,93 @@ export default function Dashboard({ addToast, setCurrentPage }) {
           white-space: nowrap;
         }
         .alert-btn:hover { background: #dc2626; }
+
+        /* Role-Specific Quick Access */
+        .role-quick-access {
+          margin-bottom: 24px;
+        }
+        .quick-access-panel {
+          background: var(--bg-card);
+          border: 1px solid var(--border-subtle);
+          border-radius: 16px;
+          padding: 20px;
+        }
+        .quick-access-panel.cashier {
+          border-color: rgba(34, 197, 94, 0.3);
+          background: linear-gradient(135deg, var(--bg-card), rgba(34, 197, 94, 0.05));
+        }
+        .quick-access-panel.manager {
+          border-color: rgba(59, 130, 246, 0.3);
+          background: linear-gradient(135deg, var(--bg-card), rgba(59, 130, 246, 0.05));
+        }
+        .quick-access-panel.owner {
+          border-color: rgba(251, 146, 60, 0.3);
+          background: linear-gradient(135deg, var(--bg-card), rgba(251, 146, 60, 0.05));
+        }
+        .panel-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+        .role-tag {
+          font-size: 0.9rem;
+          font-weight: 700;
+        }
+        .panel-hint {
+          font-size: 0.8rem;
+          color: var(--text-tertiary);
+        }
+        .quick-access-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+          gap: 12px;
+        }
+        .qa-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 16px 12px;
+          border: 1px solid var(--border-subtle);
+          background: var(--bg-secondary);
+          border-radius: 14px;
+          cursor: pointer;
+          transition: all 0.2s;
+          color: var(--text-primary);
+        }
+        .qa-btn:hover {
+          border-color: var(--primary-400);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+        }
+        .qa-btn span { font-size: 0.85rem; font-weight: 600; }
+        .qa-btn small { font-size: 0.7rem; color: var(--text-tertiary); }
+        .qa-btn.primary {
+          background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+          border-color: var(--primary-500);
+          color: white;
+        }
+        .qa-btn.primary:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 20px rgba(251, 146, 60, 0.3);
+        }
+        .qa-btn.primary small { color: rgba(255,255,255,0.8); }
+        .qa-btn.large {
+          grid-row: span 1;
+          padding: 24px 16px;
+        }
+        .qa-btn.highlight {
+          border-color: rgba(251, 146, 60, 0.4);
+          background: rgba(251, 146, 60, 0.1);
+        }
+        .qa-btn.upgrade {
+          background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+          border-color: #8b5cf6;
+          color: white;
+        }
+        .qa-btn.upgrade small { color: rgba(255,255,255,0.8); }
 
         .dash-actions {
           display: flex;

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Search, Plus, Minus, Trash2, Printer, Save, ShoppingCart, X, Eye, Loader2, MessageSquare, Send } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, Printer, Save, ShoppingCart, X, Eye, Loader2, MessageSquare, Send, Scale, Package } from 'lucide-react'
 import realDataService from '../services/realDataService'
 import whatsappService from '../services/whatsapp'
 import api from '../services/api'
 
+const categories = ["All", "Grains", "Pulses", "Essentials", "Oils", "Beverages", "Dairy", "General"]
+
 export default function CreateBill({ addToast, setCurrentPage }) {
     const [search, setSearch] = useState('')
+    const [selectedCategory, setSelectedCategory] = useState('All')
     const [products, setProducts] = useState([])
     const [loading, setLoading] = useState(true)
     const [cart, setCart] = useState([])
@@ -17,11 +20,12 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     const [printing, setPrinting] = useState(false)
     const [paymentMode, setPaymentMode] = useState('Cash')
     const [discount, setDiscount] = useState(0)
-    const [discountType, setDiscountType] = useState('percentage') // 'percentage' or 'fixed'
-    const [gstRate, setGstRate] = useState(parseInt(localStorage.getItem('kadai_default_gst_rate') || '5')) // Use configured default
-    const [existingCustomer, setExistingCustomer] = useState(null) // For customer lookup
-    const [redeemPoints, setRedeemPoints] = useState(0) // Points to redeem
+    const [discountType, setDiscountType] = useState('percentage')
+    const [gstRate, setGstRate] = useState(parseInt(localStorage.getItem('kadai_default_gst_rate') || '5'))
+    const [existingCustomer, setExistingCustomer] = useState(null)
+    const [redeemPoints, setRedeemPoints] = useState(0)
     const [lookingUpCustomer, setLookingUpCustomer] = useState(false)
+    const [showQtyModal, setShowQtyModal] = useState(null) // Product to add with custom qty
 
     useEffect(() => {
         loadProducts()
@@ -48,9 +52,30 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         }
     }
 
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(search.toLowerCase())
-    )
+    // Filter by search AND category
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase())
+        const productCategory = typeof p.category === 'string' ? p.category : (p.category?.name || 'General')
+        const matchesCategory = selectedCategory === 'All' || productCategory.toLowerCase() === selectedCategory.toLowerCase()
+        return matchesSearch && matchesCategory
+    })
+
+    // Add with custom quantity
+    const addToCartWithQty = (product, customQty) => {
+        const qty = parseFloat(customQty) || 1
+        const existing = cart.find(item => item.id === product.id)
+        if (existing) {
+            setCart(cart.map(item =>
+                item.id === product.id
+                    ? { ...item, quantity: item.quantity + qty }
+                    : item
+            ))
+        } else {
+            setCart([...cart, { ...product, quantity: qty }])
+        }
+        addToast(`Added ${qty} ${product.unit} of ${product.name}`, 'success')
+        setShowQtyModal(null)
+    }
 
     const addToCart = (product) => {
         const existing = cart.find(item => item.id === product.id)
@@ -457,30 +482,59 @@ export default function CreateBill({ addToast, setCurrentPage }) {
             <div className="bill-layout">
                 {/* Products Section */}
                 <div className="products-section">
-                    {/* Search */}
-                    <div className="card mb-lg">
-                        <div className="search-input">
-                            <Search size={18} className="icon" />
+                    {/* Search & Category Filters */}
+                    <div className="product-filters">
+                        <div className="search-input large">
+                            <Search size={20} className="icon" />
                             <input
                                 type="text"
                                 className="form-input"
-                                placeholder="Search products..."
+                                placeholder="Search products by name..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
                         </div>
+                        <div className="category-tabs">
+                            {categories.map(cat => (
+                                <button
+                                    key={cat}
+                                    className={`cat-tab ${selectedCategory === cat ? 'active' : ''}`}
+                                    onClick={() => setSelectedCategory(cat)}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    {/* Products Grid */}
+                    {/* Products Grid - Larger cards */}
                     <div className="products-grid">
-                        {filteredProducts.map(product => (
-                            <div key={product.id} className="product-item" onClick={() => addToCart(product)}>
-                                <div className="product-name">{product.name}</div>
-                                <div className="product-price">₹{product.price}/{product.unit}</div>
-                                <div className="product-stock">{product.stock} in stock</div>
-                                <button className="add-btn"><Plus size={16} /></button>
+                        {filteredProducts.length === 0 ? (
+                            <div className="no-products">
+                                <Package size={48} />
+                                <p>No products found</p>
+                                <span>{selectedCategory !== 'All' ? `Try "All" category` : 'Add products to get started'}</span>
                             </div>
-                        ))}
+                        ) : (
+                            filteredProducts.map(product => (
+                                <div key={product.id} className="product-item">
+                                    <div className="product-info" onClick={() => addToCart(product)}>
+                                        <div className="product-category-tag">{typeof product.category === 'string' ? product.category : product.category?.name || 'General'}</div>
+                                        <div className="product-name">{product.name}</div>
+                                        <div className="product-price">₹{product.price}<span>/{product.unit}</span></div>
+                                        <div className="product-stock">{product.stock} in stock</div>
+                                    </div>
+                                    <div className="product-actions">
+                                        <button className="quick-add" onClick={() => addToCart(product)}>
+                                            <Plus size={18} /> 1
+                                        </button>
+                                        <button className="qty-add" onClick={() => setShowQtyModal(product)}>
+                                            <Scale size={16} /> Qty
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
 
@@ -713,6 +767,60 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                 </div>
             </div>
 
+            {/* Custom Quantity Modal */}
+            {showQtyModal && (
+                <div className="modal-overlay" onClick={() => setShowQtyModal(null)}>
+                    <div className="modal qty-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title"><Scale size={20} /> Enter Quantity</h3>
+                            <button className="modal-close" onClick={() => setShowQtyModal(null)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="qty-product-info">
+                                <strong>{showQtyModal.name}</strong>
+                                <span>₹{showQtyModal.price} per {showQtyModal.unit}</span>
+                            </div>
+                            <div className="qty-input-section">
+                                <label>Quantity / Weight:</label>
+                                <div className="qty-input-row">
+                                    <input
+                                        type="number"
+                                        id="custom-qty-input"
+                                        min="0.1"
+                                        step="0.1"
+                                        defaultValue="1"
+                                        autoFocus
+                                        className="qty-input-large"
+                                    />
+                                    <span className="unit-label">{showQtyModal.unit}</span>
+                                </div>
+                                <div className="qty-presets">
+                                    {[0.25, 0.5, 1, 2, 5, 10].map(qty => (
+                                        <button key={qty} onClick={() => {
+                                            document.getElementById('custom-qty-input').value = qty
+                                        }}>
+                                            {qty} {showQtyModal.unit}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowQtyModal(null)}>Cancel</button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => {
+                                    const qty = document.getElementById('custom-qty-input').value
+                                    addToCartWithQty(showQtyModal, qty)
+                                }}
+                            >
+                                <Plus size={18} /> Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Preview Modal */}
             {showPreview && (
                 <div className="modal-overlay" onClick={() => setShowPreview(false)}>
@@ -854,21 +962,70 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           overflow: hidden;
         }
         
-        .products-section .card.mb-lg {
+        /* Product Filters - Search + Categories */
+        .product-filters {
           flex-shrink: 0;
+          margin-bottom: 16px;
+        }
+        .search-input.large {
           margin-bottom: 12px;
+        }
+        .search-input.large input {
+          padding: 14px 16px 14px 48px;
+          font-size: 1rem;
+        }
+        .search-input.large .icon {
+          left: 16px;
+        }
+        
+        .category-tabs {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .cat-tab {
+          padding: 8px 16px;
+          border: 1px solid var(--border-subtle);
+          background: var(--bg-card);
+          border-radius: 20px;
+          font-size: 0.8rem;
+          cursor: pointer;
+          color: var(--text-secondary);
+          transition: all 0.2s;
+        }
+        .cat-tab:hover {
+          border-color: var(--primary-400);
+          color: var(--primary-400);
+        }
+        .cat-tab.active {
+          background: var(--primary-500);
+          border-color: var(--primary-500);
+          color: white;
         }
         
         .products-grid { 
           display: grid; 
-          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
-          gap: 10px;
+          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+          gap: 14px;
           overflow-y: auto;
           flex: 1;
           padding: 4px;
           padding-right: 8px;
           align-content: start;
         }
+        
+        .no-products {
+          grid-column: 1 / -1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 60px 20px;
+          color: var(--text-tertiary);
+          text-align: center;
+        }
+        .no-products p { font-size: 1.1rem; margin: 16px 0 4px; color: var(--text-secondary); }
+        .no-products span { font-size: 0.85rem; }
         
         .products-grid::-webkit-scrollbar { width: 6px; }
         .products-grid::-webkit-scrollbar-track { background: var(--bg-tertiary); border-radius: 3px; }
@@ -877,39 +1034,130 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .product-item {
           background: var(--bg-card); 
           border: 1px solid var(--border-subtle);
-          border-radius: var(--radius-md); 
-          padding: 10px; 
-          cursor: pointer;
+          border-radius: 14px; 
+          padding: 14px; 
           transition: all 0.2s;
-          position: relative;
-          height: fit-content;
+          display: flex;
+          flex-direction: column;
         }
         .product-item:hover { 
           border-color: var(--primary-400); 
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         }
-        .product-name { font-weight: 600; margin-bottom: 2px; font-size: 0.8rem; line-height: 1.2; }
-        .product-price { color: var(--primary-400); font-weight: 700; font-size: 0.9rem; }
-        .product-stock { font-size: 0.65rem; color: var(--text-tertiary); margin-top: 2px; }
-        .add-btn {
-          position: absolute; 
-          top: 8px; 
-          right: 8px;
-          width: 28px; 
-          height: 28px; 
-          border-radius: 50%;
-          background: var(--primary-500); 
-          color: white;
-          border: none; 
-          cursor: pointer; 
+        
+        .product-info { cursor: pointer; flex: 1; }
+        .product-category-tag {
+          display: inline-block;
+          padding: 2px 8px;
+          background: var(--bg-tertiary);
+          border-radius: 10px;
+          font-size: 0.65rem;
+          color: var(--text-tertiary);
+          margin-bottom: 8px;
+          text-transform: uppercase;
+        }
+        .product-name { font-weight: 700; margin-bottom: 4px; font-size: 0.95rem; line-height: 1.3; }
+        .product-price { color: var(--primary-400); font-weight: 800; font-size: 1.1rem; }
+        .product-price span { font-weight: 500; font-size: 0.8rem; color: var(--text-tertiary); }
+        .product-stock { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 4px; }
+        
+        .product-actions {
           display: flex;
-          align-items: center; 
-          justify-content: center;
-          opacity: 1;
-          transition: transform 0.2s;
+          gap: 8px;
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid var(--border-subtle);
         }
-        .add-btn:hover { transform: scale(1.1); }
+        .quick-add, .qty-add {
+          flex: 1;
+          padding: 8px 12px;
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
+          font-size: 0.8rem;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+        }
+        .quick-add {
+          background: var(--primary-500);
+          color: white;
+        }
+        .quick-add:hover { background: var(--primary-600); }
+        .qty-add {
+          background: var(--bg-tertiary);
+          color: var(--text-secondary);
+          border: 1px solid var(--border-subtle);
+        }
+        .qty-add:hover { border-color: var(--primary-400); color: var(--primary-400); }
+        
+        /* Qty Modal Styles */
+        .qty-modal { max-width: 400px; }
+        .qty-product-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          padding: 16px;
+          background: var(--bg-tertiary);
+          border-radius: 10px;
+          margin-bottom: 20px;
+        }
+        .qty-product-info strong { font-size: 1.1rem; }
+        .qty-product-info span { color: var(--primary-400); }
+        .qty-input-section label {
+          display: block;
+          font-size: 0.9rem;
+          color: var(--text-secondary);
+          margin-bottom: 10px;
+        }
+        .qty-input-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+        .qty-input-large {
+          flex: 1;
+          padding: 16px;
+          font-size: 1.5rem;
+          font-weight: 700;
+          text-align: center;
+          border: 2px solid var(--border-default);
+          border-radius: 12px;
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+        }
+        .qty-input-large:focus {
+          border-color: var(--primary-400);
+          outline: none;
+        }
+        .unit-label {
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          min-width: 60px;
+        }
+        .qty-presets {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .qty-presets button {
+          padding: 8px 14px;
+          border: 1px solid var(--border-subtle);
+          background: var(--bg-card);
+          border-radius: 8px;
+          font-size: 0.8rem;
+          cursor: pointer;
+          color: var(--text-secondary);
+        }
+        .qty-presets button:hover {
+          border-color: var(--primary-400);
+          color: var(--primary-400);
+        }
         
         /* Cart Section - Fixed width on desktop */
         .cart-section {
