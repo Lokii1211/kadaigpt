@@ -24,6 +24,7 @@ import BulkOperations from './pages/BulkOperations'
 import AdminPanel from './pages/AdminPanel'
 import Subscription from './pages/Subscription'
 import StaffManagement from './pages/StaffManagement'
+import StoreManager from './pages/StoreManager'
 import Login from './pages/Login'
 import AdminLogin from './pages/AdminLogin'
 import api from './services/api'
@@ -35,7 +36,7 @@ import './styles/enhancements.css'
 function App() {
     const getInitialPage = () => {
         const hash = window.location.hash.replace('#', '')
-        const validPages = ['dashboard', 'bills', 'create-bill', 'ocr', 'products', 'analytics', 'customers', 'gst', 'whatsapp', 'suppliers', 'loyalty', 'ai-insights', 'expenses', 'daily-summary', 'bulk-operations', 'admin', 'settings', 'admin-login']
+        const validPages = ['dashboard', 'bills', 'create-bill', 'ocr', 'products', 'analytics', 'customers', 'gst', 'whatsapp', 'suppliers', 'loyalty', 'ai-insights', 'expenses', 'daily-summary', 'bulk-operations', 'admin', 'settings', 'staff', 'stores', 'subscription', 'admin-login']
         return validPages.includes(hash) ? hash : 'dashboard'
     }
 
@@ -167,6 +168,7 @@ function App() {
             case 'admin': return <AdminPanel addToast={addToast} />
             case 'subscription': return <Subscription addToast={addToast} />
             case 'staff': return <StaffManagement addToast={addToast} />
+            case 'stores': return <StoreManager addToast={addToast} setCurrentPage={setCurrentPage} />
             case 'settings': return <Settings addToast={addToast} />
             default: return <Dashboard addToast={addToast} setCurrentPage={setCurrentPage} />
         }
@@ -264,6 +266,12 @@ function App() {
                 `}</style>
             </div>
         )
+    }
+
+
+    // Admin login - separate URL
+    if (!user && currentPage === 'admin-login') {
+        return <AdminLogin onLogin={handleLogin} />
     }
 
     if (!user) {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, ShoppingBag, Users, AlertTriangle, IndianRupee, FileText, Package, Plus, RefreshCw, ArrowUpRight, UserPlus, Settings } from 'lucide-react'
+import { TrendingUp, ShoppingBag, Users, AlertTriangle, IndianRupee, FileText, Package, Plus, RefreshCw, ArrowUpRight, UserPlus, Settings, Store, ChevronRight } from 'lucide-react'
 import realDataService from '../services/realDataService'
 
 export default function Dashboard({ addToast, setCurrentPage }) {
@@ -220,6 +220,10 @@ export default function Dashboard({ addToast, setCurrentPage }) {
             <button onClick={() => setCurrentPage('staff')}>
               <UserPlus size={20} />
               Manage Staff
+            </button>
+            <button onClick={() => setCurrentPage('stores')}>
+              <Store size={20} />
+              My Stores
             </button>
             <button onClick={() => setCurrentPage('analytics')}>
               <TrendingUp size={20} />
