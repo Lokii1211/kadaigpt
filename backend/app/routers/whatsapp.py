@@ -100,7 +100,7 @@ async def waha_webhook(request: Request, background_tasks: BackgroundTasks):
 
 
 async def handle_waha_message(payload: Dict[str, Any]):
-    """Process incoming WAHA WhatsApp message"""
+    """Process incoming WAHA WhatsApp message (text, voice, audio)"""
     try:
         # Skip if it's our own message
         if payload.get("fromMe", False):
@@ -110,7 +110,25 @@ async def handle_waha_message(payload: Dict[str, Any]):
         from_id = payload.get("from", "")
         phone = from_id.replace("@c.us", "").replace("@s.whatsapp.net", "")
         
-        # Get message text
+        # Check message type
+        msg_type = payload.get("type", "text")
+        
+        # Handle voice/audio messages
+        if msg_type in ["audio", "ptt"]:  # ptt = push to talk (voice note)
+            logger.info(f"Voice message from {phone}")
+            
+            # Try to get audio data from WAHA
+            audio_url = payload.get("mediaUrl") or payload.get("body")
+            if audio_url:
+                response = await whatsapp_bot.process_voice_message(phone, audio_url)
+            else:
+                response = "🎤 I received your voice message but couldn't process it. Please try sending text instead."
+            
+            if response:
+                await whatsapp_bot.send_message(phone, response)
+            return
+        
+        # Handle text messages
         text = ""
         if payload.get("body"):
             text = payload.get("body")

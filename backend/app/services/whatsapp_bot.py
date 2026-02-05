@@ -28,7 +28,7 @@ _data_cache = {
 
 
 class WhatsAppBotService:
-    """Service for handling WhatsApp bot interactions"""
+    """Service for handling WhatsApp bot interactions with AI-powered NLP"""
     
     def __init__(self):
         self.waha_url = settings.EVOLUTION_API_URL or "http://localhost:8080"
@@ -38,6 +38,75 @@ class WhatsAppBotService:
         
         # Conversation states for multi-step interactions
         self._conversation_states = {}
+        
+        # Try to import NLP service for AI-powered understanding
+        try:
+            from app.services.nlp_service import nlp_service
+            self.nlp_service = nlp_service
+            self.ai_enabled = True
+            logger.info("AI NLP service initialized")
+        except Exception as e:
+            logger.warning(f"NLP service not available: {e}")
+            self.nlp_service = None
+            self.ai_enabled = False
+    
+    async def process_voice_message(self, phone: str, audio_url: str) -> str:
+        """Process voice message using AI transcription"""
+        if not self.nlp_service or not self.ai_enabled:
+            return """🎤 I received your voice message!
+
+I can understand voice notes, but AI transcription is not configured yet.
+
+Please send me a text message instead, or try:
+• *sales* - Check today's sales
+• *stock* - Check inventory
+• *help* - See all commands
+
+_Pro tip: You can speak in Hindi, Tamil, or English - I understand all!_"""
+        
+        try:
+            # Download audio from WAHA
+            audio_data = await self._download_media(audio_url)
+            
+            if not audio_data:
+                return "🎤 Couldn't download voice message. Please try again or send text."
+            
+            # Transcribe using NLP service (Gemini AI)
+            result = await self.nlp_service.transcribe_voice(audio_data)
+            
+            if not result.get("success") or not result.get("text"):
+                return "🎤 I heard your voice but couldn't understand it clearly. Please try again or type your message."
+            
+            transcribed_text = result["text"]
+            detected_lang = result.get("language", "unknown")
+            
+            logger.info(f"Voice transcribed ({detected_lang}): {transcribed_text}")
+            
+            # Now process the transcribed text like a normal message
+            response = await self.process_incoming_message(phone, transcribed_text)
+            
+            # Add transcription confirmation
+            return f"🎤 _I heard: \"{transcribed_text[:100]}{'...' if len(transcribed_text) > 100 else ''}\"_\n\n{response}"
+            
+        except Exception as e:
+            logger.error(f"Voice processing error: {e}")
+            return "🎤 Sorry, there was an error processing your voice message. Please try sending text."
+    
+    async def _download_media(self, media_url: str) -> Optional[bytes]:
+        """Download media from WAHA/Evolution API"""
+        try:
+            headers = {"X-Api-Key": self.api_key}
+            async with httpx.AsyncClient() as client:
+                response = await client.get(media_url, headers=headers, timeout=60)
+                if response.status_code == 200:
+                    return response.content
+                else:
+                    logger.error(f"Failed to download media: {response.status_code}")
+                    return None
+        except Exception as e:
+            logger.error(f"Media download error: {e}")
+            return None
+
         
     # ==================== WAHA API METHODS ====================
     
@@ -350,7 +419,7 @@ _Powered by KadaiGPT AI_ 🤖"""
         return entities
     
     async def process_incoming_message(self, phone: str, message: str, user_id: Optional[int] = None) -> str:
-        """Process incoming message using NLP intent detection"""
+        """Process incoming message using AI-powered NLP or fallback to rule-based"""
         
         original_msg = message.strip()
         clean_msg = message.strip().lower()
@@ -359,13 +428,39 @@ _Powered by KadaiGPT AI_ 🤖"""
         if phone in self._conversation_states:
             return await self._handle_conversation(phone, original_msg)
         
-        # Detect intent using NLP-like processing
+        # Try AI-powered NLP first (if available)
+        if self.ai_enabled and self.nlp_service:
+            try:
+                ai_result = await self.nlp_service.process_text(original_msg)
+                if ai_result.get("ai_processed") and ai_result.get("confidence", 0) > 0.5:
+                    intent = ai_result.get("intent", "unknown")
+                    entities = ai_result.get("entities", {})
+                    confidence = ai_result.get("confidence", 0)
+                    
+                    logger.info(f"AI NLP: intent={intent}, confidence={confidence:.2f}")
+                    
+                    # Use AI's suggested response if it's a general question
+                    if intent == "general_question" and ai_result.get("suggested_response"):
+                        return ai_result["suggested_response"]
+                    
+                    # Route to handlers based on AI-detected intent
+                    return await self._route_intent(intent, entities, user_id, phone, original_msg)
+            except Exception as e:
+                logger.warning(f"AI NLP failed, falling back to rules: {e}")
+        
+        # Fallback to rule-based NLP
         intent_result = self._detect_intent(original_msg)
         intent = intent_result['intent']
         confidence = intent_result['confidence']
         entities = intent_result.get('entities', {})
         
-        logger.info(f"Intent detected: {intent} (confidence: {confidence:.2f}) for message: {original_msg[:50]}")
+        logger.info(f"Rule-based NLP: intent={intent}, confidence={confidence:.2f}")
+        
+        # Route to handler
+        return await self._route_intent(intent, entities, user_id, phone, original_msg)
+    
+    async def _route_intent(self, intent: str, entities: Dict, user_id: Optional[int], phone: str, original_msg: str) -> str:
+        """Route to appropriate handler based on intent"""
         
         # Route to appropriate handler based on intent
         if intent == 'greeting':

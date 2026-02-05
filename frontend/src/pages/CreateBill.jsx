@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Plus, Minus, Trash2, Printer, Save, ShoppingCart, X, Eye, Loader2, MessageSquare, Send, Package } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, Printer, Save, ShoppingCart, X, Eye, Loader2, MessageSquare, Send, Package, Scale } from 'lucide-react'
 import realDataService from '../services/realDataService'
 import whatsappService from '../services/whatsapp'
 import api from '../services/api'
@@ -27,6 +27,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     const [redeemPoints, setRedeemPoints] = useState(0)
     const [lookingUpCustomer, setLookingUpCustomer] = useState(false)
     const [usingDemoData, setUsingDemoData] = useState(false)
+    const [showQtyModal, setShowQtyModal] = useState(null)
 
     useEffect(() => {
         loadProducts()
@@ -113,6 +114,28 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         setDiscount(0)
         setExistingCustomer(null)
         setRedeemPoints(0)
+    }
+
+    // Add to cart with custom quantity (for weight-based items)
+    const addToCartWithQty = (product, qty) => {
+        const quantity = parseFloat(qty) || 1
+        if (quantity <= 0) {
+            addToast('Please enter a valid quantity', 'error')
+            return
+        }
+
+        const existing = cart.find(item => item.id === product.id)
+        if (existing) {
+            setCart(cart.map(item =>
+                item.id === product.id
+                    ? { ...item, quantity: item.quantity + quantity }
+                    : item
+            ))
+        } else {
+            setCart([...cart, { ...product, quantity }])
+        }
+        addToast(`Added ${quantity} ${product.unit} of ${product.name}`, 'success')
+        setShowQtyModal(null)
     }
 
     // Lookup customer by phone number
