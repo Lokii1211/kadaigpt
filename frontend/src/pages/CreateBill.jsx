@@ -608,238 +608,122 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                     </div>
                 </div>
 
-                {/* Cart Section */}
-                <div className="cart-section">
-                    <div className="card cart-card">
-                        <div className="cart-header">
-                            <h3><ShoppingCart size={20} /> Cart ({itemCount})</h3>
-                            {cart.length > 0 && (
-                                <button className="btn btn-ghost btn-sm" onClick={clearCart}>Clear</button>
-                            )}
-                        </div>
-
-                        {/* Customer Info with Loyalty */}
-                        <div className="customer-info">
-                            <div className="phone-lookup">
-                                <input
-                                    type="tel"
-                                    className="form-input"
-                                    placeholder="📱 Phone Number *"
-                                    value={customer.phone}
-                                    onChange={(e) => {
-                                        setCustomer({ ...customer, phone: e.target.value })
-                                        if (e.target.value.length >= 10) {
-                                            lookupCustomer(e.target.value)
-                                        }
-                                    }}
-                                />
-                                {lookingUpCustomer && <span className="lookup-loading">🔍</span>}
-                            </div>
-                            <input
-                                type="text"
-                                className="form-input"
-                                placeholder="👤 Customer Name"
-                                value={customer.name}
-                                onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-                            />
-
-                            {/* Show Loyalty Points if existing customer */}
-                            {existingCustomer && (
-                                <div className="loyalty-banner">
-                                    <div className="loyalty-info">
-                                        <span className="loyalty-label">⭐ Loyalty Points</span>
-                                        <span className="loyalty-points">{existingCustomer.loyalty_points || 0}</span>
-                                    </div>
-                                    {(existingCustomer.loyalty_points || 0) >= 100 && (
-                                        <div className="redeem-section">
-                                            <label>Redeem Points:</label>
-                                            <input
-                                                type="number"
-                                                className="form-input small"
-                                                value={redeemPoints}
-                                                onChange={(e) => setRedeemPoints(Math.min(
-                                                    Math.max(0, parseInt(e.target.value) || 0),
-                                                    existingCustomer.loyalty_points || 0
-                                                ))}
-                                                max={existingCustomer.loyalty_points || 0}
-                                                min={0}
-                                                step={100}
-                                            />
-                                            <span className="redeem-value">= ₹{Math.floor(redeemPoints / 10)}</span>
-                                        </div>
-                                    )}
-                                    {existingCustomer.credit > 0 && (
-                                        <div className="credit-due">
-                                            ⚠️ Credit Due: ₹{existingCustomer.credit}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {!existingCustomer && customer.phone?.length >= 10 && (
-                                <div className="new-customer-badge">
-                                    ✨ New Customer - Will be added automatically!
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Scrollable Cart Content */}
-                        <div className="cart-scroll-area">
-                            {/* Cart Items */}
-                            <div className="cart-items">
-                                {cart.length === 0 ? (
-                                    <div className="empty-cart">
-                                        <ShoppingCart size={48} />
-                                        <p>Cart is empty</p>
-                                        <span>Click products to add</span>
-                                    </div>
-                                ) : (
-                                    <div className="cart-items-list">
-                                        {/* Cart Items Header */}
-                                        <div className="cart-items-header">
-                                            <span className="col-name">Item</span>
-                                            <span className="col-qty">Qty</span>
-                                            <span className="col-rate">Rate</span>
-                                            <span className="col-amt">Amount</span>
-                                            <span className="col-del"></span>
-                                        </div>
-
-                                        {/* Cart Items */}
-                                        {cart.map(item => (
-                                            <div key={item.id} className="cart-item-row">
-                                                <div className="col-name">
-                                                    <span className="item-name">{item.name}</span>
-                                                    <span className="item-unit">({item.unit || 'pcs'})</span>
-                                                </div>
-                                                <div className="col-qty">
-                                                    <button className="qty-btn minus" onClick={() => updateQuantity(item.id, -1)}>
-                                                        <Minus size={12} />
-                                                    </button>
-                                                    <input
-                                                        type="number"
-                                                        className="qty-input"
-                                                        value={item.quantity}
-                                                        onChange={(e) => {
-                                                            const newQty = parseFloat(e.target.value) || 1
-                                                            setCart(cart.map(i =>
-                                                                i.id === item.id ? { ...i, quantity: Math.max(0.1, newQty) } : i
-                                                            ))
-                                                        }}
-                                                        min="0.1"
-                                                        step="0.1"
-                                                    />
-                                                    <button className="qty-btn plus" onClick={() => updateQuantity(item.id, 1)}>
-                                                        <Plus size={12} />
-                                                    </button>
-                                                </div>
-                                                <div className="col-rate">₹{item.price}</div>
-                                                <div className="col-amt">₹{(item.price * item.quantity).toFixed(2)}</div>
-                                                <div className="col-del">
-                                                    <button className="delete-btn" onClick={() => removeFromCart(item.id)} title="Remove item">
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Discount & GST Controls */}
-                            {cart.length > 0 && (
-                                <div className="billing-controls">
-                                    <div className="control-row">
-                                        <label>Discount</label>
-                                        <div className="discount-input">
-                                            <input
-                                                type="number"
-                                                className="form-input small"
-                                                value={discount}
-                                                onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
-                                                min="0"
-                                                max={discountType === 'percentage' ? 100 : subtotal}
-                                            />
-                                            <select
-                                                className="form-input small"
-                                                value={discountType}
-                                                onChange={(e) => setDiscountType(e.target.value)}
-                                            >
-                                                <option value="percentage">%</option>
-                                                <option value="fixed">₹</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="control-row">
-                                        <label>GST</label>
-                                        <select
-                                            className="form-input small"
-                                            value={gstRate}
-                                            onChange={(e) => setGstRate(parseInt(e.target.value))}
-                                        >
-                                            <option value="0">0%</option>
-                                            <option value="5">5%</option>
-                                            <option value="12">12%</option>
-                                            <option value="18">18%</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* FIXED FOOTER - Always visible without scrolling */}
-                        <div className="cart-footer">
-                            {/* Totals */}
-                            {cart.length > 0 && (
-                                <div className="cart-totals-compact">
-                                    <div className="total-line">
-                                        <span>Subtotal</span>
-                                        <span>₹{subtotal.toLocaleString('en-IN')}</span>
-                                    </div>
-                                    {discountAmount > 0 && (
-                                        <div className="total-line discount">
-                                            <span>Discount</span>
-                                            <span>-₹{discountAmount}</span>
-                                        </div>
-                                    )}
-                                    <div className="total-line">
-                                        <span>GST ({gstRate}%)</span>
-                                        <span>₹{tax}</span>
-                                    </div>
-                                    <div className="total-line grand-total">
-                                        <span>TOTAL</span>
-                                        <span>₹{total.toLocaleString('en-IN')}</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Payment Mode - Compact */}
-                            {cart.length > 0 && (
-                                <div className="payment-compact">
-                                    {['Cash', 'UPI', 'Card', 'Credit'].map(mode => (
-                                        <button
-                                            key={mode}
-                                            className={`pay-btn ${paymentMode === mode ? 'active' : ''}`}
-                                            onClick={() => setPaymentMode(mode)}
-                                            type="button"
-                                        >
-                                            {mode}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Generate Bill Button - ALWAYS VISIBLE */}
-                            <div className="cart-actions-fixed">
-                                <button
-                                    className="btn-generate-bill"
-                                    onClick={handleSaveBill}
-                                    disabled={cart.length === 0}
-                                >
-                                    <Save size={18} /> GENERATE BILL
-                                </button>
-                            </div>
-                        </div>
+                {/* Cart Section - Professional Billing UI */}
+                <div className="cart-panel">
+                    {/* Cart Header */}
+                    <div className="cart-panel-header">
+                        <h3>🛒 Cart ({itemCount})</h3>
+                        {cart.length > 0 && <button className="clear-btn" onClick={clearCart}>Clear All</button>}
                     </div>
+
+                    {/* Customer Input */}
+                    <div className="customer-input">
+                        <input
+                            type="tel"
+                            placeholder="📱 Phone Number"
+                            value={customer.phone}
+                            onChange={(e) => {
+                                setCustomer({ ...customer, phone: e.target.value })
+                                if (e.target.value.length >= 10) lookupCustomer(e.target.value)
+                            }}
+                        />
+                        <input
+                            type="text"
+                            placeholder="👤 Customer Name"
+                            value={customer.name}
+                            onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+                        />
+                    </div>
+
+                    {/* Cart Items - Simple List */}
+                    <div className="cart-items-area">
+                        {cart.length === 0 ? (
+                            <div className="empty-state">
+                                <ShoppingCart size={40} />
+                                <p>Cart is empty</p>
+                            </div>
+                        ) : (
+                            <div className="items-list">
+                                {cart.map(item => (
+                                    <div key={item.id} className="item-row">
+                                        <div className="item-details">
+                                            <span className="name">{item.name}</span>
+                                            <span className="unit">₹{item.price}/{item.unit || 'pcs'}</span>
+                                        </div>
+                                        <div className="item-qty">
+                                            <button onClick={() => updateQuantity(item.id, -1)}>−</button>
+                                            <input
+                                                type="number"
+                                                value={item.quantity}
+                                                onChange={(e) => {
+                                                    const q = parseFloat(e.target.value) || 1
+                                                    setCart(cart.map(i => i.id === item.id ? { ...i, quantity: Math.max(0.1, q) } : i))
+                                                }}
+                                                step="0.1"
+                                            />
+                                            <button onClick={() => updateQuantity(item.id, 1)}>+</button>
+                                        </div>
+                                        <div className="item-amt">₹{(item.price * item.quantity).toFixed(0)}</div>
+                                        <button className="del-btn" onClick={() => removeFromCart(item.id)}>×</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Billing Summary - Fixed at bottom */}
+                    {cart.length > 0 && (
+                        <div className="billing-summary">
+                            {/* Controls Row */}
+                            <div className="controls-row">
+                                <div className="control">
+                                    <label>Discount</label>
+                                    <input
+                                        type="number"
+                                        value={discount}
+                                        onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                                    />
+                                    <select value={discountType} onChange={(e) => setDiscountType(e.target.value)}>
+                                        <option value="percentage">%</option>
+                                        <option value="fixed">₹</option>
+                                    </select>
+                                </div>
+                                <div className="control">
+                                    <label>GST</label>
+                                    <select value={gstRate} onChange={(e) => setGstRate(parseInt(e.target.value))}>
+                                        <option value="0">0%</option>
+                                        <option value="5">5%</option>
+                                        <option value="12">12%</option>
+                                        <option value="18">18%</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Totals */}
+                            <div className="totals">
+                                <div className="row"><span>Subtotal</span><span>₹{subtotal}</span></div>
+                                {discountAmount > 0 && <div className="row discount"><span>Discount</span><span>-₹{discountAmount}</span></div>}
+                                <div className="row"><span>GST ({gstRate}%)</span><span>₹{tax}</span></div>
+                                <div className="row total"><span>TOTAL</span><span>₹{total}</span></div>
+                            </div>
+
+                            {/* Payment Mode */}
+                            <div className="payment-row">
+                                {['Cash', 'UPI', 'Card', 'Credit'].map(m => (
+                                    <button
+                                        key={m}
+                                        className={paymentMode === m ? 'active' : ''}
+                                        onClick={() => setPaymentMode(m)}
+                                    >{m}</button>
+                                ))}
+                            </div>
+
+                            {/* Generate Bill Button */}
+                            <button className="generate-btn" onClick={handleSaveBill} disabled={cart.length === 0}>
+                                <Save size={20} /> GENERATE BILL
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -1223,96 +1107,274 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           color: var(--primary-400);
         }
         
-        /* Cart Section - MUCH LARGER for real billing */
-        .cart-section {
-          width: 500px;
-          min-width: 500px;
-          flex-shrink: 0;
+        /* ====== CART PANEL - PROFESSIONAL BILLING UI ====== */
+        .cart-panel {
+          width: 420px;
+          min-width: 420px;
+          height: calc(100vh - 110px);
           display: flex;
           flex-direction: column;
-          height: calc(100vh - 120px);
-          max-height: calc(100vh - 120px);
-        }
-        
-        .cart-card { 
-          display: flex; 
-          flex-direction: column; 
-          height: 100%;
           background: var(--bg-card);
-          border-radius: var(--radius-lg);
+          border-radius: 12px;
           border: 1px solid var(--border-subtle);
-          padding: 12px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
           overflow: hidden;
         }
         
-        .cart-scroll-area {
-          flex: 1;
-          overflow-y: auto;
-          min-height: 0;
-          max-height: 200px;
+        .cart-panel-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 16px;
+          background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+          color: white;
         }
-        .cart-scroll-area::-webkit-scrollbar { width: 4px; }
-        .cart-scroll-area::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 2px; }
-        
-        .cart-header { 
-          display: flex; 
-          justify-content: space-between; 
-          align-items: center; 
-          margin-bottom: 12px;
-          flex-shrink: 0;
-        }
-        .cart-header h3 { 
-          display: flex; 
-          align-items: center; 
-          gap: 8px; 
-          font-size: 1rem;
-          margin: 0;
-        }
-        
-        .customer-info { 
-          display: flex; 
-          flex-direction: column; 
-          gap: 8px; 
-          margin-bottom: 12px; 
-          padding-bottom: 12px; 
-          border-bottom: 1px solid var(--border-subtle);
-          flex-shrink: 0;
-        }
-        .customer-info input { padding: 8px 10px; font-size: 0.8rem; }
-        
-        .phone-lookup { position: relative; display: flex; align-items: center; }
-        .phone-lookup input { flex: 1; }
-        .lookup-loading { position: absolute; right: 10px; animation: pulse 1s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        
-        .loyalty-banner {
-          background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(234, 179, 8, 0.1));
-          border: 1px solid var(--primary-400);
-          border-radius: var(--radius-md);
-          padding: 10px;
-          margin-top: 4px;
-        }
-        .loyalty-info { display: flex; justify-content: space-between; align-items: center; }
-        .loyalty-label { font-size: 0.75rem; color: var(--text-secondary); }
-        .loyalty-points { font-size: 1.25rem; font-weight: 700; color: var(--primary-400); }
-        
-        .redeem-section {
-          display: flex; align-items: center; gap: 8px;
-          margin-top: 8px; padding-top: 8px;
-          border-top: 1px dashed var(--border-subtle);
+        .cart-panel-header h3 { margin: 0; font-size: 1.1rem; }
+        .clear-btn {
+          background: rgba(255,255,255,0.2);
+          border: none;
+          color: white;
+          padding: 4px 10px;
+          border-radius: 4px;
+          cursor: pointer;
           font-size: 0.75rem;
         }
-        .redeem-section label { color: var(--text-secondary); }
-        .redeem-section input { width: 70px; }
-        .redeem-value { color: var(--success); font-weight: 600; }
+        .clear-btn:hover { background: rgba(255,255,255,0.3); }
         
-        .credit-due {
-          margin-top: 8px; padding: 6px 8px;
-          background: rgba(239, 68, 68, 0.1);
-          border-radius: var(--radius-sm);
-          font-size: 0.75rem; color: var(--error);
+        .customer-input {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding: 10px 12px;
+          background: var(--bg-secondary);
         }
+        .customer-input input {
+          padding: 8px 10px;
+          border: 1px solid var(--border-subtle);
+          border-radius: 6px;
+          background: var(--bg-card);
+          color: var(--text-primary);
+          font-size: 0.85rem;
+        }
+        .customer-input input:focus {
+          border-color: var(--primary-400);
+          outline: none;
+        }
+        
+        .cart-items-area {
+          flex: 1;
+          overflow-y: auto;
+          padding: 8px 12px;
+          min-height: 120px;
+          max-height: 220px;
+        }
+        .cart-items-area::-webkit-scrollbar { width: 4px; }
+        .cart-items-area::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 2px; }
+        
+        .empty-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          color: var(--text-tertiary);
+          gap: 8px;
+        }
+        .empty-state svg { opacity: 0.3; }
+        .empty-state p { margin: 0; font-size: 0.9rem; }
+        
+        .items-list { display: flex; flex-direction: column; gap: 8px; }
+        
+        .item-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px;
+          background: var(--bg-secondary);
+          border-radius: 8px;
+          border: 1px solid var(--border-subtle);
+        }
+        .item-row:hover { border-color: var(--primary-400); }
+        
+        .item-details {
+          flex: 1;
+          min-width: 0;
+        }
+        .item-details .name {
+          display: block;
+          font-weight: 600;
+          font-size: 0.85rem;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .item-details .unit {
+          font-size: 0.7rem;
+          color: var(--text-tertiary);
+        }
+        
+        .item-qty {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .item-qty button {
+          width: 24px;
+          height: 24px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-weight: bold;
+          font-size: 1rem;
+        }
+        .item-qty button:first-child { background: #dc2626; color: white; }
+        .item-qty button:last-child { background: #16a34a; color: white; }
+        .item-qty input {
+          width: 40px;
+          text-align: center;
+          padding: 4px;
+          border: 1px solid var(--border-subtle);
+          border-radius: 4px;
+          background: var(--bg-card);
+          color: var(--text-primary);
+          font-size: 0.85rem;
+        }
+        
+        .item-amt {
+          font-weight: 700;
+          color: var(--primary-400);
+          font-size: 0.9rem;
+          min-width: 50px;
+          text-align: right;
+        }
+        
+        .del-btn {
+          background: transparent;
+          border: none;
+          color: var(--text-tertiary);
+          font-size: 1.2rem;
+          cursor: pointer;
+          padding: 4px;
+        }
+        .del-btn:hover { color: #dc2626; }
+        
+        /* BILLING SUMMARY - Always visible at bottom */
+        .billing-summary {
+          padding: 12px;
+          background: var(--bg-secondary);
+          border-top: 2px solid var(--primary-400);
+        }
+        
+        .controls-row {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 10px;
+        }
+        .control {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .control label {
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+        }
+        .control input {
+          width: 50px;
+          padding: 5px;
+          border: 1px solid var(--border-subtle);
+          border-radius: 4px;
+          background: var(--bg-card);
+          color: var(--text-primary);
+          font-size: 0.8rem;
+        }
+        .control select {
+          padding: 5px;
+          border: 1px solid var(--border-subtle);
+          border-radius: 4px;
+          background: var(--bg-card);
+          color: var(--text-primary);
+          font-size: 0.8rem;
+        }
+        
+        .totals {
+          margin-bottom: 10px;
+        }
+        .totals .row {
+          display: flex;
+          justify-content: space-between;
+          padding: 3px 0;
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+        }
+        .totals .row.discount span:last-child { color: #16a34a; }
+        .totals .row.total {
+          font-size: 1.3rem;
+          font-weight: 700;
+          color: var(--primary-400);
+          padding: 8px;
+          background: rgba(249, 115, 22, 0.15);
+          border-radius: 6px;
+          margin-top: 6px;
+        }
+        
+        .payment-row {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 6px;
+          margin-bottom: 10px;
+        }
+        .payment-row button {
+          padding: 8px;
+          border: 1px solid var(--border-subtle);
+          background: var(--bg-card);
+          border-radius: 6px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          color: var(--text-secondary);
+          transition: all 0.2s;
+        }
+        .payment-row button:hover { border-color: var(--primary-400); }
+        .payment-row button.active {
+          background: var(--primary-500);
+          border-color: var(--primary-500);
+          color: white;
+        }
+        
+        .generate-btn {
+          width: 100%;
+          padding: 14px;
+          font-size: 1.05rem;
+          font-weight: 700;
+          background: linear-gradient(135deg, var(--primary-500), #ea580c);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+          transition: all 0.2s;
+        }
+        .generate-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(249, 115, 22, 0.5);
+        }
+        .generate-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        
+        /* Hide old styles */
+        .cart-section, .cart-card, .cart-scroll-area, .cart-header,
+        .customer-info, .cart-items, .empty-cart, .cart-items-list,
+        .cart-items-header, .cart-item-row, .billing-controls,
+        .cart-footer, .cart-totals-compact, .payment-compact,
+        .cart-actions-fixed, .btn-generate-bill, .cart-actions { display: none !important; }
         
         .new-customer-badge {
           background: rgba(34, 197, 94, 0.1);
