@@ -31,6 +31,7 @@ export default function Dashboard({ addToast, setCurrentPage }) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [dataError, setDataError] = useState(null)
+  const [showAIHub, setShowAIHub] = useState(true) // Collapsible AI Hub
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -340,33 +341,47 @@ export default function Dashboard({ addToast, setCurrentPage }) {
       {/* AI Insights Panel - Advanced AI Analytics */}
       <AIInsightsPanel addToast={addToast} />
 
-      {/* Advanced AI Features Grid */}
-      <div className="ai-features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: '24px' }}>
-        <SmartGoals addToast={addToast} />
-        <ChurnPrediction addToast={addToast} />
-      </div>
+      {/* AI Hub - Collapsible section for all AI agents */}
+      <div className="ai-hub-section">
+        <div className="ai-hub-header" onClick={() => setShowAIHub(!showAIHub)}>
+          <div className="ai-hub-title">
+            <span className="ai-icon">🤖</span>
+            <h2>AI Agents Hub</h2>
+            <span className="ai-badge">PRO</span>
+          </div>
+          <span className="ai-hub-toggle">{showAIHub !== false ? '▼' : '▶'}</span>
+        </div>
 
-      {/* AI Agents Row */}
-      <div className="ai-agents-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: '24px' }}>
-        <AutoRestockAgent addToast={addToast} />
-        <RevenueForecastAgent addToast={addToast} />
-      </div>
+        {showAIHub !== false && (
+          <div className="ai-hub-content">
+            {/* Row 1: Goals & Predictions */}
+            <div className="ai-agents-row">
+              <SmartGoals addToast={addToast} />
+              <ChurnPrediction addToast={addToast} />
+            </div>
 
-      {/* Customer & Anomaly Agents */}
-      <div className="ai-agents-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: '24px' }}>
-        <CustomerEngagementAgent addToast={addToast} />
-        <AnomalyDetectionAgent addToast={addToast} />
-      </div>
+            {/* Row 2: Stock & Forecasting */}
+            <div className="ai-agents-row">
+              <AutoRestockAgent addToast={addToast} />
+              <RevenueForecastAgent addToast={addToast} />
+            </div>
 
-      {/* Daily Action Planner & Smart Pricing */}
-      <div className="ai-agents-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: '24px' }}>
-        <DailyActionPlanner addToast={addToast} setCurrentPage={setCurrentPage} />
-        <SmartPricingAgent addToast={addToast} />
-      </div>
+            {/* Row 3: Customer & Anomaly */}
+            <div className="ai-agents-row">
+              <CustomerEngagementAgent addToast={addToast} />
+              <AnomalyDetectionAgent addToast={addToast} />
+            </div>
 
-      {/* Profit Margin Analyzer */}
-      <div style={{ marginTop: '24px' }}>
-        <ProfitMarginAnalyzer addToast={addToast} />
+            {/* Row 4: Daily Actions & Pricing */}
+            <div className="ai-agents-row">
+              <DailyActionPlanner addToast={addToast} setCurrentPage={setCurrentPage} />
+              <SmartPricingAgent addToast={addToast} />
+            </div>
+
+            {/* Profit Analyzer */}
+            <ProfitMarginAnalyzer addToast={addToast} />
+          </div>
+        )}
       </div>
 
       <style>{`
@@ -1003,6 +1018,83 @@ export default function Dashboard({ addToast, setCurrentPage }) {
           
           th:last-child, td:last-child {
             padding-right: 16px;
+          }
+        }
+
+        /* AI Hub Section */
+        .ai-hub-section {
+          margin-top: 24px;
+          background: var(--bg-card);
+          border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-xl);
+          overflow: hidden;
+        }
+
+        .ai-hub-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 20px;
+          background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(234, 88, 12, 0.05));
+          border-bottom: 1px solid var(--border-subtle);
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .ai-hub-header:hover {
+          background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.08));
+        }
+
+        .ai-hub-title {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .ai-hub-title .ai-icon {
+          font-size: 1.5rem;
+        }
+
+        .ai-hub-title h2 {
+          margin: 0;
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .ai-badge {
+          padding: 4px 10px;
+          background: linear-gradient(135deg, #f97316, #ea580c);
+          color: white;
+          font-size: 0.7rem;
+          font-weight: 700;
+          border-radius: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .ai-hub-toggle {
+          font-size: 0.875rem;
+          color: var(--text-tertiary);
+          transition: transform 0.2s;
+        }
+
+        .ai-hub-content {
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .ai-agents-row {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+          gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+          .ai-agents-row {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
