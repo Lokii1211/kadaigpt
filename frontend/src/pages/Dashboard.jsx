@@ -1,40 +1,30 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, ShoppingBag, Users, AlertTriangle, IndianRupee, ArrowUpRight, Clock, Zap, FileText, Package, Plus, Camera, BarChart3, RefreshCw, WifiOff } from 'lucide-react'
+import { TrendingUp, ShoppingBag, Users, AlertTriangle, IndianRupee, Clock, FileText, Package, Plus, Camera, BarChart3, RefreshCw, CreditCard, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import realDataService from '../services/realDataService'
 import WhatsAppAgentPanel from '../components/WhatsAppAgentPanel'
 import AIInsightsPanel from '../components/AIInsightsPanel'
-import SmartGoals from '../components/SmartGoals'
-import ChurnPrediction from '../components/ChurnPrediction'
-import ProfitMarginAnalyzer from '../components/ProfitMarginAnalyzer'
-import AutoRestockAgent from '../components/AutoRestockAgent'
-import RevenueForecastAgent from '../components/RevenueForecastAgent'
-import CustomerEngagementAgent from '../components/CustomerEngagementAgent'
-import AnomalyDetectionAgent from '../components/AnomalyDetectionAgent'
-import DailyActionPlanner from '../components/DailyActionPlanner'
-import SmartPricingAgent from '../components/SmartPricingAgent'
-import FloatingActionButton from '../components/FloatingActionButton'
-import api from '../services/api'
-
 
 export default function Dashboard({ addToast, setCurrentPage }) {
   const [stats, setStats] = useState({
     todaySales: 0,
     todayBills: 0,
     avgBillValue: 0,
-    lowStockCount: 0
+    lowStockCount: 0,
+    totalCustomers: 0,
+    creditPending: 0
   })
   const [products, setProducts] = useState([])
   const [bills, setBills] = useState([])
-  const [activity, setActivity] = useState([])
-  const [hourlyData, setHourlyData] = useState([])
-  const [currentTime, setCurrentTime] = useState(new Date())
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [dataError, setDataError] = useState(null)
-  const [showAIHub, setShowAIHub] = useState(true) // Collapsible AI Hub
+  const [currentTime, setCurrentTime] = useState(new Date())
+
+  // Get user role
+  const userRole = localStorage.getItem('kadai_user_role') || 'owner'
+  const storeName = localStorage.getItem('kadai_store_name') || 'My Store'
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000)
     return () => clearInterval(timer)
   }, [])
 
@@ -44,58 +34,36 @@ export default function Dashboard({ addToast, setCurrentPage }) {
 
   const loadDashboardData = async () => {
     setIsLoading(true)
-    setDataError(null)
-
     try {
-      // Fetch all data from real backend APIs
-      const [statsData, productsData, billsData, activityData] = await Promise.all([
+      const [statsData, productsData, billsData] = await Promise.all([
         realDataService.getDashboardStats(),
         realDataService.getProducts(),
-        realDataService.getBills({ limit: 10 }),
-        realDataService.getDashboardActivity()
+        realDataService.getBills({ limit: 5 })
       ])
 
       setStats({
         todaySales: statsData.todaySales || 0,
         todayBills: statsData.todayBills || billsData.length || 0,
         avgBillValue: statsData.avgBillValue || 0,
-        lowStockCount: statsData.lowStockCount || productsData.filter(p => p.stock <= p.minStock).length || 0
+        lowStockCount: productsData.filter(p => p.stock <= p.minStock).length || 0,
+        totalCustomers: statsData.totalCustomers || 0,
+        creditPending: statsData.creditPending || 0
       })
 
       setProducts(productsData)
       setBills(billsData)
-      setActivity(activityData)
-
-      // Calculate hourly data from bills if not provided
-      if (billsData.length > 0) {
-        const hourlyMap = {}
-        billsData.forEach(bill => {
-          const hour = new Date(bill.createdAt).getHours()
-          hourlyMap[hour] = (hourlyMap[hour] || 0) + bill.total
-        })
-        const hourlyArr = Object.entries(hourlyMap).map(([hour, sales]) => ({
-          hour: `${hour}:00`,
-          sales
-        }))
-        setHourlyData(hourlyArr)
-      }
-
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
-      setDataError('Failed to load data. Please check your connection.')
-      addToast?.('Failed to load dashboard data', 'error')
     } finally {
       setIsLoading(false)
     }
   }
 
-
-  const formatCurrency = (n) => `₹${n.toLocaleString('en-IN')}`
-  const formatTime = (date) => date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
-  const formatDate = (date) => date.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const formatCurrency = (n) => `₹${(n || 0).toLocaleString('en-IN')}`
+  const formatTime = () => currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  const formatDate = () => currentTime.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })
 
   const lowStockProducts = products.filter(p => p.stock <= p.minStock)
-  const maxSales = Math.max(...(hourlyData.map(h => h.sales) || [0]), 1)
 
   const refresh = () => {
     setIsRefreshing(true)
@@ -105,970 +73,588 @@ export default function Dashboard({ addToast, setCurrentPage }) {
     })
   }
 
-  const quickActions = [
-    { label: 'New Bill', icon: Plus, page: 'create-bill', color: 'primary' },
-    { label: 'Scan Bill', icon: Camera, page: 'ocr', color: 'secondary' },
-    { label: 'View Bills', icon: FileText, page: 'bills', color: 'secondary' },
-    { label: 'Analytics', icon: BarChart3, page: 'analytics', color: 'secondary' },
-  ]
+  // Get greeting based on time
+  const getGreeting = () => {
+    const hour = currentTime.getHours()
+    if (hour < 12) return 'Good Morning'
+    if (hour < 17) return 'Good Afternoon'
+    return 'Good Evening'
+  }
 
   return (
-    <div className="dashboard">
-      {/* Header with Time - Compact */}
-      <div className="dashboard-header">
-        <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">{formatDate(currentTime)}</p>
+    <div className="dashboard-page">
+      {/* Welcome Header */}
+      <div className="welcome-header">
+        <div className="welcome-text">
+          <h1>{getGreeting()}! 👋</h1>
+          <p>{storeName} • {formatDate()}</p>
         </div>
-        <div className="header-right">
-          <div className="live-time">
-            <Clock size={16} />
-            <span>{formatTime(currentTime)}</span>
-          </div>
-          <button className={`btn btn-ghost btn-sm ${isRefreshing ? 'spin' : ''}`} onClick={refresh}>
-            <RefreshCw size={16} />
+        <div className="header-actions">
+          <span className="current-time">{formatTime()}</span>
+          <button className={`refresh-btn ${isRefreshing ? 'spinning' : ''}`} onClick={refresh}>
+            <RefreshCw size={18} />
           </button>
         </div>
       </div>
 
-      {/* Quick Actions - Compact horizontal */}
-      <div className="quick-actions-grid">
-        {quickActions.map((action, i) => (
-          <button
-            key={i}
-            className={`quick-action-btn ${action.color}`}
-            onClick={() => setCurrentPage(action.page)}
-          >
-            <action.icon size={20} />
-            <span>{action.label}</span>
-          </button>
-        ))}
+      {/* Quick Action Buttons */}
+      <div className="quick-actions">
+        <button className="action-btn primary" onClick={() => setCurrentPage('create-bill')}>
+          <Plus size={20} />
+          <span>New Bill</span>
+        </button>
+        <button className="action-btn" onClick={() => setCurrentPage('products')}>
+          <Package size={20} />
+          <span>Products</span>
+        </button>
+        <button className="action-btn" onClick={() => setCurrentPage('customers')}>
+          <Users size={20} />
+          <span>Customers</span>
+        </button>
+        <button className="action-btn" onClick={() => setCurrentPage('bills')}>
+          <FileText size={20} />
+          <span>Bills</span>
+        </button>
       </div>
 
-      {/* Stats Grid - More compact */}
-      <div className="stats-grid">
-        <div className="stat-card highlight">
-          <div className="stat-icon"><IndianRupee size={22} /></div>
-          <div className="stat-content">
+      {/* Stats Cards */}
+      <div className="stats-row">
+        <div className="stat-card sales">
+          <div className="stat-icon"><IndianRupee size={20} /></div>
+          <div className="stat-info">
             <span className="stat-value">{formatCurrency(stats.todaySales)}</span>
             <span className="stat-label">Today's Sales</span>
           </div>
+          <ArrowUpRight className="trend-icon up" size={16} />
         </div>
-        <div className="stat-card">
-          <div className="stat-icon"><ShoppingBag size={22} /></div>
-          <div className="stat-content">
+
+        <div className="stat-card bills">
+          <div className="stat-icon"><ShoppingBag size={20} /></div>
+          <div className="stat-info">
             <span className="stat-value">{stats.todayBills}</span>
-            <span className="stat-label">Total Bills</span>
+            <span className="stat-label">Bills Today</span>
           </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon"><TrendingUp size={22} /></div>
-          <div className="stat-content">
+
+        <div className="stat-card avg">
+          <div className="stat-icon"><TrendingUp size={20} /></div>
+          <div className="stat-info">
             <span className="stat-value">{formatCurrency(stats.avgBillValue)}</span>
             <span className="stat-label">Avg Bill</span>
           </div>
         </div>
-        <div className={`stat-card ${stats.lowStockCount > 0 ? 'warning' : ''}`}>
-          <div className="stat-icon"><Package size={22} /></div>
-          <div className="stat-content">
-            <span className="stat-value">{stats.lowStockCount}</span>
-            <span className="stat-label">Low Stock</span>
-          </div>
-        </div>
-      </div>
 
-      {/* WhatsApp AI Agent Panel */}
-      <WhatsAppAgentPanel addToast={addToast} />
-
-      <div className="dashboard-grid">
-        {/* Sales Chart */}
-        <div className="card chart-card">
-          <div className="card-header">
-            <h3 className="card-title"><BarChart3 size={20} /> Today's Sales Trend</h3>
-          </div>
-          <div className="chart-container">
-            <div className="area-chart">
-              <div className="chart-bars">
-                {hourlyData.map((data, i) => (
-                  <div key={i} className="chart-bar-wrapper">
-                    <div
-                      className="chart-bar"
-                      style={{ height: `${(data.sales / maxSales) * 100}%` }}
-                      title={`${data.hour}: ₹${data.sales}`}
-                    >
-                      <span className="bar-tooltip">₹{data.sales}</span>
-                    </div>
-                    <span className="bar-label">{data.hour}</span>
-                  </div>
-                ))}
-              </div>
+        {stats.lowStockCount > 0 && (
+          <div className="stat-card warning" onClick={() => setCurrentPage('products')}>
+            <div className="stat-icon"><AlertTriangle size={20} /></div>
+            <div className="stat-info">
+              <span className="stat-value">{stats.lowStockCount}</span>
+              <span className="stat-label">Low Stock</span>
             </div>
-          </div>
-          <div className="chart-summary">
-            <div className="summary-item">
-              <span className="label">Peak Hour</span>
-              <span className="value">11 AM - ₹6,800</span>
-            </div>
-            <div className="summary-item">
-              <span className="label">Total Customers</span>
-              <span className="value">{hourlyData.reduce((s, h) => s + h.customers, 0)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Activity Feed */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title"><Zap size={20} /> Live Activity</h3>
-          </div>
-          <div className="activity-feed">
-            {activity.length > 0 ? activity.map(item => (
-              <div key={item.id} className={`activity-item ${item.type}`}>
-                <div className="activity-dot"></div>
-                <div className="activity-content">
-                  <p>{item.message}</p>
-                  <span className="activity-time">{item.time}</span>
-                </div>
-                {item.amount && <span className="activity-amount">₹{item.amount}</span>}
-              </div>
-            )) : (
-              <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>
-                <Zap size={24} style={{ marginBottom: '8px', opacity: 0.5 }} />
-                <p style={{ margin: 0 }}>No activity yet. Start creating bills!</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="dashboard-grid">
-        {/* Low Stock Alert */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title"><AlertTriangle size={20} /> Low Stock Alerts</h3>
-            <button className="btn btn-ghost btn-sm" onClick={() => setCurrentPage('products')}>View All</button>
-          </div>
-          <div className="low-stock-list">
-            {lowStockProducts.slice(0, 5).map(product => (
-              <div key={product.id} className="low-stock-item">
-                <div className="product-info">
-                  <span className="product-name">{product.name}</span>
-                  <span className="product-category">{product.category}</span>
-                </div>
-                <div className="stock-info">
-                  <span className={`stock-level ${product.stock === 0 ? 'out' : 'low'}`}>
-                    {product.stock} / {product.minStock} {product.unit}
-                  </span>
-                  <div className="stock-bar">
-                    <div
-                      className="stock-fill"
-                      style={{ width: `${Math.min(100, (product.stock / product.minStock) * 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Bills */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title"><FileText size={20} /> Recent Bills</h3>
-            <button className="btn btn-ghost btn-sm" onClick={() => setCurrentPage('bills')}>View All</button>
-          </div>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Bill No</th>
-                  <th>Customer</th>
-                  <th>Amount</th>
-                  <th>Mode</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bills.length > 0 ? bills.slice(0, 5).map(bill => (
-                  <tr key={bill.id}>
-                    <td><code>{bill.bill_number}</code></td>
-                    <td>{bill.customer_name || 'Walk-in'}</td>
-                    <td className="amount">₹{(bill.total || 0).toFixed(2)}</td>
-                    <td><span className={`badge badge-${bill.payment_mode === 'UPI' ? 'info' : bill.payment_mode === 'Card' ? 'warning' : 'success'}`}>{bill.payment_mode || 'Cash'}</span></td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan="4" className="empty-table">
-                      <div className="empty-state-inline">
-                        <FileText size={24} />
-                        <span>No bills yet. Create your first bill!</span>
-                        <button className="btn btn-primary btn-sm" onClick={() => setCurrentPage('create-bill')}>Create Bill</button>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {/* AI Insights Panel - Advanced AI Analytics */}
-      <AIInsightsPanel addToast={addToast} />
-
-      {/* AI Hub - Collapsible section for all AI agents */}
-      <div className="ai-hub-section">
-        <div className="ai-hub-header" onClick={() => setShowAIHub(!showAIHub)}>
-          <div className="ai-hub-title">
-            <span className="ai-icon">🤖</span>
-            <h2>AI Agents Hub</h2>
-            <span className="ai-badge">PRO</span>
-          </div>
-          <span className="ai-hub-toggle">{showAIHub !== false ? '▼' : '▶'}</span>
-        </div>
-
-        {showAIHub !== false && (
-          <div className="ai-hub-content">
-            {/* Row 1: Goals & Predictions */}
-            <div className="ai-agents-row">
-              <SmartGoals addToast={addToast} />
-              <ChurnPrediction addToast={addToast} />
-            </div>
-
-            {/* Row 2: Stock & Forecasting */}
-            <div className="ai-agents-row">
-              <AutoRestockAgent addToast={addToast} />
-              <RevenueForecastAgent addToast={addToast} />
-            </div>
-
-            {/* Row 3: Customer & Anomaly */}
-            <div className="ai-agents-row">
-              <CustomerEngagementAgent addToast={addToast} />
-              <AnomalyDetectionAgent addToast={addToast} />
-            </div>
-
-            {/* Row 4: Daily Actions & Pricing */}
-            <div className="ai-agents-row">
-              <DailyActionPlanner addToast={addToast} setCurrentPage={setCurrentPage} />
-              <SmartPricingAgent addToast={addToast} />
-            </div>
-
-            {/* Profit Analyzer */}
-            <ProfitMarginAnalyzer addToast={addToast} />
           </div>
         )}
       </div>
 
+      {/* Main Content Grid */}
+      <div className="dashboard-grid">
+        {/* Recent Bills */}
+        <div className="card recent-bills">
+          <div className="card-header">
+            <h3><FileText size={18} /> Recent Bills</h3>
+            <button className="link-btn" onClick={() => setCurrentPage('bills')}>View All</button>
+          </div>
+          <div className="bills-list">
+            {bills.length > 0 ? bills.map(bill => (
+              <div key={bill.id} className="bill-item">
+                <div className="bill-info">
+                  <span className="bill-number">#{bill.bill_number}</span>
+                  <span className="bill-customer">{bill.customer_name || 'Walk-in'}</span>
+                </div>
+                <div className="bill-amount">
+                  <span className="amount">{formatCurrency(bill.total)}</span>
+                  <span className={`payment-badge ${bill.payment_mode?.toLowerCase()}`}>
+                    {bill.payment_mode || 'Cash'}
+                  </span>
+                </div>
+              </div>
+            )) : (
+              <div className="empty-state">
+                <FileText size={32} />
+                <p>No bills yet</p>
+                <button className="btn-primary" onClick={() => setCurrentPage('create-bill')}>
+                  Create First Bill
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Low Stock Alert */}
+        {lowStockProducts.length > 0 && (
+          <div className="card low-stock">
+            <div className="card-header warning">
+              <h3><AlertTriangle size={18} /> Low Stock Alert</h3>
+              <span className="count-badge">{lowStockProducts.length}</span>
+            </div>
+            <div className="stock-list">
+              {lowStockProducts.slice(0, 5).map(product => (
+                <div key={product.id} className="stock-item">
+                  <span className="product-name">{product.name}</span>
+                  <span className={`stock-level ${product.stock === 0 ? 'out' : 'low'}`}>
+                    {product.stock} left
+                  </span>
+                </div>
+              ))}
+              {lowStockProducts.length > 5 && (
+                <button className="see-more" onClick={() => setCurrentPage('products')}>
+                  +{lowStockProducts.length - 5} more
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* AI Features Section - Only for Owner/Admin */}
+      {(userRole === 'owner' || userRole === 'admin') && (
+        <div className="ai-section">
+          <div className="section-header">
+            <h2>🤖 AI Insights</h2>
+            <span className="pro-badge">PRO</span>
+          </div>
+          <AIInsightsPanel addToast={addToast} />
+          <WhatsAppAgentPanel addToast={addToast} />
+        </div>
+      )}
+
+      {/* Staff View - Simplified */}
+      {userRole === 'staff' && (
+        <div className="staff-notice">
+          <p>👋 Ready to serve customers! Use the buttons above to create bills and manage products.</p>
+        </div>
+      )}
+
       <style>{`
-        /* Top Navigation Bar */
-        .top-nav-bar {
-          background: var(--bg-card);
-          border: 1px solid var(--border-subtle);
-          border-radius: var(--radius-lg);
-          padding: 8px;
-          margin-bottom: 16px;
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
+        .dashboard-page {
+          max-width: 1200px;
+          margin: 0 auto;
         }
-        
-        .top-nav-bar::-webkit-scrollbar {
-          height: 4px;
-        }
-        .top-nav-bar::-webkit-scrollbar-thumb {
-          background: var(--primary-400);
-          border-radius: 2px;
-        }
-        
-        .top-nav-items {
+
+        /* Welcome Header */
+        .welcome-header {
           display: flex;
-          gap: 6px;
-          min-width: max-content;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid var(--border-subtle);
         }
-        
-        .top-nav-item {
+
+        .welcome-text h1 {
+          font-size: 1.5rem;
+          font-weight: 700;
+          margin: 0 0 4px;
+        }
+
+        .welcome-text p {
+          color: var(--text-secondary);
+          margin: 0;
+          font-size: 0.875rem;
+        }
+
+        .header-actions {
           display: flex;
           align-items: center;
-          gap: 6px;
-          padding: 8px 14px;
-          background: transparent;
-          border: 1px solid transparent;
-          border-radius: var(--radius-md);
+          gap: 12px;
+        }
+
+        .current-time {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .refresh-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          border: 1px solid var(--border-subtle);
+          background: var(--bg-card);
           color: var(--text-secondary);
-          font-size: 0.8rem;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+          background: var(--primary-500);
+          color: white;
+          border-color: var(--primary-500);
+        }
+
+        .refresh-btn.spinning svg {
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 24px;
+          overflow-x: auto;
+          padding-bottom: 4px;
+        }
+
+        .action-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 20px;
+          border-radius: 12px;
+          border: 1px solid var(--border-subtle);
+          background: var(--bg-card);
+          color: var(--text-secondary);
+          font-size: 0.875rem;
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s;
           white-space: nowrap;
         }
-        
-        .top-nav-item:hover {
-          background: var(--bg-tertiary);
+
+        .action-btn:hover {
+          border-color: var(--primary-400);
           color: var(--primary-400);
-          border-color: var(--primary-300);
-        }
-        
-        .top-nav-item:active {
-          transform: scale(0.98);
-        }
-        
-        /* Dashboard Header - Compact */
-        .dashboard-header { 
-          display: flex; 
-          justify-content: space-between; 
-          align-items: center; 
-          margin-bottom: 16px;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        
-        .dashboard-header .page-title {
-          font-size: 1.25rem;
-          margin-bottom: 2px;
-        }
-        
-        .dashboard-header .page-subtitle {
-          font-size: 0.8rem;
-        }
-        
-        @media (max-width: 640px) {
-          .dashboard-header {
-            flex-direction: column;
-            align-items: flex-start;
-            margin-bottom: 12px;
-          }
-          .header-right {
-            width: 100%;
-            justify-content: space-between;
-          }
-        }
-        
-        .header-right { 
-          display: flex; 
-          align-items: center; 
-          gap: 8px; 
-        }
-        
-        .live-time { 
-          display: flex; 
-          align-items: center; 
-          gap: 6px; 
-          padding: 6px 12px; 
-          background: var(--bg-card); 
-          border: 1px solid var(--border-subtle); 
-          border-radius: var(--radius-md); 
-          font-weight: 600; 
-          font-size: 0.9rem; 
-        }
-        
-        @media (max-width: 480px) {
-          .live-time {
-            padding: 4px 10px;
-            font-size: 0.85rem;
-          }
-        }
-        
-        .spin svg { animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Quick Actions Grid - Compact */
-        .quick-actions-grid { 
-          display: grid; 
-          grid-template-columns: repeat(4, 1fr); 
-          gap: 10px; 
-          margin-bottom: 16px; 
-        }
-        
-        @media (max-width: 900px) { 
-          .quick-actions-grid { 
-            grid-template-columns: repeat(4, 1fr); 
-          } 
-        }
-        
-        @media (max-width: 480px) { 
-          .quick-actions-grid { 
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-bottom: 12px;
-          } 
-        }
-        
-        .quick-action-btn {
-          display: flex; 
-          flex-direction: row; 
-          align-items: center; 
-          justify-content: center;
-          gap: 8px; 
-          padding: 12px 16px; 
-          background: var(--bg-card);
-          border: 1px solid var(--border-subtle); 
-          border-radius: var(--radius-lg);
-          cursor: pointer; 
-          transition: all var(--transition-fast);
-          font-weight: 600; 
-          color: var(--text-secondary);
-          -webkit-tap-highlight-color: transparent;
-          font-size: 0.85rem;
-        }
-        
-        @media (max-width: 480px) {
-          .quick-action-btn {
-            padding: 16px 12px;
-            min-height: 80px;
-            font-size: 0.875rem;
-          }
-          .quick-action-btn svg {
-            width: 20px;
-            height: 20px;
-          }
-        }
-        
-        .quick-action-btn:hover { 
-          border-color: var(--primary-400); 
-          color: var(--primary-400); 
-        }
-        
-        @media (hover: hover) and (pointer: fine) {
-          .quick-action-btn:hover {
-            transform: translateY(-2px);
-          }
-        }
-        
-        .quick-action-btn:active {
-          transform: scale(0.98);
-        }
-        
-        .quick-action-btn.primary { 
-          background: var(--gradient-primary); 
-          color: white; 
-          border: none; 
-        }
-        
-        .quick-action-btn.primary:hover { 
-          opacity: 0.9; 
         }
 
-        /* Stats Grid - Compact */
-        .stats-grid { 
-          display: grid; 
-          grid-template-columns: repeat(4, 1fr); 
-          gap: 12px; 
-          margin-bottom: 16px; 
-        }
-        
-        @media (max-width: 1024px) { 
-          .stats-grid { 
-            grid-template-columns: repeat(2, 1fr); 
-          } 
-        }
-        
-        @media (max-width: 480px) { 
-          .stats-grid { 
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-bottom: 12px;
-          } 
-        }
-        
-        .stat-card {
-          display: flex; 
-          align-items: center; 
-          gap: 12px;
-          padding: 14px; 
-          background: var(--bg-card);
-          border: 1px solid var(--border-subtle); 
-          border-radius: var(--radius-lg);
-          position: relative; 
-          overflow: hidden;
-        }
-        
-        @media (max-width: 480px) {
-          .stat-card {
-            padding: 12px;
-            gap: 10px;
-          }
-        }
-        
-        .stat-card.highlight { 
-          background: var(--gradient-primary); 
-          color: white; 
-          border: none; 
-        }
-        
-        .stat-card.highlight .stat-icon { 
-          background: rgba(255,255,255,0.2); 
-        }
-        
-        .stat-card.warning { 
-          border-color: var(--warning); 
-        }
-        
-        .stat-icon { 
-          width: 44px; 
-          height: 44px; 
-          background: var(--bg-tertiary); 
-          border-radius: var(--radius-md); 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          color: var(--primary-400);
-          flex-shrink: 0;
-        }
-        
-        @media (max-width: 480px) {
-          .stat-icon {
-            width: 40px;
-            height: 40px;
-          }
-          .stat-icon svg {
-            width: 20px;
-            height: 20px;
-          }
-        }
-        
-        .stat-card.highlight .stat-icon { 
-          color: white; 
-        }
-        
-        .stat-content { 
-          flex: 1;
-          min-width: 0; /* Prevent overflow */
-        }
-        
-        .stat-value { 
-          font-size: 1.25rem; 
-          font-weight: 700; 
-          display: block;
-          -webkit-font-smoothing: antialiased;
-        }
-        
-        @media (max-width: 480px) {
-          .stat-value {
-            font-size: 1.5rem;
-          }
-        }
-        
-        .stat-label { 
-          font-size: 0.875rem; 
-          opacity: 0.8; 
-        }
-        
-        .stat-change { 
-          display: flex; 
-          align-items: center; 
-          gap: 4px; 
-          font-size: 0.8125rem; 
-          font-weight: 600; 
-          position: absolute; 
-          top: 16px; 
-          right: 16px; 
-        }
-        
-        @media (max-width: 480px) {
-          .stat-change {
-            top: 12px;
-            right: 12px;
-            font-size: 0.75rem;
-          }
-        }
-        
-        .stat-change.positive { 
-          color: var(--success); 
-        }
-        
-        .stat-card.highlight .stat-change { 
-          color: rgba(255,255,255,0.9); 
-        }
-
-        /* Dashboard Grid */
-        .dashboard-grid { 
-          display: grid; 
-          grid-template-columns: 1.5fr 1fr; 
-          gap: 24px; 
-          margin-bottom: 24px; 
-        }
-        
-        @media (max-width: 1024px) { 
-          .dashboard-grid { 
-            grid-template-columns: 1fr; 
-          } 
-        }
-        
-        @media (max-width: 480px) {
-          .dashboard-grid {
-            gap: 16px;
-            margin-bottom: 16px;
-          }
-        }
-
-        /* Chart Styles */
-        .chart-card .chart-container { 
-          padding: 20px 0; 
-        }
-        
-        .area-chart { 
-          height: 200px; 
-        }
-        
-        @media (max-width: 480px) {
-          .area-chart {
-            height: 150px;
-          }
-        }
-        
-        .chart-bars { 
-          display: flex; 
-          align-items: flex-end; 
-          justify-content: space-between; 
-          height: 100%; 
-          gap: 4px; 
-          padding: 0 10px; 
-        }
-        
-        .chart-bar-wrapper { 
-          display: flex; 
-          flex-direction: column; 
-          align-items: center; 
-          flex: 1; 
-          height: 100%; 
-        }
-        
-        .chart-bar { 
-          width: 100%; 
-          max-width: 40px; 
-          background: var(--gradient-primary); 
-          border-radius: 4px 4px 0 0;
-          position: relative; 
-          transition: height 0.5s ease;
-          cursor: pointer;
-        }
-        
-        @media (max-width: 480px) {
-          .chart-bar {
-            max-width: 24px;
-          }
-        }
-        
-        .chart-bar:hover { 
-          opacity: 0.8; 
-        }
-        
-        .bar-tooltip { 
-          position: absolute; 
-          bottom: 100%; 
-          left: 50%; 
-          transform: translateX(-50%);
-          padding: 4px 8px; 
-          background: var(--bg-primary); 
-          border-radius: var(--radius-sm);
-          font-size: 0.6875rem; 
-          white-space: nowrap; 
-          opacity: 0;
-          transition: opacity var(--transition-fast); 
-          margin-bottom: 4px;
-        }
-        
-        .chart-bar:hover .bar-tooltip { 
-          opacity: 1; 
-        }
-        
-        .bar-label { 
-          font-size: 0.625rem; 
-          color: var(--text-tertiary); 
-          margin-top: 8px; 
-        }
-        
-        .chart-summary { 
-          display: flex; 
-          gap: 24px; 
-          padding-top: 16px; 
-          border-top: 1px solid var(--border-subtle);
-          flex-wrap: wrap;
-        }
-        
-        @media (max-width: 480px) {
-          .chart-summary {
-            gap: 16px;
-          }
-        }
-        
-        .summary-item .label { 
-          font-size: 0.75rem; 
-          color: var(--text-tertiary); 
-          display: block; 
-        }
-        
-        .summary-item .value { 
-          font-weight: 600; 
-        }
-
-        /* Activity Feed */
-        .activity-feed { 
-          display: flex; 
-          flex-direction: column; 
-          gap: 12px; 
-          max-height: 300px; 
-          overflow-y: auto;
-          -webkit-overflow-scrolling: touch; /* iOS smooth scroll */
-        }
-        
-        .activity-item { 
-          display: flex; 
-          align-items: flex-start; 
-          gap: 12px; 
-          padding: 12px; 
-          background: var(--bg-tertiary); 
-          border-radius: var(--radius-md); 
-        }
-        
-        .activity-dot { 
-          width: 8px; 
-          height: 8px; 
-          border-radius: 50%; 
-          margin-top: 6px; 
-          flex-shrink: 0; 
-        }
-        
-        .activity-item.sale .activity-dot { background: var(--success); }
-        .activity-item.stock .activity-dot { background: var(--warning); }
-        .activity-item.payment .activity-dot { background: var(--primary-400); }
-        .activity-item.ocr .activity-dot { background: #8b5cf6; }
-        .activity-item.customer .activity-dot { background: #3b82f6; }
-        
-        .activity-content { 
-          flex: 1;
-          min-width: 0;
-        }
-        
-        .activity-content p { 
-          margin: 0 0 4px; 
-          font-size: 0.875rem; 
-        }
-        
-        .activity-time { 
-          font-size: 0.75rem; 
-          color: var(--text-tertiary); 
-        }
-        
-        .activity-amount { 
-          font-weight: 700; 
-          color: var(--success); 
-        }
-
-        /* Low Stock List */
-        .low-stock-list { 
-          display: flex; 
-          flex-direction: column; 
-          gap: 12px; 
-        }
-        
-        .low-stock-item { 
-          display: flex; 
-          justify-content: space-between; 
-          align-items: center; 
-          padding: 12px; 
-          background: var(--bg-tertiary); 
-          border-radius: var(--radius-md); 
-        }
-        
-        .product-name { 
-          font-weight: 500; 
-          display: block; 
-        }
-        
-        .product-category { 
-          font-size: 0.75rem; 
-          color: var(--text-tertiary); 
-        }
-        
-        .stock-info { 
-          text-align: right; 
-          min-width: 100px;
-          flex-shrink: 0;
-        }
-        
-        @media (max-width: 480px) {
-          .stock-info {
-            min-width: 80px;
-          }
-        }
-        
-        .stock-level { 
-          font-size: 0.8125rem; 
-          display: block; 
-          margin-bottom: 4px; 
-        }
-        
-        .stock-level.low { color: var(--warning); }
-        .stock-level.out { color: var(--error); }
-        
-        .stock-bar { 
-          height: 4px; 
-          background: var(--bg-secondary); 
-          border-radius: 2px; 
-          overflow: hidden; 
-        }
-        
-        .stock-fill { 
-          height: 100%; 
-          background: var(--warning); 
-          border-radius: 2px; 
-        }
-
-        /* Table Amount */
-        .amount { 
-          font-weight: 600; 
-          color: var(--primary-400); 
-        }
-
-        /* AI Insights Banner */
-        .ai-insights-banner {
-          display: flex; 
-          align-items: center; 
-          gap: 20px;
-          padding: 24px; 
-          background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(234, 88, 12, 0.1) 100%);
-          border: 1px solid var(--primary-400); 
-          border-radius: var(--radius-xl);
-          flex-wrap: wrap;
-        }
-        
-        @media (max-width: 768px) {
-          .ai-insights-banner {
-            flex-direction: column;
-            align-items: flex-start;
-            padding: 20px;
-            gap: 16px;
-          }
-          .ai-insights-banner .btn {
-            width: 100%;
-            justify-content: center;
-          }
-        }
-        
-        .ai-icon { 
-          width: 56px; 
-          height: 56px; 
-          background: var(--gradient-primary); 
-          border-radius: var(--radius-lg); 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
+        .action-btn.primary {
+          background: linear-gradient(135deg, #f97316, #ea580c);
           color: white;
-          flex-shrink: 0;
-        }
-        
-        .ai-content { 
-          flex: 1;
-          min-width: 0;
-        }
-        
-        .ai-content h4 { 
-          margin: 0 0 4px; 
-          color: var(--primary-400); 
-        }
-        
-        .ai-content p { 
-          margin: 0; 
-          color: var(--text-secondary); 
-        }
-        
-        /* Table responsive */
-        @media (max-width: 640px) {
-          .table-container {
-            margin: 0 -16px;
-            border-radius: 0;
-          }
-          
-          table {
-            font-size: 0.8125rem;
-          }
-          
-          th, td {
-            padding: 10px 8px;
-          }
-          
-          th:first-child, td:first-child {
-            padding-left: 16px;
-          }
-          
-          th:last-child, td:last-child {
-            padding-right: 16px;
-          }
+          border: none;
         }
 
-        /* AI Hub Section */
-        .ai-hub-section {
-          margin-top: 24px;
+        .action-btn.primary:hover {
+          opacity: 0.9;
+          transform: translateY(-1px);
+        }
+
+        /* Stats Row */
+        .stats-row {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+
+        .stat-card {
           background: var(--bg-card);
           border: 1px solid var(--border-subtle);
-          border-radius: var(--radius-xl);
-          overflow: hidden;
+          border-radius: 16px;
+          padding: 20px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          position: relative;
+          transition: all 0.2s;
         }
 
-        .ai-hub-header {
+        .stat-card:hover {
+          border-color: var(--primary-400);
+        }
+
+        .stat-card .stat-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(249, 115, 22, 0.1);
+          color: var(--primary-400);
+        }
+
+        .stat-card.sales .stat-icon { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+        .stat-card.warning .stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .stat-card.warning { cursor: pointer; }
+
+        .stat-info {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .stat-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+        }
+
+        .stat-label {
+          font-size: 0.8rem;
+          color: var(--text-tertiary);
+        }
+
+        .trend-icon {
+          position: absolute;
+          top: 16px;
+          right: 16px;
+        }
+
+        .trend-icon.up { color: #22c55e; }
+        .trend-icon.down { color: #ef4444; }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* Cards */
+        .card {
+          background: var(--bg-card);
+          border: 1px solid var(--border-subtle);
+          border-radius: 16px;
+          padding: 20px;
+        }
+
+        .card-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 16px 20px;
-          background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(234, 88, 12, 0.05));
-          border-bottom: 1px solid var(--border-subtle);
-          cursor: pointer;
-          transition: background 0.2s;
+          margin-bottom: 16px;
         }
 
-        .ai-hub-header:hover {
-          background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.08));
-        }
-
-        .ai-hub-title {
+        .card-header h3 {
           display: flex;
           align-items: center;
+          gap: 8px;
+          font-size: 1rem;
+          font-weight: 600;
+          margin: 0;
+        }
+
+        .card-header.warning h3 {
+          color: #f59e0b;
+        }
+
+        .link-btn {
+          background: none;
+          border: none;
+          color: var(--primary-400);
+          font-size: 0.8rem;
+          cursor: pointer;
+        }
+
+        .count-badge {
+          background: #ef4444;
+          color: white;
+          padding: 2px 8px;
+          border-radius: 10px;
+          font-size: 0.75rem;
+          font-weight: 600;
+        }
+
+        /* Bills List */
+        .bills-list {
+          display: flex;
+          flex-direction: column;
           gap: 12px;
         }
 
-        .ai-hub-title .ai-icon {
-          font-size: 1.5rem;
+        .bill-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px;
+          background: var(--bg-tertiary);
+          border-radius: 10px;
         }
 
-        .ai-hub-title h2 {
-          margin: 0;
-          font-size: 1.125rem;
-          font-weight: 700;
-          color: var(--text-primary);
-        }
-
-        .ai-badge {
-          padding: 4px 10px;
-          background: linear-gradient(135deg, #f97316, #ea580c);
-          color: white;
-          font-size: 0.7rem;
-          font-weight: 700;
-          border-radius: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .ai-hub-toggle {
-          font-size: 0.875rem;
-          color: var(--text-tertiary);
-          transition: transform 0.2s;
-        }
-
-        .ai-hub-content {
-          padding: 20px;
+        .bill-info {
           display: flex;
           flex-direction: column;
-          gap: 20px;
         }
 
-        .ai-agents-row {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-          gap: 20px;
+        .bill-number {
+          font-weight: 600;
+          font-size: 0.875rem;
         }
 
-        @media (max-width: 900px) {
-          .ai-agents-row {
-            grid-template-columns: 1fr;
+        .bill-customer {
+          font-size: 0.75rem;
+          color: var(--text-tertiary);
+        }
+
+        .bill-amount {
+          text-align: right;
+        }
+
+        .bill-amount .amount {
+          display: block;
+          font-weight: 600;
+        }
+
+        .payment-badge {
+          font-size: 0.65rem;
+          padding: 2px 6px;
+          border-radius: 4px;
+          text-transform: uppercase;
+          background: var(--bg-tertiary);
+        }
+
+        .payment-badge.cash { background: #22c55e20; color: #22c55e; }
+        .payment-badge.upi { background: #3b82f620; color: #3b82f6; }
+        .payment-badge.card { background: #f59e0b20; color: #f59e0b; }
+
+        /* Stock List */
+        .stock-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .stock-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px 12px;
+          background: var(--bg-tertiary);
+          border-radius: 8px;
+        }
+
+        .product-name {
+          font-size: 0.875rem;
+        }
+
+        .stock-level {
+          font-size: 0.75rem;
+          font-weight: 600;
+        }
+
+        .stock-level.low { color: #f59e0b; }
+        .stock-level.out { color: #ef4444; }
+
+        .see-more {
+          background: none;
+          border: none;
+          color: var(--primary-400);
+          font-size: 0.8rem;
+          cursor: pointer;
+          padding: 8px;
+        }
+
+        /* Empty State */
+        .empty-state {
+          text-align: center;
+          padding: 32px;
+          color: var(--text-tertiary);
+        }
+
+        .empty-state svg {
+          margin-bottom: 12px;
+          opacity: 0.5;
+        }
+
+        .empty-state p {
+          margin-bottom: 16px;
+        }
+
+        .btn-primary {
+          background: var(--primary-500);
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 8px;
+          font-weight: 500;
+          cursor: pointer;
+        }
+
+        /* AI Section */
+        .ai-section {
+          margin-top: 32px;
+          padding-top: 24px;
+          border-top: 1px solid var(--border-subtle);
+        }
+
+        .section-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+          font-size: 1.25rem;
+          margin: 0;
+        }
+
+        .pro-badge {
+          background: linear-gradient(135deg, #f97316, #ea580c);
+          color: white;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 0.7rem;
+          font-weight: 700;
+        }
+
+        /* Staff Notice */
+        .staff-notice {
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+          border: 1px solid rgba(59, 130, 246, 0.2);
+          border-radius: 12px;
+          padding: 20px;
+          text-align: center;
+          margin-top: 24px;
+        }
+
+        .staff-notice p {
+          margin: 0;
+          color: var(--text-secondary);
+        }
+
+        /* Mobile */
+        @media (max-width: 640px) {
+          .welcome-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+          }
+
+          .header-actions {
+            width: 100%;
+            justify-content: space-between;
+          }
+
+          .stats-row {
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .stat-card {
+            padding: 14px;
+          }
+
+          .stat-value {
+            font-size: 1.25rem;
+          }
+
+          .quick-actions {
+            gap: 8px;
+          }
+
+          .action-btn {
+            padding: 10px 14px;
+            font-size: 0.8rem;
           }
         }
       `}</style>

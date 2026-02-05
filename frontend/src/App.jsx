@@ -5,7 +5,6 @@ import OnboardingWizard from './components/OnboardingWizard'
 import CommandPalette from './components/CommandPalette'
 import UnifiedAIAssistant from './components/UnifiedAIAssistant'
 import VoiceCommandAgent from './components/VoiceCommandAgent'
-import AICopilot from './components/AICopilot'
 import Dashboard from './pages/Dashboard'
 import Bills from './pages/Bills'
 import OCRCapture from './pages/OCRCapture'
@@ -23,6 +22,7 @@ import ExpenseTracker from './pages/ExpenseTracker'
 import DailySummary from './pages/DailySummary'
 import BulkOperations from './pages/BulkOperations'
 import AdminPanel from './pages/AdminPanel'
+import Subscription from './pages/Subscription'
 import Login from './pages/Login'
 import AdminLogin from './pages/AdminLogin'
 import api from './services/api'
@@ -158,31 +158,63 @@ function App() {
             case 'daily-summary': return <DailySummary addToast={addToast} />
             case 'bulk-operations': return <BulkOperations addToast={addToast} />
             case 'admin': return <AdminPanel addToast={addToast} />
+            case 'subscription': return <Subscription addToast={addToast} />
             case 'settings': return <Settings addToast={addToast} />
             default: return <Dashboard addToast={addToast} setCurrentPage={setCurrentPage} />
         }
     }
 
-    // Navigation items
-    const navItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: Home },
-        { id: 'create-bill', label: 'New Bill', icon: Plus, primary: true },
-        { id: 'bills', label: 'Bills', icon: FileText },
-        { id: 'products', label: 'Products', icon: Package },
-        { id: 'customers', label: 'Customers', icon: Users },
-        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    ]
+    // Role-based navigation items
+    const getNavItems = () => {
+        const baseItems = [
+            { id: 'dashboard', label: 'Dashboard', icon: Home },
+            { id: 'create-bill', label: 'New Bill', icon: Plus, primary: true },
+            { id: 'bills', label: 'Bills', icon: FileText },
+            { id: 'products', label: 'Products', icon: Package },
+        ]
 
-    const moreItems = [
-        { id: 'gst', label: 'GST Reports' },
-        { id: 'suppliers', label: 'Suppliers' },
-        { id: 'loyalty', label: 'Loyalty' },
-        { id: 'expenses', label: 'Expenses' },
-        { id: 'daily-summary', label: 'Daily Report' },
-        { id: 'ai-insights', label: 'AI Insights' },
-        { id: 'whatsapp', label: 'WhatsApp' },
-        { id: 'bulk-operations', label: 'Import/Export' },
-    ]
+        // Staff only sees basic items
+        if (userRole === 'staff' || userRole === 'cashier') {
+            return baseItems
+        }
+
+        // Owner/Manager sees more
+        return [
+            ...baseItems,
+            { id: 'customers', label: 'Customers', icon: Users },
+            { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        ]
+    }
+
+    const getMoreItems = () => {
+        // Staff sees nothing in more menu
+        if (userRole === 'staff' || userRole === 'cashier') {
+            return []
+        }
+
+        const ownerItems = [
+            { id: 'gst', label: 'GST Reports' },
+            { id: 'suppliers', label: 'Suppliers' },
+            { id: 'expenses', label: 'Expenses' },
+            { id: 'daily-summary', label: 'Daily Report' },
+        ]
+
+        // Owner sees AI features
+        if (userRole === 'owner' || userRole === 'admin') {
+            return [
+                ...ownerItems,
+                { id: 'ai-insights', label: 'AI Insights' },
+                { id: 'whatsapp', label: 'WhatsApp' },
+                { id: 'loyalty', label: 'Loyalty' },
+                { id: 'bulk-operations', label: 'Import/Export' },
+            ]
+        }
+
+        return ownerItems
+    }
+
+    const navItems = getNavItems()
+    const moreItems = getMoreItems()
 
     if (loading) {
         return (
@@ -391,7 +423,6 @@ function App() {
             {/* AI Assistants */}
             <UnifiedAIAssistant addToast={addToast} setCurrentPage={setCurrentPage} products={products} />
             <VoiceCommandAgent addToast={addToast} setCurrentPage={setCurrentPage} />
-            <AICopilot currentPage={currentPage} addToast={addToast} />
 
             {/* Toast Notifications */}
             <div className="toast-container">
