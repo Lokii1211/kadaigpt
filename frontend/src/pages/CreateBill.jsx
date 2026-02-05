@@ -1083,7 +1083,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .cart-panel {
           width: 340px;
           min-width: 340px;
-          height: calc(100vh - 80px);
+          height: calc(100vh - 140px);
           position: sticky;
           top: 10px;
           display: flex;
@@ -1260,19 +1260,19 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         }
         .unit-sel:focus { border-color: var(--primary-400); outline: none; }
         
-        /* Cart Footer - Fixed at Bottom, Never Hidden */
+        /* Cart Footer - Ultra Compact, Always Visible */
         .cart-footer {
-          padding: 10px;
-          background: linear-gradient(to top, var(--bg-secondary), var(--bg-card));
+          padding: 6px 8px;
+          background: var(--bg-secondary);
           border-top: 2px solid var(--primary-400);
           flex-shrink: 0;
         }
         
         .quick-controls {
           display: flex;
-          gap: 12px;
-          margin-bottom: 6px;
-          font-size: 0.75rem;
+          gap: 10px;
+          margin-bottom: 4px;
+          font-size: 0.7rem;
           color: var(--text-secondary);
         }
         .quick-controls label {
@@ -1302,10 +1302,10 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         
         .totals-row {
           display: flex;
-          gap: 12px;
-          font-size: 0.8rem;
+          gap: 10px;
+          font-size: 0.75rem;
           color: var(--text-secondary);
-          margin-bottom: 6px;
+          margin-bottom: 4px;
           font-weight: 500;
         }
         .totals-row .discount { color: #22c55e; }
@@ -1313,23 +1313,23 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .total-big {
           background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.2));
           color: var(--primary-400);
-          font-size: 1.25rem;
+          font-size: 1.1rem;
           font-weight: 800;
-          padding: 8px 12px;
-          border-radius: 8px;
+          padding: 6px 10px;
+          border-radius: 6px;
           text-align: center;
-          margin-bottom: 8px;
+          margin-bottom: 5px;
           border: 1px solid rgba(249, 115, 22, 0.3);
         }
         
         .payment-btns {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 4px;
-          margin-bottom: 8px;
+          gap: 3px;
+          margin-bottom: 5px;
         }
         .payment-btns button {
-          padding: 7px;
+          padding: 5px;
           border: 1px solid var(--border-subtle);
           background: var(--bg-card);
           border-radius: 6px;
@@ -1348,8 +1348,8 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         
         .generate-bill-btn {
           width: 100%;
-          padding: 12px;
-          font-size: 1rem;
+          padding: 10px;
+          font-size: 0.95rem;
           font-weight: 700;
           background: linear-gradient(135deg, var(--primary-500), #ea580c);
           color: white;
