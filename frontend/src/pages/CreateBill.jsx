@@ -3,8 +3,9 @@ import { Search, Plus, Minus, Trash2, Printer, Save, ShoppingCart, X, Eye, Loade
 import realDataService from '../services/realDataService'
 import whatsappService from '../services/whatsapp'
 import api from '../services/api'
+import { demoProducts } from '../services/demoData'
 
-const categories = ["All", "Grains", "Pulses", "Essentials", "Oils", "Beverages", "Dairy", "General"]
+const categories = ["All", "Grains", "Pulses", "Essentials", "Oils", "Beverages", "Dairy", "General", "Snacks", "Packaged", "Household", "Personal Care"]
 
 export default function CreateBill({ addToast, setCurrentPage }) {
     const [search, setSearch] = useState('')
@@ -25,6 +26,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     const [existingCustomer, setExistingCustomer] = useState(null)
     const [redeemPoints, setRedeemPoints] = useState(0)
     const [lookingUpCustomer, setLookingUpCustomer] = useState(false)
+    const [usingDemoData, setUsingDemoData] = useState(false)
 
     useEffect(() => {
         loadProducts()
@@ -32,20 +34,37 @@ export default function CreateBill({ addToast, setCurrentPage }) {
 
     const loadProducts = async () => {
         setLoading(true)
+        setUsingDemoData(false)
 
         try {
-            // Always fetch from real API - no more demo mode
+            // Try to fetch from real API first
             const productList = await realDataService.getProducts()
 
             if (Array.isArray(productList) && productList.length > 0) {
                 setProducts(productList)
+                console.log('✅ Loaded', productList.length, 'products from API')
             } else {
-                setProducts([])
+                // Fallback to demo products if API returns empty
+                console.log('⚠️ No products from API, using demo data')
+                setProducts(demoProducts.map(p => ({
+                    ...p,
+                    stock: p.stock || 100,
+                    isDemo: true
+                })))
+                setUsingDemoData(true)
+                addToast?.('Using demo products. Add real products in Products page.', 'info')
             }
         } catch (error) {
             console.error('Error loading products:', error)
-            addToast?.('Failed to load products. Please add products first.', 'warning')
-            setProducts([])
+            // Fallback to demo products on error
+            console.log('⚠️ API error, using demo data')
+            setProducts(demoProducts.map(p => ({
+                ...p,
+                stock: p.stock || 100,
+                isDemo: true
+            })))
+            setUsingDemoData(true)
+            addToast?.('Using demo products. Login to access your inventory.', 'warning')
         } finally {
             setLoading(false)
         }
@@ -229,22 +248,60 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         const billData = getBillData()
         console.log('📝 Creating bill with payment mode:', paymentMode)
         console.log('📝 Bill data:', billData)
+        console.log('📝 Using demo data:', usingDemoData)
+
+        // Generate bill number first
+        const newBillNumber = billData.bill_number || `INV-${Date.now().toString().slice(-6)}`
+        setBillNumber(newBillNumber)
+
+        // If using demo data, just show success and clear cart
+        if (usingDemoData) {
+            // Update local stock for demo products
+            setProducts(prev => prev.map(p => {
+                const cartItem = cart.find(c => c.id === p.id)
+                if (cartItem) {
+                    return { ...p, stock: Math.max(0, (p.stock || 0) - cartItem.quantity) }
+                }
+                return p
+            }))
+
+            addToast(`✅ Bill ${newBillNumber} created - ₹${total.toFixed(2)} (Demo Mode)`, 'success')
+
+            // Open WhatsApp if phone provided
+            if (customer.phone && customer.phone.length >= 10) {
+                const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
+                const loyaltyPoints = Math.floor(total / 100) * 10
+                const itemsList = cart.map(i => `• ${i.name} x${i.quantity} = ₹${i.price * i.quantity}`).join('\n')
+                const whatsappMessage = `🧾 *BILL - ${newBillNumber}*\n📍 ${storeName}\n\n${itemsList}\n\n💰 *Total: ₹${total.toFixed(2)}*\n📱 Payment: ${paymentMode}\n⭐ Loyalty Points: +${loyaltyPoints}\n\nThank you! 🙏\n_Powered by KadaiGPT_`
+
+                const waUrl = `https://wa.me/91${customer.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
+                window.open(waUrl, '_blank')
+            }
+
+            setTimeout(() => {
+                clearCart()
+                addToast('Ready for next bill!', 'info')
+            }, 1500)
+            return
+        }
 
         try {
-            // Save bill to API with correct payment_mode
+            // Save bill to API with correct payment_method
             const result = await api.createBill({
                 ...billData,
-                payment_mode: paymentMode.toLowerCase(), // Ensure lowercase for API
+                payment_method: paymentMode.toLowerCase(), // Use payment_method for API
                 total: total
             })
             console.log('✅ Bill created:', result)
 
-            const newBillNumber = result.bill_number || `INV-${Date.now().toString().slice(-6)}`
-            setBillNumber(newBillNumber)
+            const apiNewBillNumber = result.bill_number || newBillNumber
+            setBillNumber(apiNewBillNumber)
 
-            // UPDATE STOCK for each item sold
+            // UPDATE STOCK for each item sold (only for real products)
             console.log('📦 Updating stock for', cart.length, 'items')
             for (const item of cart) {
+                if (item.isDemo) continue // Skip demo products
+
                 try {
                     const currentStock = item.stock || item.current_stock || 0
                     const newStock = Math.max(0, currentStock - item.quantity)
@@ -442,7 +499,22 @@ export default function CreateBill({ addToast, setCurrentPage }) {
             <div className="page-header">
                 <div className="header-left">
                     <h1 className="page-title">🧾 Create New Bill</h1>
-                    <p className="page-subtitle">Add products and generate invoice</p>
+                    <p className="page-subtitle">
+                        Add products and generate invoice
+                        {usingDemoData && (
+                            <span className="demo-badge" style={{
+                                marginLeft: '12px',
+                                padding: '2px 8px',
+                                background: 'rgba(249, 115, 22, 0.15)',
+                                color: '#f97316',
+                                borderRadius: '4px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600
+                            }}>
+                                Demo Mode
+                            </span>
+                        )}
+                    </p>
                 </div>
                 <div className="header-actions">
                     {cart.length > 0 && (

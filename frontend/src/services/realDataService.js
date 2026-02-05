@@ -64,13 +64,13 @@ class RealDataService {
     }
 
     // ==================== PRODUCTS DATA ====================
-    async getProducts() {
+    async getProducts(includeDemoFallback = false) {
         try {
             const response = await api.getProducts()
             const products = response?.products || response || []
 
             // Normalize product data
-            return products.map(p => ({
+            const normalizedProducts = products.map(p => ({
                 id: p.id,
                 name: p.name,
                 sku: p.sku || '',
@@ -86,6 +86,8 @@ class RealDataService {
                 createdAt: p.created_at,
                 updatedAt: p.updated_at
             }))
+
+            return normalizedProducts
         } catch (error) {
             console.error('Failed to fetch products:', error)
             return []
