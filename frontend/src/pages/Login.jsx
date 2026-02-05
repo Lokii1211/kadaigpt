@@ -68,24 +68,25 @@ export default function Login({ onLogin }) {
             onLogin(user)
           }
         } else {
-          // Staff registration - join existing store
+          // Manager or Cashier registration - join existing store
+          const selectedRole = registerType // 'manager' or 'cashier'
           const registerResult = await api.registerStaff?.({
             full_name: form.username,
             email: form.email,
             password: form.password,
             store_code: form.storeCode,
-            role: 'staff'
+            role: selectedRole
           }) || await api.register({
             full_name: form.username,
             email: form.email,
             password: form.password,
             store_code: form.storeCode,
-            role: 'cashier' // Default staff role
+            role: selectedRole
           })
 
           if (registerResult.access_token) {
             api.setToken(registerResult.access_token)
-            localStorage.setItem('kadai_user_role', registerResult.user?.role || 'cashier')
+            localStorage.setItem('kadai_user_role', selectedRole)
 
             const user = {
               id: registerResult.user?.id,
@@ -93,14 +94,15 @@ export default function Login({ onLogin }) {
               full_name: registerResult.user?.full_name,
               username: registerResult.user?.full_name || form.username,
               store_name: registerResult.store?.name,
-              role: registerResult.user?.role || 'cashier'
+              role: selectedRole
             }
             onLogin(user)
           } else {
             // Fallback login
             await api.login(form.email, form.password)
             const user = await api.getProfile()
-            onLogin(user)
+            localStorage.setItem('kadai_user_role', selectedRole)
+            onLogin({ ...user, role: selectedRole })
           }
         }
       }
@@ -196,16 +198,25 @@ export default function Login({ onLogin }) {
                   >
                     <Building size={18} />
                     <span>Store Owner</span>
-                    <small>Create a new store</small>
+                    <small>Create new store</small>
                   </button>
                   <button
                     type="button"
-                    className={`role-btn ${registerType === 'staff' ? 'active' : ''}`}
-                    onClick={() => setRegisterType('staff')}
+                    className={`role-btn ${registerType === 'manager' ? 'active' : ''}`}
+                    onClick={() => setRegisterType('manager')}
+                  >
+                    <Shield size={18} />
+                    <span>Manager</span>
+                    <small>Join as manager</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={`role-btn ${registerType === 'cashier' ? 'active' : ''}`}
+                    onClick={() => setRegisterType('cashier')}
                   >
                     <Users size={18} />
-                    <span>Staff Member</span>
-                    <small>Join existing store</small>
+                    <span>Cashier</span>
+                    <small>Join as staff</small>
                   </button>
                 </div>
               )}

@@ -183,12 +183,24 @@ function App() {
             { id: 'products', label: 'Products', icon: Package },
         ]
 
-        // Staff only sees basic items
+        // Cashier sees basic items + Customers
         if (userRole === 'staff' || userRole === 'cashier') {
-            return baseItems
+            return [
+                ...baseItems,
+                { id: 'customers', label: 'Customers', icon: Users },
+            ]
         }
 
-        // Owner/Manager sees more
+        // Manager sees more + can manage staff
+        if (userRole === 'manager') {
+            return [
+                ...baseItems,
+                { id: 'customers', label: 'Customers', icon: Users },
+                { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+            ]
+        }
+
+        // Owner sees everything
         return [
             ...baseItems,
             { id: 'customers', label: 'Customers', icon: Users },
@@ -197,28 +209,35 @@ function App() {
     }
 
     const getMoreItems = () => {
-        // Staff sees nothing in more menu
+        // Cashier sees nothing in more menu
         if (userRole === 'staff' || userRole === 'cashier') {
             return []
         }
 
+        // Manager sees some items + staff management
+        if (userRole === 'manager') {
+            return [
+                { id: 'staff', label: 'Staff Management' },
+                { id: 'gst', label: 'GST Reports' },
+                { id: 'expenses', label: 'Expenses' },
+                { id: 'daily-summary', label: 'Daily Report' },
+            ]
+        }
+
+        // Owner sees all features
         const ownerItems = [
+            { id: 'staff', label: 'Staff Management' },
+            { id: 'stores', label: 'My Stores' },
             { id: 'gst', label: 'GST Reports' },
             { id: 'suppliers', label: 'Suppliers' },
             { id: 'expenses', label: 'Expenses' },
             { id: 'daily-summary', label: 'Daily Report' },
+            { id: 'ai-insights', label: 'AI Insights' },
+            { id: 'whatsapp', label: 'WhatsApp' },
+            { id: 'loyalty', label: 'Loyalty' },
+            { id: 'bulk-operations', label: 'Import/Export' },
+            { id: 'subscription', label: 'Subscription' },
         ]
-
-        // Owner sees AI features
-        if (userRole === 'owner' || userRole === 'admin') {
-            return [
-                ...ownerItems,
-                { id: 'ai-insights', label: 'AI Insights' },
-                { id: 'whatsapp', label: 'WhatsApp' },
-                { id: 'loyalty', label: 'Loyalty' },
-                { id: 'bulk-operations', label: 'Import/Export' },
-            ]
-        }
 
         return ownerItems
     }

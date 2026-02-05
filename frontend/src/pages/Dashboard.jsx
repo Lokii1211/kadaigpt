@@ -19,6 +19,7 @@ export default function Dashboard({ addToast, setCurrentPage }) {
 
   const userRole = localStorage.getItem('kadai_user_role') || 'owner'
   const storeName = localStorage.getItem('kadai_store_name') || 'My Store'
+  const userPlan = localStorage.getItem('kadai_plan') || 'free'
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000)
@@ -212,10 +213,30 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         )}
       </section>
 
+      {/* Manager Controls - Manager can manage staff */}
+      {userRole === 'manager' && (
+        <section className="owner-section">
+          <h3>Manager Controls</h3>
+          <div className="owner-btns">
+            <button onClick={() => setCurrentPage('staff')}>
+              <UserPlus size={20} />
+              Manage Staff
+            </button>
+            <button onClick={() => setCurrentPage('analytics')}>
+              <TrendingUp size={20} />
+              Analytics
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* Owner Quick Access */}
       {(userRole === 'owner' || userRole === 'admin') && (
         <section className="owner-section">
-          <h3>Owner Controls</h3>
+          <div className="section-header">
+            <h3>Owner Controls</h3>
+            <span className={`plan-badge ${userPlan}`}>{userPlan.toUpperCase()} Plan</span>
+          </div>
           <div className="owner-btns">
             <button onClick={() => setCurrentPage('staff')}>
               <UserPlus size={20} />
@@ -231,7 +252,7 @@ export default function Dashboard({ addToast, setCurrentPage }) {
             </button>
             <button onClick={() => setCurrentPage('subscription')}>
               <Settings size={20} />
-              Subscription
+              {userPlan === 'free' ? 'Upgrade' : 'Subscription'}
             </button>
           </div>
         </section>
@@ -413,6 +434,23 @@ export default function Dashboard({ addToast, setCurrentPage }) {
           border-radius: 16px;
           padding: 20px;
         }
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+        .section-header h3 { margin: 0; font-size: 1rem; }
+        .plan-badge {
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 0.7rem;
+          font-weight: 600;
+        }
+        .plan-badge.free { background: #71717a; color: white; }
+        .plan-badge.pro { background: linear-gradient(135deg, #f97316, #ea580c); color: white; }
+        .plan-badge.business { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+        .plan-badge.enterprise { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
         .owner-section h3 { margin: 0 0 16px; font-size: 1rem; }
         .owner-btns { display: flex; gap: 12px; flex-wrap: wrap; }
         .owner-btns button {
