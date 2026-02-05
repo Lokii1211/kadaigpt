@@ -770,84 +770,74 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                                         </div>
                                     </div>
                                     <div className="control-row">
-                                        <label>GST Rate</label>
+                                        <label>GST</label>
                                         <select
                                             className="form-input small"
                                             value={gstRate}
                                             onChange={(e) => setGstRate(parseInt(e.target.value))}
                                         >
-                                            <option value="0">0% (Exempt)</option>
+                                            <option value="0">0%</option>
                                             <option value="5">5%</option>
                                             <option value="12">12%</option>
                                             <option value="18">18%</option>
-                                            <option value="28">28%</option>
                                         </select>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Totals - Always visible */}
-                        {cart.length > 0 && (
-                            <div className="cart-totals">
-                                <div className="total-row">
-                                    <span>Subtotal</span>
-                                    <span>₹{subtotal.toLocaleString('en-IN')}</span>
-                                </div>
-                                {discountAmount > 0 && (
-                                    <div className="total-row discount">
-                                        <span>Discount</span>
-                                        <span className="text-success">-₹{discountAmount.toLocaleString('en-IN')}</span>
+                        {/* FIXED FOOTER - Always visible without scrolling */}
+                        <div className="cart-footer">
+                            {/* Totals */}
+                            {cart.length > 0 && (
+                                <div className="cart-totals-compact">
+                                    <div className="total-line">
+                                        <span>Subtotal</span>
+                                        <span>₹{subtotal.toLocaleString('en-IN')}</span>
                                     </div>
-                                )}
-                                {pointsDiscount > 0 && (
-                                    <div className="total-row discount">
-                                        <span>⭐ Points</span>
-                                        <span className="text-success">-₹{pointsDiscount.toLocaleString('en-IN')}</span>
+                                    {discountAmount > 0 && (
+                                        <div className="total-line discount">
+                                            <span>Discount</span>
+                                            <span>-₹{discountAmount}</span>
+                                        </div>
+                                    )}
+                                    <div className="total-line">
+                                        <span>GST ({gstRate}%)</span>
+                                        <span>₹{tax}</span>
                                     </div>
-                                )}
-                                <div className="total-row tax">
-                                    <span>GST ({gstRate}%)</span>
-                                    <span>₹{tax.toLocaleString('en-IN')}</span>
+                                    <div className="total-line grand-total">
+                                        <span>TOTAL</span>
+                                        <span>₹{total.toLocaleString('en-IN')}</span>
+                                    </div>
                                 </div>
-                                <div className="total-row grand">
-                                    <span>Total</span>
-                                    <span>₹{total.toLocaleString('en-IN')}</span>
-                                </div>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Payment Mode - MUST SELECT BEFORE GENERATING BILL */}
-                        {cart.length > 0 && (
-                            <div className="payment-mode-section">
-                                <label className="form-label payment-label">💳 Select Payment Mode *</label>
-                                <div className="payment-buttons-inline">
+                            {/* Payment Mode - Compact */}
+                            {cart.length > 0 && (
+                                <div className="payment-compact">
                                     {['Cash', 'UPI', 'Card', 'Credit'].map(mode => (
                                         <button
                                             key={mode}
-                                            className={`payment-mode-btn ${paymentMode === mode ? 'active' : ''}`}
+                                            className={`pay-btn ${paymentMode === mode ? 'active' : ''}`}
                                             onClick={() => setPaymentMode(mode)}
                                             type="button"
                                         >
-                                            {mode === 'Cash' && '💵'}
-                                            {mode === 'UPI' && '📱'}
-                                            {mode === 'Card' && '💳'}
-                                            {mode === 'Credit' && '📋'}
-                                            {' '}{mode}
+                                            {mode}
                                         </button>
                                     ))}
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Actions - Always visible at bottom */}
-                        <div className="cart-actions">
-                            <button className="btn btn-ghost" onClick={handlePreview} disabled={cart.length === 0}>
-                                <Eye size={16} /> Preview
-                            </button>
-                            <button className="btn btn-primary btn-lg" onClick={handleSaveBill} disabled={cart.length === 0}>
-                                <Save size={16} /> Generate Bill
-                            </button>
+                            {/* Generate Bill Button - ALWAYS VISIBLE */}
+                            <div className="cart-actions-fixed">
+                                <button
+                                    className="btn-generate-bill"
+                                    onClick={handleSaveBill}
+                                    disabled={cart.length === 0}
+                                >
+                                    <Save size={18} /> GENERATE BILL
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1240,27 +1230,27 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           flex-shrink: 0;
           display: flex;
           flex-direction: column;
-          height: 100%;
+          height: calc(100vh - 120px);
+          max-height: calc(100vh - 120px);
         }
         
         .cart-card { 
           display: flex; 
           flex-direction: column; 
           height: 100%;
-          min-height: 600px;
           background: var(--bg-card);
           border-radius: var(--radius-lg);
           border: 1px solid var(--border-subtle);
-          padding: 16px;
+          padding: 12px;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+          overflow: hidden;
         }
         
         .cart-scroll-area {
           flex: 1;
           overflow-y: auto;
-          min-height: 250px;
-          display: flex;
-          flex-direction: column;
+          min-height: 0;
+          max-height: 200px;
         }
         .cart-scroll-area::-webkit-scrollbar { width: 4px; }
         .cart-scroll-area::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 2px; }
@@ -1497,47 +1487,108 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           color: white;
         }
 
-        /* Billing Controls - Compact but Visible */
+        /* Billing Controls - Compact */
         .billing-controls { 
           display: flex; 
-          gap: 12px; 
-          margin: 8px 0; 
-          flex-wrap: wrap;
-          padding: 10px;
+          gap: 10px; 
+          padding: 8px;
           border-top: 1px solid var(--border-subtle);
           background: rgba(249, 115, 22, 0.05);
-          border-radius: var(--radius-md);
+          border-radius: var(--radius-sm);
           flex-shrink: 0;
         }
-        .control-row { display: flex; align-items: center; gap: 8px; }
-        .control-row label { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
-        .discount-input { display: flex; gap: 4px; }
-        .form-input.small { width: 60px; padding: 6px 8px; font-size: 0.85rem; }
+        .control-row { display: flex; align-items: center; gap: 6px; }
+        .control-row label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; }
+        .discount-input { display: flex; gap: 3px; }
+        .form-input.small { width: 50px; padding: 5px 6px; font-size: 0.8rem; }
 
-        .cart-totals { 
-          padding: 12px 0; 
-          border-top: 1px solid var(--border-subtle); 
+        /* CART FOOTER - FIXED at bottom, always visible */
+        .cart-footer {
           flex-shrink: 0;
-        }
-        .total-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.85rem; }
-        .total-row.tax-row { font-size: 0.75rem; color: var(--text-secondary); }
-        .total-row.grand { 
-          font-size: 1.1rem; 
-          font-weight: 700; 
-          color: var(--primary-400); 
-          border-top: 1px solid var(--border-subtle); 
-          padding-top: 8px; 
-          margin-top: 4px; 
+          background: var(--bg-card);
+          border-top: 2px solid var(--primary-400);
+          padding: 12px 0 0 0;
+          margin-top: auto;
         }
         
-        .cart-actions { 
-          display: flex; 
-          gap: 10px; 
-          padding: 14px 0 6px 0;
-          margin-top: auto;
-          flex-shrink: 0;
-          border-top: 2px solid var(--border-subtle);
-          background: var(--bg-card);
+        .cart-totals-compact {
+          display: grid;
+          gap: 4px;
+          margin-bottom: 10px;
+        }
+        .total-line {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+        }
+        .total-line.discount span:last-child { color: var(--success); }
+        .total-line.grand-total {
+          font-size: 1.2rem;
+          font-weight: 700;
+          color: var(--primary-400);
+          background: rgba(249, 115, 22, 0.1);
+          padding: 8px;
+          border-radius: var(--radius-sm);
+          margin-top: 4px;
+        }
+        
+        /* Payment Buttons - Compact Row */
+        .payment-compact {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 6px;
+          margin-bottom: 10px;
+        }
+        .pay-btn {
+          padding: 8px 4px;
+          border: 1px solid var(--border-subtle);
+          background: var(--bg-secondary);
+          border-radius: var(--radius-sm);
+          font-size: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          color: var(--text-secondary);
+          transition: all 0.2s;
+        }
+        .pay-btn:hover { border-color: var(--primary-400); color: var(--primary-400); }
+        .pay-btn.active { 
+          background: var(--primary-500); 
+          border-color: var(--primary-500); 
+          color: white; 
+        }
+        
+        /* Generate Bill Button - LARGE and prominent */
+        .cart-actions-fixed {
+          margin-top: 8px;
+        }
+        .btn-generate-bill {
+          width: 100%;
+          padding: 14px 20px;
+          font-size: 1rem;
+          font-weight: 700;
+          background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+          color: white;
+          border: none;
+          border-radius: var(--radius-md);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+          transition: all 0.2s;
+        }
+        .btn-generate-bill:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(249, 115, 22, 0.5);
+        }
+        .btn-generate-bill:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .cart-actions { display: none; } /* Hide old cart actions */
         }
         .cart-actions .btn { 
           flex: 1; 
