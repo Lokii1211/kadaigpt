@@ -694,38 +694,54 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                                         <span>Click products to add</span>
                                     </div>
                                 ) : (
-                                    cart.map(item => (
-                                        <div key={item.id} className="cart-item">
-                                            <div className="item-info">
-                                                <span className="item-name">{item.name}</span>
-                                                <span className="item-price">₹{item.price} × {item.quantity}</span>
-                                            </div>
-                                            <div className="item-actions">
-                                                <button className="qty-btn" onClick={() => updateQuantity(item.id, -1)}>
-                                                    <Minus size={14} />
-                                                </button>
-                                                <input
-                                                    type="number"
-                                                    className="qty-input"
-                                                    value={item.quantity}
-                                                    onChange={(e) => {
-                                                        const newQty = parseInt(e.target.value) || 1
-                                                        setCart(cart.map(i =>
-                                                            i.id === item.id ? { ...i, quantity: Math.max(1, newQty) } : i
-                                                        ))
-                                                    }}
-                                                    min="1"
-                                                />
-                                                <button className="qty-btn" onClick={() => updateQuantity(item.id, 1)}>
-                                                    <Plus size={14} />
-                                                </button>
-                                                <button className="remove-btn" onClick={() => removeFromCart(item.id)}>
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                            <div className="item-total">₹{item.price * item.quantity}</div>
+                                    <div className="cart-items-list">
+                                        {/* Cart Items Header */}
+                                        <div className="cart-items-header">
+                                            <span className="col-name">Item</span>
+                                            <span className="col-qty">Qty</span>
+                                            <span className="col-rate">Rate</span>
+                                            <span className="col-amt">Amount</span>
+                                            <span className="col-del"></span>
                                         </div>
-                                    ))
+
+                                        {/* Cart Items */}
+                                        {cart.map(item => (
+                                            <div key={item.id} className="cart-item-row">
+                                                <div className="col-name">
+                                                    <span className="item-name">{item.name}</span>
+                                                    <span className="item-unit">({item.unit || 'pcs'})</span>
+                                                </div>
+                                                <div className="col-qty">
+                                                    <button className="qty-btn minus" onClick={() => updateQuantity(item.id, -1)}>
+                                                        <Minus size={12} />
+                                                    </button>
+                                                    <input
+                                                        type="number"
+                                                        className="qty-input"
+                                                        value={item.quantity}
+                                                        onChange={(e) => {
+                                                            const newQty = parseFloat(e.target.value) || 1
+                                                            setCart(cart.map(i =>
+                                                                i.id === item.id ? { ...i, quantity: Math.max(0.1, newQty) } : i
+                                                            ))
+                                                        }}
+                                                        min="0.1"
+                                                        step="0.1"
+                                                    />
+                                                    <button className="qty-btn plus" onClick={() => updateQuantity(item.id, 1)}>
+                                                        <Plus size={12} />
+                                                    </button>
+                                                </div>
+                                                <div className="col-rate">₹{item.price}</div>
+                                                <div className="col-amt">₹{(item.price * item.quantity).toFixed(2)}</div>
+                                                <div className="col-del">
+                                                    <button className="delete-btn" onClick={() => removeFromCart(item.id)} title="Remove item">
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
 
@@ -1316,9 +1332,11 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .cart-items { 
           flex: 1; 
           overflow-y: auto; 
-          margin: 0 -8px;
-          padding: 0 8px;
-          min-height: 100px;
+          min-height: 150px;
+          max-height: 200px;
+          border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-md);
+          background: var(--bg-secondary);
         }
         .cart-items::-webkit-scrollbar { width: 4px; }
         .cart-items::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 2px; }
@@ -1335,53 +1353,145 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .empty-cart p { font-weight: 600; margin-bottom: 4px; font-size: 0.9rem; }
         .empty-cart span { font-size: 0.75rem; }
         
-        .cart-item { 
-          display: grid; 
-          grid-template-columns: 1fr auto auto; 
-          gap: 8px; 
-          align-items: center; 
-          padding: 10px 0; 
-          border-bottom: 1px solid var(--border-subtle); 
+        /* Cart Items Table Layout */
+        .cart-items-list {
+          display: flex;
+          flex-direction: column;
         }
-        .item-name { font-weight: 500; font-size: 0.85rem; }
-        .item-price { font-size: 0.75rem; color: var(--text-secondary); }
-        .item-actions { display: flex; align-items: center; gap: 2px; }
-        .qty-btn { 
-          width: 26px; 
-          height: 26px; 
-          border-radius: var(--radius-md); 
-          background: var(--bg-tertiary); 
-          border: none; 
-          color: var(--text-primary); 
-          cursor: pointer; 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-        }
-        .qty-input { 
-          width: 40px; 
-          text-align: center; 
-          font-weight: 600; 
-          background: var(--bg-secondary); 
-          border: 1px solid var(--border-default); 
-          border-radius: var(--radius-sm); 
-          padding: 3px; 
-          color: var(--text-primary);
-          font-size: 0.85rem;
-        }
-        .qty-input::-webkit-inner-spin-button, .qty-input::-webkit-outer-spin-button { -webkit-appearance: none; }
-        .remove-btn { 
-          width: 24px; 
-          height: 24px; 
-          border-radius: var(--radius-md); 
-          background: none; 
-          border: none; 
-          color: var(--error); 
-          cursor: pointer; 
-          margin-left: 4px; 
-        }
-        .item-total { font-weight: 700; min-width: 60px; text-align: right; font-size: 0.85rem; }
         
+        .cart-items-header {
+          display: grid;
+          grid-template-columns: 2fr 90px 60px 70px 30px;
+          gap: 4px;
+          padding: 8px 10px;
+          background: var(--bg-tertiary);
+          border-bottom: 1px solid var(--border-subtle);
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          position: sticky;
+          top: 0;
+          z-index: 1;
+        }
+        
+        .cart-item-row {
+          display: grid;
+          grid-template-columns: 2fr 90px 60px 70px 30px;
+          gap: 4px;
+          padding: 10px;
+          border-bottom: 1px solid var(--border-subtle);
+          align-items: center;
+          transition: background 0.2s;
+        }
+        .cart-item-row:hover {
+          background: rgba(249, 115, 22, 0.05);
+        }
+        .cart-item-row:last-child {
+          border-bottom: none;
+        }
+        
+        .col-name {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+        }
+        .col-name .item-name {
+          font-weight: 600;
+          font-size: 0.85rem;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .col-name .item-unit {
+          font-size: 0.7rem;
+          color: var(--text-tertiary);
+        }
+        
+        .col-qty {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          justify-content: center;
+        }
+        .col-qty .qty-btn {
+          width: 22px;
+          height: 22px;
+          border-radius: 4px;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        .col-qty .qty-btn.minus {
+          background: rgba(239, 68, 68, 0.15);
+          color: #ef4444;
+        }
+        .col-qty .qty-btn.minus:hover {
+          background: rgba(239, 68, 68, 0.3);
+        }
+        .col-qty .qty-btn.plus {
+          background: rgba(34, 197, 94, 0.15);
+          color: #22c55e;
+        }
+        .col-qty .qty-btn.plus:hover {
+          background: rgba(34, 197, 94, 0.3);
+        }
+        .col-qty .qty-input {
+          width: 40px;
+          height: 24px;
+          text-align: center;
+          font-weight: 700;
+          font-size: 0.85rem;
+          background: var(--bg-card);
+          border: 1px solid var(--border-default);
+          border-radius: 4px;
+          padding: 2px;
+          color: var(--text-primary);
+        }
+        .col-qty .qty-input::-webkit-inner-spin-button,
+        .col-qty .qty-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+        
+        .col-rate {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+          text-align: center;
+        }
+        
+        .col-amt {
+          font-weight: 700;
+          font-size: 0.85rem;
+          color: var(--primary-400);
+          text-align: right;
+        }
+        
+        .col-del {
+          display: flex;
+          justify-content: center;
+        }
+        .delete-btn {
+          width: 24px;
+          height: 24px;
+          border-radius: 4px;
+          border: none;
+          background: rgba(239, 68, 68, 0.1);
+          color: #ef4444;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        .delete-btn:hover {
+          background: #ef4444;
+          color: white;
+        }
+
         /* Billing Controls - Compact but Visible */
         .billing-controls { 
           display: flex; 
