@@ -540,13 +540,6 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           </p>
         </div>
         <div className="header-actions">
-          {cart.length > 0 && (
-            <div className="cart-badge">
-              <ShoppingCart size={20} />
-              <span className="badge-count">{itemCount}</span>
-              <span className="badge-total">₹{total.toLocaleString('en-IN')}</span>
-            </div>
-          )}
           <button
             className="btn btn-ghost btn-sm"
             onClick={() => setCurrentPage?.('dashboard')}
@@ -1107,19 +1100,19 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           color: var(--primary-400);
         }
         
-        /* ====== CART PANEL - PROFESSIONAL BILLING UI ====== */
+        /* ====== CART PANEL - FULL HEIGHT BILLING UI ====== */
         .cart-panel {
-          width: 380px;
-          min-width: 380px;
-          max-height: calc(100vh - 100px);
+          width: 340px;
+          min-width: 340px;
+          height: calc(100vh - 130px);
           display: flex;
           flex-direction: column;
           background: var(--bg-card);
-          border-radius: 12px;
+          border-radius: 10px;
           border: 1px solid var(--border-subtle);
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
           overflow: hidden;
-          margin-right: 60px; /* Space for AI buttons */
+          margin-right: 50px;
         }
         
         .cart-panel-header {
@@ -1167,9 +1160,8 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .cart-items-area {
           flex: 1;
           overflow-y: auto;
-          padding: 6px 10px;
-          min-height: 80px;
-          max-height: 150px;
+          padding: 8px 10px;
+          min-height: 0;
         }
         .cart-items-area::-webkit-scrollbar { width: 4px; }
         .cart-items-area::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 2px; }
