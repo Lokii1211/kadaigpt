@@ -8,446 +8,446 @@ import { demoProducts } from '../services/demoData'
 const categories = ["All", "Grains", "Pulses", "Essentials", "Oils", "Beverages", "Dairy", "General", "Snacks", "Packaged", "Household", "Personal Care"]
 
 export default function CreateBill({ addToast, setCurrentPage }) {
-    const [search, setSearch] = useState('')
-    const [selectedCategory, setSelectedCategory] = useState('All')
-    const [products, setProducts] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [cart, setCart] = useState([])
-    const [customer, setCustomer] = useState({ name: '', phone: '' })
-    const [showPayment, setShowPayment] = useState(false)
-    const [showPreview, setShowPreview] = useState(false)
-    const [previewContent, setPreviewContent] = useState('')
-    const [billNumber, setBillNumber] = useState('')
-    const [printing, setPrinting] = useState(false)
-    const [paymentMode, setPaymentMode] = useState('Cash')
-    const [discount, setDiscount] = useState(0)
-    const [discountType, setDiscountType] = useState('percentage')
-    const [gstRate, setGstRate] = useState(parseInt(localStorage.getItem('kadai_default_gst_rate') || '5'))
-    const [existingCustomer, setExistingCustomer] = useState(null)
-    const [redeemPoints, setRedeemPoints] = useState(0)
-    const [lookingUpCustomer, setLookingUpCustomer] = useState(false)
-    const [usingDemoData, setUsingDemoData] = useState(false)
-    const [showQtyModal, setShowQtyModal] = useState(null)
+  const [search, setSearch] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('All')
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [cart, setCart] = useState([])
+  const [customer, setCustomer] = useState({ name: '', phone: '' })
+  const [showPayment, setShowPayment] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+  const [previewContent, setPreviewContent] = useState('')
+  const [billNumber, setBillNumber] = useState('')
+  const [printing, setPrinting] = useState(false)
+  const [paymentMode, setPaymentMode] = useState('Cash')
+  const [discount, setDiscount] = useState(0)
+  const [discountType, setDiscountType] = useState('percentage')
+  const [gstRate, setGstRate] = useState(parseInt(localStorage.getItem('kadai_default_gst_rate') || '5'))
+  const [existingCustomer, setExistingCustomer] = useState(null)
+  const [redeemPoints, setRedeemPoints] = useState(0)
+  const [lookingUpCustomer, setLookingUpCustomer] = useState(false)
+  const [usingDemoData, setUsingDemoData] = useState(false)
+  const [showQtyModal, setShowQtyModal] = useState(null)
 
-    useEffect(() => {
-        loadProducts()
-    }, [])
+  useEffect(() => {
+    loadProducts()
+  }, [])
 
-    const loadProducts = async () => {
-        setLoading(true)
-        setUsingDemoData(false)
+  const loadProducts = async () => {
+    setLoading(true)
+    setUsingDemoData(false)
 
-        try {
-            // Try to fetch from real API first
-            const productList = await realDataService.getProducts()
+    try {
+      // Try to fetch from real API first
+      const productList = await realDataService.getProducts()
 
-            if (Array.isArray(productList) && productList.length > 0) {
-                setProducts(productList)
-                console.log('✅ Loaded', productList.length, 'products from API')
-            } else {
-                // Fallback to demo products if API returns empty
-                console.log('⚠️ No products from API, using demo data')
-                setProducts(demoProducts.map(p => ({
-                    ...p,
-                    stock: p.stock || 100,
-                    isDemo: true
-                })))
-                setUsingDemoData(true)
-                addToast?.('Using demo products. Add real products in Products page.', 'info')
-            }
-        } catch (error) {
-            console.error('Error loading products:', error)
-            // Fallback to demo products on error
-            console.log('⚠️ API error, using demo data')
-            setProducts(demoProducts.map(p => ({
-                ...p,
-                stock: p.stock || 100,
-                isDemo: true
-            })))
-            setUsingDemoData(true)
-            addToast?.('Using demo products. Login to access your inventory.', 'warning')
-        } finally {
-            setLoading(false)
-        }
+      if (Array.isArray(productList) && productList.length > 0) {
+        setProducts(productList)
+        console.log('✅ Loaded', productList.length, 'products from API')
+      } else {
+        // Fallback to demo products if API returns empty
+        console.log('⚠️ No products from API, using demo data')
+        setProducts(demoProducts.map(p => ({
+          ...p,
+          stock: p.stock || 100,
+          isDemo: true
+        })))
+        setUsingDemoData(true)
+        addToast?.('Using demo products. Add real products in Products page.', 'info')
+      }
+    } catch (error) {
+      console.error('Error loading products:', error)
+      // Fallback to demo products on error
+      console.log('⚠️ API error, using demo data')
+      setProducts(demoProducts.map(p => ({
+        ...p,
+        stock: p.stock || 100,
+        isDemo: true
+      })))
+      setUsingDemoData(true)
+      addToast?.('Using demo products. Login to access your inventory.', 'warning')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Filter by search AND category
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase())
+    const productCategory = (p.category || 'General').toLowerCase()
+    const matchesCategory = selectedCategory === 'All' || productCategory === selectedCategory.toLowerCase()
+    return matchesSearch && matchesCategory
+  })
+
+  const addToCart = (product) => {
+    const existing = cart.find(item => item.id === product.id)
+    if (existing) {
+      setCart(cart.map(item =>
+        item.id === product.id
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      ))
+    } else {
+      setCart([...cart, { ...product, quantity: 1 }])
+    }
+    addToast(`Added ${product.name}`, 'success')
+  }
+
+  const updateQuantity = (id, delta) => {
+    setCart(cart.map(item => {
+      if (item.id === id) {
+        const newQty = Math.max(0, item.quantity + delta)
+        return { ...item, quantity: newQty }
+      }
+      return item
+    }).filter(item => item.quantity > 0))
+  }
+
+  const removeFromCart = (id) => {
+    setCart(cart.filter(item => item.id !== id))
+  }
+
+  const clearCart = () => {
+    setCart([])
+    setCustomer({ name: '', phone: '' })
+    setBillNumber('')
+    setDiscount(0)
+    setExistingCustomer(null)
+    setRedeemPoints(0)
+  }
+
+  // Add to cart with custom quantity (for weight-based items)
+  const addToCartWithQty = (product, qty) => {
+    const quantity = parseFloat(qty) || 1
+    if (quantity <= 0) {
+      addToast('Please enter a valid quantity', 'error')
+      return
     }
 
-    // Filter by search AND category
-    const filteredProducts = products.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase())
-        const productCategory = (p.category || 'General').toLowerCase()
-        const matchesCategory = selectedCategory === 'All' || productCategory === selectedCategory.toLowerCase()
-        return matchesSearch && matchesCategory
-    })
+    const existing = cart.find(item => item.id === product.id)
+    if (existing) {
+      setCart(cart.map(item =>
+        item.id === product.id
+          ? { ...item, quantity: item.quantity + quantity }
+          : item
+      ))
+    } else {
+      setCart([...cart, { ...product, quantity }])
+    }
+    addToast(`Added ${quantity} ${product.unit} of ${product.name}`, 'success')
+    setShowQtyModal(null)
+  }
 
-    const addToCart = (product) => {
-        const existing = cart.find(item => item.id === product.id)
-        if (existing) {
-            setCart(cart.map(item =>
-                item.id === product.id
-                    ? { ...item, quantity: item.quantity + 1 }
-                    : item
-            ))
-        } else {
-            setCart([...cart, { ...product, quantity: 1 }])
-        }
-        addToast(`Added ${product.name}`, 'success')
+  // Lookup customer by phone number
+  const lookupCustomer = async (phone) => {
+    if (!phone || phone.length < 10) {
+      setExistingCustomer(null)
+      return
     }
 
-    const updateQuantity = (id, delta) => {
-        setCart(cart.map(item => {
-            if (item.id === id) {
-                const newQty = Math.max(0, item.quantity + delta)
-                return { ...item, quantity: newQty }
-            }
-            return item
-        }).filter(item => item.quantity > 0))
-    }
-
-    const removeFromCart = (id) => {
-        setCart(cart.filter(item => item.id !== id))
-    }
-
-    const clearCart = () => {
-        setCart([])
-        setCustomer({ name: '', phone: '' })
-        setBillNumber('')
-        setDiscount(0)
+    setLookingUpCustomer(true)
+    try {
+      const customers = await api.getCustomers?.() || []
+      const found = customers.find(c => c.phone === phone || c.phone === `+91${phone}`)
+      if (found) {
+        setExistingCustomer(found)
+        setCustomer({ ...customer, name: found.name })
+        addToast(`Welcome back, ${found.name}! ${found.loyalty_points || 0} points available`, 'success')
+      } else {
         setExistingCustomer(null)
-        setRedeemPoints(0)
+      }
+    } catch (error) {
+      console.log('Customer lookup failed:', error)
+    } finally {
+      setLookingUpCustomer(false)
+    }
+  }
+
+  // Proper billing calculations
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  const discountAmount = discountType === 'percentage'
+    ? Math.round((subtotal * discount) / 100)
+    : Math.min(discount, subtotal)
+  const pointsDiscount = Math.floor(redeemPoints / 10) // 10 points = ₹1
+  const taxableAmount = Math.max(0, subtotal - discountAmount - pointsDiscount)
+  const cgst = Math.round((taxableAmount * gstRate) / 200) // Half of GST rate for CGST
+  const sgst = Math.round((taxableAmount * gstRate) / 200) // Half of GST rate for SGST
+  const tax = cgst + sgst
+  const total = taxableAmount + tax
+  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+
+  // Generate 4-digit invoice number
+  const generateInvoiceNumber = () => {
+    const lastNum = parseInt(localStorage.getItem('kadai_last_invoice') || '0')
+    const newNum = (lastNum + 1) % 10000 // Reset after 9999
+    localStorage.setItem('kadai_last_invoice', newNum.toString())
+    return `INV-${newNum.toString().padStart(4, '0')}`
+  }
+
+  const getBillData = () => ({
+    // For preview/print - 4 digit invoice number
+    bill_number: billNumber || generateInvoiceNumber(),
+    store_name: localStorage.getItem('kadai_store_name') || 'KadaiGPT Store',
+    store_address: localStorage.getItem('kadai_store_address') || '',
+    store_phone: localStorage.getItem('kadai_store_phone') || '',
+    gstin: localStorage.getItem('kadai_gstin') || '',
+
+    // Customer info
+    customer_name: customer.name || 'Walk-in Customer',
+    customer_phone: customer.phone || '',
+
+    // API requires payment_method enum (lowercase)
+    payment_method: paymentMode.toLowerCase(),
+    amount_paid: total,
+
+    // Items in API format
+    items: cart.map(item => ({
+      product_id: item.id || null,
+      product_name: item.name,
+      product_sku: item.sku || '',
+      unit_price: item.price,
+      quantity: item.quantity,
+      discount_percent: 0,
+      tax_rate: gstRate || 0
+    })),
+
+    // Legacy fields for print/preview
+    subtotal,
+    discount: discountAmount,
+    discount_type: discountType,
+    discount_value: discount,
+    taxable_amount: taxableAmount,
+    cgst,
+    sgst,
+    gst_rate: gstRate,
+    tax,
+    total,
+    payment_mode: paymentMode,
+    use_thermal: localStorage.getItem('kadai_thermal') !== 'false'
+  })
+
+  const handlePreview = async () => {
+    if (cart.length === 0) {
+      addToast('Add items to cart first', 'error')
+      return
     }
 
-    // Add to cart with custom quantity (for weight-based items)
-    const addToCartWithQty = (product, qty) => {
-        const quantity = parseFloat(qty) || 1
-        if (quantity <= 0) {
-            addToast('Please enter a valid quantity', 'error')
-            return
-        }
+    try {
+      const data = await api.previewReceipt(getBillData())
+      setPreviewContent(data.preview)
+      setShowPreview(true)
+    } catch (err) {
+      // Fallback preview
+      const bill = getBillData()
+      let preview = '================================\n'
+      preview += `        ${bill.store_name}\n`
+      preview += '================================\n'
+      preview += `Bill No: ${bill.bill_number}\n`
+      preview += `Date: ${new Date().toLocaleString()}\n`
+      preview += `Customer: ${bill.customer_name}\n`
+      preview += '--------------------------------\n'
+      cart.forEach(item => {
+        preview += `${item.name.substring(0, 16).padEnd(16)} ${item.quantity.toString().padStart(4)} ${(item.price * item.quantity).toFixed(2).padStart(10)}\n`
+      })
+      preview += '--------------------------------\n'
+      preview += `${'Subtotal'.padEnd(20)} ₹${subtotal.toFixed(2)}\n`
+      preview += `${'GST (5%)'.padEnd(20)} ₹${tax.toFixed(2)}\n`
+      preview += '================================\n'
+      preview += `${'TOTAL'.padEnd(20)} ₹${total.toFixed(2)}\n`
+      preview += '================================\n'
+      preview += '        Thank You!\n'
+      preview += '    Powered by KadaiGPT\n'
+      setPreviewContent(preview)
+      setShowPreview(true)
+    }
+  }
 
-        const existing = cart.find(item => item.id === product.id)
-        if (existing) {
-            setCart(cart.map(item =>
-                item.id === product.id
-                    ? { ...item, quantity: item.quantity + quantity }
-                    : item
-            ))
-        } else {
-            setCart([...cart, { ...product, quantity }])
-        }
-        addToast(`Added ${quantity} ${product.unit} of ${product.name}`, 'success')
-        setShowQtyModal(null)
+  const handleSaveBill = async () => {
+    if (cart.length === 0) {
+      addToast('Add items to cart first', 'error')
+      return
     }
 
-    // Lookup customer by phone number
-    const lookupCustomer = async (phone) => {
-        if (!phone || phone.length < 10) {
-            setExistingCustomer(null)
-            return
-        }
+    const billData = getBillData()
+    console.log('📝 Creating bill with payment mode:', paymentMode)
+    console.log('📝 Bill data:', billData)
+    console.log('📝 Using demo data:', usingDemoData)
 
-        setLookingUpCustomer(true)
+    // Generate bill number first
+    const newBillNumber = billData.bill_number || `INV-${Date.now().toString().slice(-6)}`
+    setBillNumber(newBillNumber)
+
+    // If using demo data, just show success and clear cart
+    if (usingDemoData) {
+      // Update local stock for demo products
+      setProducts(prev => prev.map(p => {
+        const cartItem = cart.find(c => c.id === p.id)
+        if (cartItem) {
+          return { ...p, stock: Math.max(0, (p.stock || 0) - cartItem.quantity) }
+        }
+        return p
+      }))
+
+      addToast(`✅ Bill ${newBillNumber} created - ₹${total.toFixed(2)} (Demo Mode)`, 'success')
+
+      // Open WhatsApp if phone provided
+      if (customer.phone && customer.phone.length >= 10) {
+        const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
+        const loyaltyPoints = Math.floor(total / 100) * 10
+        const itemsList = cart.map(i => `• ${i.name} x${i.quantity} = ₹${i.price * i.quantity}`).join('\n')
+        const whatsappMessage = `🧾 *BILL - ${newBillNumber}*\n📍 ${storeName}\n\n${itemsList}\n\n💰 *Total: ₹${total.toFixed(2)}*\n📱 Payment: ${paymentMode}\n⭐ Loyalty Points: +${loyaltyPoints}\n\nThank you! 🙏\n_Powered by KadaiGPT_`
+
+        const waUrl = `https://wa.me/91${customer.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
+        window.open(waUrl, '_blank')
+      }
+
+      setTimeout(() => {
+        clearCart()
+        addToast('Ready for next bill!', 'info')
+      }, 1500)
+      return
+    }
+
+    try {
+      // Save bill to API with correct payment_method
+      const result = await api.createBill({
+        ...billData,
+        payment_method: paymentMode.toLowerCase(), // Use payment_method for API
+        total: total
+      })
+      console.log('✅ Bill created:', result)
+
+      const apiNewBillNumber = result.bill_number || newBillNumber
+      setBillNumber(apiNewBillNumber)
+
+      // UPDATE STOCK for each item sold (only for real products)
+      console.log('📦 Updating stock for', cart.length, 'items')
+      for (const item of cart) {
+        if (item.isDemo) continue // Skip demo products
+
         try {
-            const customers = await api.getCustomers?.() || []
-            const found = customers.find(c => c.phone === phone || c.phone === `+91${phone}`)
-            if (found) {
-                setExistingCustomer(found)
-                setCustomer({ ...customer, name: found.name })
-                addToast(`Welcome back, ${found.name}! ${found.loyalty_points || 0} points available`, 'success')
-            } else {
-                setExistingCustomer(null)
-            }
-        } catch (error) {
-            console.log('Customer lookup failed:', error)
-        } finally {
-            setLookingUpCustomer(false)
+          const currentStock = item.stock || item.current_stock || 0
+          const newStock = Math.max(0, currentStock - item.quantity)
+          console.log(`  📦 ${item.name}: ${currentStock} → ${newStock}`)
+
+          await api.updateProduct(item.id, {
+            current_stock: newStock,
+            stock: newStock // Send both field names
+          })
+          console.log(`  ✅ Stock updated for ${item.name}`)
+        } catch (stockError) {
+          console.error('  ❌ Stock update failed:', stockError)
         }
-    }
+      }
 
-    // Proper billing calculations
-    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const discountAmount = discountType === 'percentage'
-        ? Math.round((subtotal * discount) / 100)
-        : Math.min(discount, subtotal)
-    const pointsDiscount = Math.floor(redeemPoints / 10) // 10 points = ₹1
-    const taxableAmount = Math.max(0, subtotal - discountAmount - pointsDiscount)
-    const cgst = Math.round((taxableAmount * gstRate) / 200) // Half of GST rate for CGST
-    const sgst = Math.round((taxableAmount * gstRate) / 200) // Half of GST rate for SGST
-    const tax = cgst + sgst
-    const total = taxableAmount + tax
-    const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
-
-    // Generate 4-digit invoice number
-    const generateInvoiceNumber = () => {
-        const lastNum = parseInt(localStorage.getItem('kadai_last_invoice') || '0')
-        const newNum = (lastNum + 1) % 10000 // Reset after 9999
-        localStorage.setItem('kadai_last_invoice', newNum.toString())
-        return `INV-${newNum.toString().padStart(4, '0')}`
-    }
-
-    const getBillData = () => ({
-        // For preview/print - 4 digit invoice number
-        bill_number: billNumber || generateInvoiceNumber(),
-        store_name: localStorage.getItem('kadai_store_name') || 'KadaiGPT Store',
-        store_address: localStorage.getItem('kadai_store_address') || '',
-        store_phone: localStorage.getItem('kadai_store_phone') || '',
-        gstin: localStorage.getItem('kadai_gstin') || '',
-
-        // Customer info
-        customer_name: customer.name || 'Walk-in Customer',
-        customer_phone: customer.phone || '',
-
-        // API requires payment_method enum (lowercase)
-        payment_method: paymentMode.toLowerCase(),
-        amount_paid: total,
-
-        // Items in API format
-        items: cart.map(item => ({
-            product_id: item.id || null,
-            product_name: item.name,
-            product_sku: item.sku || '',
-            unit_price: item.price,
-            quantity: item.quantity,
-            discount_percent: 0,
-            tax_rate: gstRate || 0
-        })),
-
-        // Legacy fields for print/preview
-        subtotal,
-        discount: discountAmount,
-        discount_type: discountType,
-        discount_value: discount,
-        taxable_amount: taxableAmount,
-        cgst,
-        sgst,
-        gst_rate: gstRate,
-        tax,
-        total,
-        payment_mode: paymentMode,
-        use_thermal: localStorage.getItem('kadai_thermal') !== 'false'
-    })
-
-    const handlePreview = async () => {
-        if (cart.length === 0) {
-            addToast('Add items to cart first', 'error')
-            return
+      // Update local products state immediately
+      setProducts(prev => prev.map(p => {
+        const cartItem = cart.find(c => c.id === p.id)
+        if (cartItem) {
+          const newStock = Math.max(0, (p.stock || p.current_stock || 0) - cartItem.quantity)
+          return { ...p, stock: newStock, current_stock: newStock }
         }
+        return p
+      }))
 
+      // ADD OR UPDATE CUSTOMER
+      if (customer.phone && customer.phone.length >= 10) {
+        console.log('👤 Processing customer:', customer.phone)
         try {
-            const data = await api.previewReceipt(getBillData())
-            setPreviewContent(data.preview)
-            setShowPreview(true)
-        } catch (err) {
-            // Fallback preview
-            const bill = getBillData()
-            let preview = '================================\n'
-            preview += `        ${bill.store_name}\n`
-            preview += '================================\n'
-            preview += `Bill No: ${bill.bill_number}\n`
-            preview += `Date: ${new Date().toLocaleString()}\n`
-            preview += `Customer: ${bill.customer_name}\n`
-            preview += '--------------------------------\n'
-            cart.forEach(item => {
-                preview += `${item.name.substring(0, 16).padEnd(16)} ${item.quantity.toString().padStart(4)} ${(item.price * item.quantity).toFixed(2).padStart(10)}\n`
+          const loyaltyPointsEarned = Math.floor(total / 100) * 10
+          const pointsToDeduct = redeemPoints || 0
+
+          // Fetch existing customers
+          let existingCustomers = []
+          try {
+            existingCustomers = await api.getCustomers() || []
+            console.log('👥 Found', existingCustomers.length, 'existing customers')
+          } catch (e) {
+            console.log('Could not fetch customers:', e)
+          }
+
+          // Match by phone (with or without country code)
+          const matchedCustomer = existingCustomers.find(c =>
+            c.phone === customer.phone ||
+            c.phone === `+91${customer.phone}` ||
+            c.phone?.replace(/\D/g, '') === customer.phone.replace(/\D/g, '')
+          )
+
+          if (matchedCustomer) {
+            console.log('👤 Updating existing customer:', matchedCustomer.id)
+            const creditToAdd = paymentMode.toLowerCase() === 'credit' ? total : 0
+            const newLoyalty = Math.max(0, (matchedCustomer.loyalty_points || 0) + loyaltyPointsEarned - pointsToDeduct)
+
+            await api.updateCustomer(matchedCustomer.id, {
+              total_purchases: (matchedCustomer.total_purchases || 0) + total,
+              credit: (matchedCustomer.credit || 0) + creditToAdd,
+              loyalty_points: newLoyalty,
+              last_purchase: new Date().toISOString()
             })
-            preview += '--------------------------------\n'
-            preview += `${'Subtotal'.padEnd(20)} ₹${subtotal.toFixed(2)}\n`
-            preview += `${'GST (5%)'.padEnd(20)} ₹${tax.toFixed(2)}\n`
-            preview += '================================\n'
-            preview += `${'TOTAL'.padEnd(20)} ₹${total.toFixed(2)}\n`
-            preview += '================================\n'
-            preview += '        Thank You!\n'
-            preview += '    Powered by KadaiGPT\n'
-            setPreviewContent(preview)
-            setShowPreview(true)
-        }
-    }
+            console.log('✅ Customer updated')
+            addToast(`+${loyaltyPointsEarned} points earned!`, 'success')
+          } else {
+            console.log('👤 Creating new customer')
+            const creditAmount = paymentMode.toLowerCase() === 'credit' ? total : 0
 
-    const handleSaveBill = async () => {
-        if (cart.length === 0) {
-            addToast('Add items to cart first', 'error')
-            return
-        }
-
-        const billData = getBillData()
-        console.log('📝 Creating bill with payment mode:', paymentMode)
-        console.log('📝 Bill data:', billData)
-        console.log('📝 Using demo data:', usingDemoData)
-
-        // Generate bill number first
-        const newBillNumber = billData.bill_number || `INV-${Date.now().toString().slice(-6)}`
-        setBillNumber(newBillNumber)
-
-        // If using demo data, just show success and clear cart
-        if (usingDemoData) {
-            // Update local stock for demo products
-            setProducts(prev => prev.map(p => {
-                const cartItem = cart.find(c => c.id === p.id)
-                if (cartItem) {
-                    return { ...p, stock: Math.max(0, (p.stock || 0) - cartItem.quantity) }
-                }
-                return p
-            }))
-
-            addToast(`✅ Bill ${newBillNumber} created - ₹${total.toFixed(2)} (Demo Mode)`, 'success')
-
-            // Open WhatsApp if phone provided
-            if (customer.phone && customer.phone.length >= 10) {
-                const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
-                const loyaltyPoints = Math.floor(total / 100) * 10
-                const itemsList = cart.map(i => `• ${i.name} x${i.quantity} = ₹${i.price * i.quantity}`).join('\n')
-                const whatsappMessage = `🧾 *BILL - ${newBillNumber}*\n📍 ${storeName}\n\n${itemsList}\n\n💰 *Total: ₹${total.toFixed(2)}*\n📱 Payment: ${paymentMode}\n⭐ Loyalty Points: +${loyaltyPoints}\n\nThank you! 🙏\n_Powered by KadaiGPT_`
-
-                const waUrl = `https://wa.me/91${customer.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
-                window.open(waUrl, '_blank')
-            }
-
-            setTimeout(() => {
-                clearCart()
-                addToast('Ready for next bill!', 'info')
-            }, 1500)
-            return
-        }
-
-        try {
-            // Save bill to API with correct payment_method
-            const result = await api.createBill({
-                ...billData,
-                payment_method: paymentMode.toLowerCase(), // Use payment_method for API
-                total: total
+            const newCustomer = await api.createCustomer({
+              name: customer.name || 'Walk-in Customer',
+              phone: customer.phone,
+              email: '',
+              address: '',
+              credit: creditAmount,
+              loyalty_points: loyaltyPointsEarned,
+              total_purchases: total,
+              last_purchase: new Date().toISOString()
             })
-            console.log('✅ Bill created:', result)
-
-            const apiNewBillNumber = result.bill_number || newBillNumber
-            setBillNumber(apiNewBillNumber)
-
-            // UPDATE STOCK for each item sold (only for real products)
-            console.log('📦 Updating stock for', cart.length, 'items')
-            for (const item of cart) {
-                if (item.isDemo) continue // Skip demo products
-
-                try {
-                    const currentStock = item.stock || item.current_stock || 0
-                    const newStock = Math.max(0, currentStock - item.quantity)
-                    console.log(`  📦 ${item.name}: ${currentStock} → ${newStock}`)
-
-                    await api.updateProduct(item.id, {
-                        current_stock: newStock,
-                        stock: newStock // Send both field names
-                    })
-                    console.log(`  ✅ Stock updated for ${item.name}`)
-                } catch (stockError) {
-                    console.error('  ❌ Stock update failed:', stockError)
-                }
-            }
-
-            // Update local products state immediately
-            setProducts(prev => prev.map(p => {
-                const cartItem = cart.find(c => c.id === p.id)
-                if (cartItem) {
-                    const newStock = Math.max(0, (p.stock || p.current_stock || 0) - cartItem.quantity)
-                    return { ...p, stock: newStock, current_stock: newStock }
-                }
-                return p
-            }))
-
-            // ADD OR UPDATE CUSTOMER
-            if (customer.phone && customer.phone.length >= 10) {
-                console.log('👤 Processing customer:', customer.phone)
-                try {
-                    const loyaltyPointsEarned = Math.floor(total / 100) * 10
-                    const pointsToDeduct = redeemPoints || 0
-
-                    // Fetch existing customers
-                    let existingCustomers = []
-                    try {
-                        existingCustomers = await api.getCustomers() || []
-                        console.log('👥 Found', existingCustomers.length, 'existing customers')
-                    } catch (e) {
-                        console.log('Could not fetch customers:', e)
-                    }
-
-                    // Match by phone (with or without country code)
-                    const matchedCustomer = existingCustomers.find(c =>
-                        c.phone === customer.phone ||
-                        c.phone === `+91${customer.phone}` ||
-                        c.phone?.replace(/\D/g, '') === customer.phone.replace(/\D/g, '')
-                    )
-
-                    if (matchedCustomer) {
-                        console.log('👤 Updating existing customer:', matchedCustomer.id)
-                        const creditToAdd = paymentMode.toLowerCase() === 'credit' ? total : 0
-                        const newLoyalty = Math.max(0, (matchedCustomer.loyalty_points || 0) + loyaltyPointsEarned - pointsToDeduct)
-
-                        await api.updateCustomer(matchedCustomer.id, {
-                            total_purchases: (matchedCustomer.total_purchases || 0) + total,
-                            credit: (matchedCustomer.credit || 0) + creditToAdd,
-                            loyalty_points: newLoyalty,
-                            last_purchase: new Date().toISOString()
-                        })
-                        console.log('✅ Customer updated')
-                        addToast(`+${loyaltyPointsEarned} points earned!`, 'success')
-                    } else {
-                        console.log('👤 Creating new customer')
-                        const creditAmount = paymentMode.toLowerCase() === 'credit' ? total : 0
-
-                        const newCustomer = await api.createCustomer({
-                            name: customer.name || 'Walk-in Customer',
-                            phone: customer.phone,
-                            email: '',
-                            address: '',
-                            credit: creditAmount,
-                            loyalty_points: loyaltyPointsEarned,
-                            total_purchases: total,
-                            last_purchase: new Date().toISOString()
-                        })
-                        console.log('✅ Customer created:', newCustomer)
-                        addToast(`New customer added with ${loyaltyPointsEarned} points!`, 'success')
-                    }
-                } catch (custError) {
-                    console.error('❌ Customer operation failed:', custError)
-                    addToast('Customer will be synced later', 'warning')
-                }
-            }
-
-            // Success! Bill is created
-            addToast(`✅ Bill ${newBillNumber} created - ₹${total.toFixed(2)} (${paymentMode})`, 'success')
-
-            // Auto-send to WhatsApp if phone provided
-            if (customer.phone && customer.phone.length >= 10) {
-                const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
-                const loyaltyPoints = Math.floor(total / 100) * 10
-                const itemsList = cart.map(i => `• ${i.name} x${i.quantity} = ₹${i.price * i.quantity}`).join('\n')
-                const whatsappMessage = `🧾 *BILL - ${newBillNumber}*\n📍 ${storeName}\n\n${itemsList}\n\n💰 *Total: ₹${total.toFixed(2)}*\n📱 Payment: ${paymentMode}\n⭐ Loyalty Points: +${loyaltyPoints}\n\nThank you! 🙏\n_Powered by KadaiGPT_`
-
-                const waUrl = `https://wa.me/91${customer.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
-                window.open(waUrl, '_blank')
-            }
-
-            // Clear cart and prepare for next bill
-            setTimeout(() => {
-                clearCart()
-                addToast('Ready for next bill!', 'info')
-            }, 2000)
-
-        } catch (error) {
-            console.error('❌ Error saving bill:', error)
-            const newBillNumber = `INV-${Date.now().toString().slice(-6)}`
-            setBillNumber(newBillNumber)
-            addToast('Bill saved locally - will sync when connected', 'warning')
-            clearCart()
+            console.log('✅ Customer created:', newCustomer)
+            addToast(`New customer added with ${loyaltyPointsEarned} points!`, 'success')
+          }
+        } catch (custError) {
+          console.error('❌ Customer operation failed:', custError)
+          addToast('Customer will be synced later', 'warning')
         }
-    }
+      }
 
-    const handlePrint = async () => {
-        setPrinting(true)
-        try {
-            // Try API print first (for connected printers)
-            await api.printReceipt(getBillData())
-            addToast('Bill printed successfully!', 'success')
-        } catch (err) {
-            // Fallback: Use browser print dialog (works without physical printer)
-            const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
-            const printContent = `
+      // Success! Bill is created
+      addToast(`✅ Bill ${newBillNumber} created - ₹${total.toFixed(2)} (${paymentMode})`, 'success')
+
+      // Auto-send to WhatsApp if phone provided
+      if (customer.phone && customer.phone.length >= 10) {
+        const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
+        const loyaltyPoints = Math.floor(total / 100) * 10
+        const itemsList = cart.map(i => `• ${i.name} x${i.quantity} = ₹${i.price * i.quantity}`).join('\n')
+        const whatsappMessage = `🧾 *BILL - ${newBillNumber}*\n📍 ${storeName}\n\n${itemsList}\n\n💰 *Total: ₹${total.toFixed(2)}*\n📱 Payment: ${paymentMode}\n⭐ Loyalty Points: +${loyaltyPoints}\n\nThank you! 🙏\n_Powered by KadaiGPT_`
+
+        const waUrl = `https://wa.me/91${customer.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
+        window.open(waUrl, '_blank')
+      }
+
+      // Clear cart and prepare for next bill
+      setTimeout(() => {
+        clearCart()
+        addToast('Ready for next bill!', 'info')
+      }, 2000)
+
+    } catch (error) {
+      console.error('❌ Error saving bill:', error)
+      const newBillNumber = `INV-${Date.now().toString().slice(-6)}`
+      setBillNumber(newBillNumber)
+      addToast('Bill saved locally - will sync when connected', 'warning')
+      clearCart()
+    }
+  }
+
+  const handlePrint = async () => {
+    setPrinting(true)
+    try {
+      // Try API print first (for connected printers)
+      await api.printReceipt(getBillData())
+      addToast('Bill printed successfully!', 'success')
+    } catch (err) {
+      // Fallback: Use browser print dialog (works without physical printer)
+      const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
+      const printContent = `
                 <html>
                 <head>
                     <title>Bill ${billNumber}</title>
@@ -475,387 +475,387 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                 </body>
                 </html>
             `
-            const printWindow = window.open('', '_blank')
-            printWindow.document.write(printContent)
-            printWindow.document.close()
-            printWindow.print()
-            addToast('Print preview opened!', 'success')
-        } finally {
-            setPrinting(false)
-            clearCart()
-            setShowPayment(false)
-            setCurrentPage('bills')
-        }
+      const printWindow = window.open('', '_blank')
+      printWindow.document.write(printContent)
+      printWindow.document.close()
+      printWindow.print()
+      addToast('Print preview opened!', 'success')
+    } finally {
+      setPrinting(false)
+      clearCart()
+      setShowPayment(false)
+      setCurrentPage('bills')
+    }
+  }
+
+  // Send bill via WhatsApp
+  const handleSendWhatsApp = () => {
+    if (!customer.phone) {
+      addToast('Please enter customer phone number', 'error')
+      return
     }
 
-    // Send bill via WhatsApp
-    const handleSendWhatsApp = () => {
-        if (!customer.phone) {
-            addToast('Please enter customer phone number', 'error')
-            return
-        }
+    const billData = getBillData()
+    const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
 
-        const billData = getBillData()
-        const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
-
-        // Build bill object for WhatsApp
-        const bill = {
-            bill_number: billNumber || billData.bill_number,
-            created_at: new Date().toISOString(),
-            items: cart.map(item => ({
-                product_name: item.name,
-                quantity: item.quantity,
-                unit_price: item.price
-            })),
-            subtotal: subtotal,
-            tax: tax,
-            total: total,
-            payment_mode: paymentMode
-        }
-
-        whatsappService.sendBill(bill, customer.phone, storeName)
-        addToast('Opening WhatsApp...', 'success')
+    // Build bill object for WhatsApp
+    const bill = {
+      bill_number: billNumber || billData.bill_number,
+      created_at: new Date().toISOString(),
+      items: cart.map(item => ({
+        product_name: item.name,
+        quantity: item.quantity,
+        unit_price: item.price
+      })),
+      subtotal: subtotal,
+      tax: tax,
+      total: total,
+      payment_mode: paymentMode
     }
 
-    return (
-        <div className="create-bill">
-            <div className="page-header">
-                <div className="header-left">
-                    <h1 className="page-title">🧾 Create New Bill</h1>
-                    <p className="page-subtitle">
-                        Add products and generate invoice
-                        {usingDemoData && (
-                            <span className="demo-badge" style={{
-                                marginLeft: '12px',
-                                padding: '2px 8px',
-                                background: 'rgba(249, 115, 22, 0.15)',
-                                color: '#f97316',
-                                borderRadius: '4px',
-                                fontSize: '0.75rem',
-                                fontWeight: 600
-                            }}>
-                                Demo Mode
-                            </span>
-                        )}
-                    </p>
+    whatsappService.sendBill(bill, customer.phone, storeName)
+    addToast('Opening WhatsApp...', 'success')
+  }
+
+  return (
+    <div className="create-bill">
+      <div className="page-header">
+        <div className="header-left">
+          <h1 className="page-title">🧾 Create New Bill</h1>
+          <p className="page-subtitle">
+            Add products and generate invoice
+            {usingDemoData && (
+              <span className="demo-badge" style={{
+                marginLeft: '12px',
+                padding: '2px 8px',
+                background: 'rgba(249, 115, 22, 0.15)',
+                color: '#f97316',
+                borderRadius: '4px',
+                fontSize: '0.75rem',
+                fontWeight: 600
+              }}>
+                Demo Mode
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="header-actions">
+          {cart.length > 0 && (
+            <div className="cart-badge">
+              <ShoppingCart size={20} />
+              <span className="badge-count">{itemCount}</span>
+              <span className="badge-total">₹{total.toLocaleString('en-IN')}</span>
+            </div>
+          )}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setCurrentPage?.('dashboard')}
+          >
+            ← Back
+          </button>
+        </div>
+      </div>
+
+      <div className="bill-layout">
+        {/* Products Section */}
+        <div className="products-section">
+          {/* Search & Category Filters */}
+          <div className="product-filters">
+            <div className="search-input large">
+              <Search size={20} className="icon" />
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Search products by name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="category-tabs">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  className={`cat-tab ${selectedCategory === cat ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(cat)}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Products Grid - Larger cards */}
+          <div className="products-grid">
+            {filteredProducts.length === 0 ? (
+              <div className="no-products">
+                <Package size={48} />
+                <p>No products found</p>
+                <span>{selectedCategory !== 'All' ? `Try "All" category` : 'Add products to get started'}</span>
+              </div>
+            ) : (
+              filteredProducts.map(product => (
+                <div key={product.id} className="product-item" onClick={() => addToCart(product)}>
+                  <div className="product-category-tag">{product.category || 'General'}</div>
+                  <div className="product-name">{product.name}</div>
+                  <div className="product-price">₹{product.price}<span>/{product.unit}</span></div>
+                  <div className="product-stock">{product.stock} in stock</div>
+                  <button className="add-btn" onClick={(e) => { e.stopPropagation(); addToCart(product); }}>
+                    <Plus size={16} />
+                  </button>
                 </div>
-                <div className="header-actions">
-                    {cart.length > 0 && (
-                        <div className="cart-badge">
-                            <ShoppingCart size={20} />
-                            <span className="badge-count">{itemCount}</span>
-                            <span className="badge-total">₹{total.toLocaleString('en-IN')}</span>
-                        </div>
-                    )}
-                    <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => setCurrentPage?.('dashboard')}
-                    >
-                        ← Back
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Cart Section - Professional Billing UI */}
+        <div className="cart-panel">
+          {/* Cart Header */}
+          <div className="cart-panel-header">
+            <h3>🛒 Cart ({itemCount})</h3>
+            {cart.length > 0 && <button className="clear-btn" onClick={clearCart}>Clear All</button>}
+          </div>
+
+          {/* Customer Input */}
+          <div className="customer-input">
+            <input
+              type="tel"
+              placeholder="📱 Phone Number"
+              value={customer.phone}
+              onChange={(e) => {
+                setCustomer({ ...customer, phone: e.target.value })
+                if (e.target.value.length >= 10) lookupCustomer(e.target.value)
+              }}
+            />
+            <input
+              type="text"
+              placeholder="👤 Customer Name"
+              value={customer.name}
+              onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+            />
+          </div>
+
+          {/* Cart Items - Simple List */}
+          <div className="cart-items-area">
+            {cart.length === 0 ? (
+              <div className="empty-state">
+                <ShoppingCart size={40} />
+                <p>Cart is empty</p>
+              </div>
+            ) : (
+              <div className="items-list">
+                {cart.map(item => (
+                  <div key={item.id} className="item-row">
+                    <div className="item-details">
+                      <span className="name">{item.name}</span>
+                      <span className="unit">₹{item.price}/{item.unit || 'pcs'}</span>
+                    </div>
+                    <div className="item-qty">
+                      <button onClick={() => updateQuantity(item.id, -1)}>−</button>
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => {
+                          const q = parseFloat(e.target.value) || 1
+                          setCart(cart.map(i => i.id === item.id ? { ...i, quantity: Math.max(0.1, q) } : i))
+                        }}
+                        step="0.1"
+                      />
+                      <button onClick={() => updateQuantity(item.id, 1)}>+</button>
+                    </div>
+                    <div className="item-amt">₹{(item.price * item.quantity).toFixed(0)}</div>
+                    <button className="del-btn" onClick={() => removeFromCart(item.id)}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Billing Summary - Fixed at bottom */}
+          {cart.length > 0 && (
+            <div className="billing-summary">
+              {/* Controls Row */}
+              <div className="controls-row">
+                <div className="control">
+                  <label>Discount</label>
+                  <input
+                    type="number"
+                    value={discount}
+                    onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                  />
+                  <select value={discountType} onChange={(e) => setDiscountType(e.target.value)}>
+                    <option value="percentage">%</option>
+                    <option value="fixed">₹</option>
+                  </select>
+                </div>
+                <div className="control">
+                  <label>GST</label>
+                  <select value={gstRate} onChange={(e) => setGstRate(parseInt(e.target.value))}>
+                    <option value="0">0%</option>
+                    <option value="5">5%</option>
+                    <option value="12">12%</option>
+                    <option value="18">18%</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Totals */}
+              <div className="totals">
+                <div className="row"><span>Subtotal</span><span>₹{subtotal}</span></div>
+                {discountAmount > 0 && <div className="row discount"><span>Discount</span><span>-₹{discountAmount}</span></div>}
+                <div className="row"><span>GST ({gstRate}%)</span><span>₹{tax}</span></div>
+                <div className="row total"><span>TOTAL</span><span>₹{total}</span></div>
+              </div>
+
+              {/* Payment Mode */}
+              <div className="payment-row">
+                {['Cash', 'UPI', 'Card', 'Credit'].map(m => (
+                  <button
+                    key={m}
+                    className={paymentMode === m ? 'active' : ''}
+                    onClick={() => setPaymentMode(m)}
+                  >{m}</button>
+                ))}
+              </div>
+
+              {/* Generate Bill Button */}
+              <button className="generate-btn" onClick={handleSaveBill} disabled={cart.length === 0}>
+                <Save size={20} /> GENERATE BILL
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Custom Quantity Modal */}
+      {showQtyModal && (
+        <div className="modal-overlay" onClick={() => setShowQtyModal(null)}>
+          <div className="modal qty-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title"><Scale size={20} /> Enter Quantity</h3>
+              <button className="modal-close" onClick={() => setShowQtyModal(null)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="qty-product-info">
+                <strong>{showQtyModal.name}</strong>
+                <span>₹{showQtyModal.price} per {showQtyModal.unit}</span>
+              </div>
+              <div className="qty-input-section">
+                <label>Quantity / Weight:</label>
+                <div className="qty-input-row">
+                  <input
+                    type="number"
+                    id="custom-qty-input"
+                    min="0.1"
+                    step="0.1"
+                    defaultValue="1"
+                    autoFocus
+                    className="qty-input-large"
+                  />
+                  <span className="unit-label">{showQtyModal.unit}</span>
+                </div>
+                <div className="qty-presets">
+                  {[0.25, 0.5, 1, 2, 5, 10].map(qty => (
+                    <button key={qty} onClick={() => {
+                      document.getElementById('custom-qty-input').value = qty
+                    }}>
+                      {qty} {showQtyModal.unit}
                     </button>
+                  ))}
                 </div>
+              </div>
             </div>
-
-            <div className="bill-layout">
-                {/* Products Section */}
-                <div className="products-section">
-                    {/* Search & Category Filters */}
-                    <div className="product-filters">
-                        <div className="search-input large">
-                            <Search size={20} className="icon" />
-                            <input
-                                type="text"
-                                className="form-input"
-                                placeholder="Search products by name..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                        </div>
-                        <div className="category-tabs">
-                            {categories.map(cat => (
-                                <button
-                                    key={cat}
-                                    className={`cat-tab ${selectedCategory === cat ? 'active' : ''}`}
-                                    onClick={() => setSelectedCategory(cat)}
-                                >
-                                    {cat}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Products Grid - Larger cards */}
-                    <div className="products-grid">
-                        {filteredProducts.length === 0 ? (
-                            <div className="no-products">
-                                <Package size={48} />
-                                <p>No products found</p>
-                                <span>{selectedCategory !== 'All' ? `Try "All" category` : 'Add products to get started'}</span>
-                            </div>
-                        ) : (
-                            filteredProducts.map(product => (
-                                <div key={product.id} className="product-item" onClick={() => addToCart(product)}>
-                                    <div className="product-category-tag">{product.category || 'General'}</div>
-                                    <div className="product-name">{product.name}</div>
-                                    <div className="product-price">₹{product.price}<span>/{product.unit}</span></div>
-                                    <div className="product-stock">{product.stock} in stock</div>
-                                    <button className="add-btn" onClick={(e) => { e.stopPropagation(); addToCart(product); }}>
-                                        <Plus size={16} />
-                                    </button>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-
-                {/* Cart Section - Professional Billing UI */}
-                <div className="cart-panel">
-                    {/* Cart Header */}
-                    <div className="cart-panel-header">
-                        <h3>🛒 Cart ({itemCount})</h3>
-                        {cart.length > 0 && <button className="clear-btn" onClick={clearCart}>Clear All</button>}
-                    </div>
-
-                    {/* Customer Input */}
-                    <div className="customer-input">
-                        <input
-                            type="tel"
-                            placeholder="📱 Phone Number"
-                            value={customer.phone}
-                            onChange={(e) => {
-                                setCustomer({ ...customer, phone: e.target.value })
-                                if (e.target.value.length >= 10) lookupCustomer(e.target.value)
-                            }}
-                        />
-                        <input
-                            type="text"
-                            placeholder="👤 Customer Name"
-                            value={customer.name}
-                            onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-                        />
-                    </div>
-
-                    {/* Cart Items - Simple List */}
-                    <div className="cart-items-area">
-                        {cart.length === 0 ? (
-                            <div className="empty-state">
-                                <ShoppingCart size={40} />
-                                <p>Cart is empty</p>
-                            </div>
-                        ) : (
-                            <div className="items-list">
-                                {cart.map(item => (
-                                    <div key={item.id} className="item-row">
-                                        <div className="item-details">
-                                            <span className="name">{item.name}</span>
-                                            <span className="unit">₹{item.price}/{item.unit || 'pcs'}</span>
-                                        </div>
-                                        <div className="item-qty">
-                                            <button onClick={() => updateQuantity(item.id, -1)}>−</button>
-                                            <input
-                                                type="number"
-                                                value={item.quantity}
-                                                onChange={(e) => {
-                                                    const q = parseFloat(e.target.value) || 1
-                                                    setCart(cart.map(i => i.id === item.id ? { ...i, quantity: Math.max(0.1, q) } : i))
-                                                }}
-                                                step="0.1"
-                                            />
-                                            <button onClick={() => updateQuantity(item.id, 1)}>+</button>
-                                        </div>
-                                        <div className="item-amt">₹{(item.price * item.quantity).toFixed(0)}</div>
-                                        <button className="del-btn" onClick={() => removeFromCart(item.id)}>×</button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Billing Summary - Fixed at bottom */}
-                    {cart.length > 0 && (
-                        <div className="billing-summary">
-                            {/* Controls Row */}
-                            <div className="controls-row">
-                                <div className="control">
-                                    <label>Discount</label>
-                                    <input
-                                        type="number"
-                                        value={discount}
-                                        onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
-                                    />
-                                    <select value={discountType} onChange={(e) => setDiscountType(e.target.value)}>
-                                        <option value="percentage">%</option>
-                                        <option value="fixed">₹</option>
-                                    </select>
-                                </div>
-                                <div className="control">
-                                    <label>GST</label>
-                                    <select value={gstRate} onChange={(e) => setGstRate(parseInt(e.target.value))}>
-                                        <option value="0">0%</option>
-                                        <option value="5">5%</option>
-                                        <option value="12">12%</option>
-                                        <option value="18">18%</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Totals */}
-                            <div className="totals">
-                                <div className="row"><span>Subtotal</span><span>₹{subtotal}</span></div>
-                                {discountAmount > 0 && <div className="row discount"><span>Discount</span><span>-₹{discountAmount}</span></div>}
-                                <div className="row"><span>GST ({gstRate}%)</span><span>₹{tax}</span></div>
-                                <div className="row total"><span>TOTAL</span><span>₹{total}</span></div>
-                            </div>
-
-                            {/* Payment Mode */}
-                            <div className="payment-row">
-                                {['Cash', 'UPI', 'Card', 'Credit'].map(m => (
-                                    <button
-                                        key={m}
-                                        className={paymentMode === m ? 'active' : ''}
-                                        onClick={() => setPaymentMode(m)}
-                                    >{m}</button>
-                                ))}
-                            </div>
-
-                            {/* Generate Bill Button */}
-                            <button className="generate-btn" onClick={handleSaveBill} disabled={cart.length === 0}>
-                                <Save size={20} /> GENERATE BILL
-                            </button>
-                        </div>
-                    )}
-                </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowQtyModal(null)}>Cancel</button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  const qty = document.getElementById('custom-qty-input').value
+                  addToCartWithQty(showQtyModal, qty)
+                }}
+              >
+                <Plus size={18} /> Add to Cart
+              </button>
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* Custom Quantity Modal */}
-            {showQtyModal && (
-                <div className="modal-overlay" onClick={() => setShowQtyModal(null)}>
-                    <div className="modal qty-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3 className="modal-title"><Scale size={20} /> Enter Quantity</h3>
-                            <button className="modal-close" onClick={() => setShowQtyModal(null)}><X size={20} /></button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="qty-product-info">
-                                <strong>{showQtyModal.name}</strong>
-                                <span>₹{showQtyModal.price} per {showQtyModal.unit}</span>
-                            </div>
-                            <div className="qty-input-section">
-                                <label>Quantity / Weight:</label>
-                                <div className="qty-input-row">
-                                    <input
-                                        type="number"
-                                        id="custom-qty-input"
-                                        min="0.1"
-                                        step="0.1"
-                                        defaultValue="1"
-                                        autoFocus
-                                        className="qty-input-large"
-                                    />
-                                    <span className="unit-label">{showQtyModal.unit}</span>
-                                </div>
-                                <div className="qty-presets">
-                                    {[0.25, 0.5, 1, 2, 5, 10].map(qty => (
-                                        <button key={qty} onClick={() => {
-                                            document.getElementById('custom-qty-input').value = qty
-                                        }}>
-                                            {qty} {showQtyModal.unit}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowQtyModal(null)}>Cancel</button>
-                            <button
-                                className="btn btn-primary"
-                                onClick={() => {
-                                    const qty = document.getElementById('custom-qty-input').value
-                                    addToCartWithQty(showQtyModal, qty)
-                                }}
-                            >
-                                <Plus size={18} /> Add to Cart
-                            </button>
-                        </div>
-                    </div>
+      {/* Preview Modal */}
+      {showPreview && (
+        <div className="modal-overlay" onClick={() => setShowPreview(false)}>
+          <div className="modal preview-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Receipt Preview</h3>
+              <button className="modal-close" onClick={() => setShowPreview(false)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="receipt-preview">
+                <pre>{previewContent}</pre>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowPreview(false)}>Close</button>
+              <button className="btn btn-primary" onClick={() => { setShowPreview(false); handleSaveBill(); }}>
+                <Save size={18} /> Create Bill
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {showPayment && (
+        <div className="modal-overlay" onClick={() => setShowPayment(false)}>
+          <div className="modal payment-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">🎉 Bill Created!</h3>
+              <button className="modal-close" onClick={() => setShowPayment(false)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="bill-success">
+                <div className="success-icon">✓</div>
+                <h4>Invoice Generated</h4>
+                <p className="bill-number">{billNumber}</p>
+                <div className="bill-amount">₹{total}</div>
+              </div>
+
+              <div className="payment-options">
+                <label className="form-label">Payment Method</label>
+                <div className="payment-buttons">
+                  {['Cash', 'UPI', 'Card', 'Credit'].map(mode => (
+                    <button
+                      key={mode}
+                      className={`payment-btn ${paymentMode === mode ? 'active' : ''}`}
+                      onClick={() => setPaymentMode(mode)}
+                    >
+                      {mode}
+                    </button>
+                  ))}
                 </div>
-            )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => { setShowPayment(false); clearCart(); }}>
+                New Bill
+              </button>
+              <button
+                className="btn btn-success"
+                onClick={handleSendWhatsApp}
+                disabled={!customer.phone}
+                title={!customer.phone ? 'Add customer phone to send via WhatsApp' : 'Send bill via WhatsApp'}
+              >
+                <MessageSquare size={18} /> WhatsApp
+              </button>
+              <button className="btn btn-primary" onClick={handlePrint} disabled={printing}>
+                {printing ? <><Loader2 size={18} className="spin" /> Printing...</> : <><Printer size={18} /> Print Receipt</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-            {/* Preview Modal */}
-            {showPreview && (
-                <div className="modal-overlay" onClick={() => setShowPreview(false)}>
-                    <div className="modal preview-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3 className="modal-title">Receipt Preview</h3>
-                            <button className="modal-close" onClick={() => setShowPreview(false)}><X size={20} /></button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="receipt-preview">
-                                <pre>{previewContent}</pre>
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowPreview(false)}>Close</button>
-                            <button className="btn btn-primary" onClick={() => { setShowPreview(false); handleSaveBill(); }}>
-                                <Save size={18} /> Create Bill
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Payment Modal */}
-            {showPayment && (
-                <div className="modal-overlay" onClick={() => setShowPayment(false)}>
-                    <div className="modal payment-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3 className="modal-title">🎉 Bill Created!</h3>
-                            <button className="modal-close" onClick={() => setShowPayment(false)}><X size={20} /></button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="bill-success">
-                                <div className="success-icon">✓</div>
-                                <h4>Invoice Generated</h4>
-                                <p className="bill-number">{billNumber}</p>
-                                <div className="bill-amount">₹{total}</div>
-                            </div>
-
-                            <div className="payment-options">
-                                <label className="form-label">Payment Method</label>
-                                <div className="payment-buttons">
-                                    {['Cash', 'UPI', 'Card', 'Credit'].map(mode => (
-                                        <button
-                                            key={mode}
-                                            className={`payment-btn ${paymentMode === mode ? 'active' : ''}`}
-                                            onClick={() => setPaymentMode(mode)}
-                                        >
-                                            {mode}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => { setShowPayment(false); clearCart(); }}>
-                                New Bill
-                            </button>
-                            <button
-                                className="btn btn-success"
-                                onClick={handleSendWhatsApp}
-                                disabled={!customer.phone}
-                                title={!customer.phone ? 'Add customer phone to send via WhatsApp' : 'Send bill via WhatsApp'}
-                            >
-                                <MessageSquare size={18} /> WhatsApp
-                            </button>
-                            <button className="btn btn-primary" onClick={handlePrint} disabled={printing}>
-                                {printing ? <><Loader2 size={18} className="spin" /> Printing...</> : <><Printer size={18} /> Print Receipt</>}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <style>{`
+      <style>{`
         /* Main layout - Full page billing interface - MAXIMIZED */
         .create-bill {
           display: flex;
@@ -1109,9 +1109,9 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         
         /* ====== CART PANEL - PROFESSIONAL BILLING UI ====== */
         .cart-panel {
-          width: 420px;
-          min-width: 420px;
-          height: calc(100vh - 110px);
+          width: 380px;
+          min-width: 380px;
+          max-height: calc(100vh - 100px);
           display: flex;
           flex-direction: column;
           background: var(--bg-card);
@@ -1119,17 +1119,19 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           border: 1px solid var(--border-subtle);
           box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
           overflow: hidden;
+          margin-right: 60px; /* Space for AI buttons */
         }
         
         .cart-panel-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 12px 16px;
+          padding: 10px 14px;
           background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
           color: white;
+          flex-shrink: 0;
         }
-        .cart-panel-header h3 { margin: 0; font-size: 1.1rem; }
+        .cart-panel-header h3 { margin: 0; font-size: 1rem; }
         .clear-btn {
           background: rgba(255,255,255,0.2);
           border: none;
@@ -1137,24 +1139,25 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           padding: 4px 10px;
           border-radius: 4px;
           cursor: pointer;
-          font-size: 0.75rem;
+          font-size: 0.7rem;
         }
         .clear-btn:hover { background: rgba(255,255,255,0.3); }
         
         .customer-input {
           display: flex;
-          flex-direction: column;
           gap: 6px;
-          padding: 10px 12px;
+          padding: 8px 10px;
           background: var(--bg-secondary);
+          flex-shrink: 0;
         }
         .customer-input input {
-          padding: 8px 10px;
+          flex: 1;
+          padding: 6px 8px;
           border: 1px solid var(--border-subtle);
-          border-radius: 6px;
+          border-radius: 4px;
           background: var(--bg-card);
           color: var(--text-primary);
-          font-size: 0.85rem;
+          font-size: 0.8rem;
         }
         .customer-input input:focus {
           border-color: var(--primary-400);
@@ -1164,9 +1167,9 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .cart-items-area {
           flex: 1;
           overflow-y: auto;
-          padding: 8px 12px;
-          min-height: 120px;
-          max-height: 220px;
+          padding: 6px 10px;
+          min-height: 80px;
+          max-height: 150px;
         }
         .cart-items-area::-webkit-scrollbar { width: 4px; }
         .cart-items-area::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 2px; }
@@ -1181,17 +1184,17 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           gap: 8px;
         }
         .empty-state svg { opacity: 0.3; }
-        .empty-state p { margin: 0; font-size: 0.9rem; }
+        .empty-state p { margin: 0; font-size: 0.85rem; }
         
-        .items-list { display: flex; flex-direction: column; gap: 8px; }
+        .items-list { display: flex; flex-direction: column; gap: 6px; }
         
         .item-row {
           display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 10px;
+          gap: 6px;
+          padding: 8px;
           background: var(--bg-secondary);
-          border-radius: 8px;
+          border-radius: 6px;
           border: 1px solid var(--border-subtle);
         }
         .item-row:hover { border-color: var(--primary-400); }
@@ -1238,14 +1241,14 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           border-radius: 4px;
           background: var(--bg-card);
           color: var(--text-primary);
-          font-size: 0.85rem;
+          font-size: 0.8rem;
         }
         
         .item-amt {
           font-weight: 700;
           color: var(--primary-400);
-          font-size: 0.9rem;
-          min-width: 50px;
+          font-size: 0.85rem;
+          min-width: 45px;
           text-align: right;
         }
         
@@ -1253,84 +1256,85 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           background: transparent;
           border: none;
           color: var(--text-tertiary);
-          font-size: 1.2rem;
+          font-size: 1.1rem;
           cursor: pointer;
-          padding: 4px;
+          padding: 2px;
         }
         .del-btn:hover { color: #dc2626; }
         
-        /* BILLING SUMMARY - Always visible at bottom */
+        /* BILLING SUMMARY - Compact and always visible */
         .billing-summary {
-          padding: 12px;
+          padding: 10px;
           background: var(--bg-secondary);
           border-top: 2px solid var(--primary-400);
+          flex-shrink: 0;
         }
         
         .controls-row {
           display: flex;
-          gap: 12px;
-          margin-bottom: 10px;
+          gap: 10px;
+          margin-bottom: 6px;
         }
         .control {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 4px;
         }
         .control label {
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           color: var(--text-secondary);
         }
         .control input {
-          width: 50px;
-          padding: 5px;
+          width: 40px;
+          padding: 4px;
           border: 1px solid var(--border-subtle);
           border-radius: 4px;
           background: var(--bg-card);
           color: var(--text-primary);
-          font-size: 0.8rem;
+          font-size: 0.75rem;
         }
         .control select {
-          padding: 5px;
+          padding: 4px;
           border: 1px solid var(--border-subtle);
           border-radius: 4px;
           background: var(--bg-card);
           color: var(--text-primary);
-          font-size: 0.8rem;
+          font-size: 0.75rem;
         }
         
         .totals {
-          margin-bottom: 10px;
+          margin-bottom: 6px;
         }
         .totals .row {
           display: flex;
           justify-content: space-between;
-          padding: 3px 0;
-          font-size: 0.85rem;
+          padding: 2px 0;
+          font-size: 0.8rem;
           color: var(--text-secondary);
         }
         .totals .row.discount span:last-child { color: #16a34a; }
         .totals .row.total {
-          font-size: 1.3rem;
+          font-size: 1.1rem;
           font-weight: 700;
           color: var(--primary-400);
-          padding: 8px;
+          padding: 6px;
           background: rgba(249, 115, 22, 0.15);
           border-radius: 6px;
-          margin-top: 6px;
+          margin-top: 4px;
         }
         
         .payment-row {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 6px;
-          margin-bottom: 10px;
+          gap: 4px;
+          margin-bottom: 8px;
         }
         .payment-row button {
-          padding: 8px;
+          padding: 6px;
           border: 1px solid var(--border-subtle);
           background: var(--bg-card);
-          border-radius: 6px;
-          font-size: 0.75rem;
+          border-radius: 4px;
+          font-size: 0.7rem;
           font-weight: 600;
           cursor: pointer;
           color: var(--text-secondary);
@@ -1345,24 +1349,24 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         
         .generate-btn {
           width: 100%;
-          padding: 14px;
-          font-size: 1.05rem;
+          padding: 10px;
+          font-size: 0.9rem;
           font-weight: 700;
           background: linear-gradient(135deg, var(--primary-500), #ea580c);
           color: white;
           border: none;
-          border-radius: 8px;
+          border-radius: 6px;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
-          box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+          gap: 6px;
+          box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
           transition: all 0.2s;
         }
         .generate-btn:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(249, 115, 22, 0.5);
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(249, 115, 22, 0.5);
         }
         .generate-btn:disabled {
           opacity: 0.5;
@@ -1796,6 +1800,6 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
-        </div>
-    )
+    </div>
+  )
 }
