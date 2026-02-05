@@ -96,11 +96,11 @@ export default function CreateBill({ addToast, setCurrentPage }) {
   const updateQuantity = (id, delta) => {
     setCart(cart.map(item => {
       if (item.id === id) {
-        const newQty = Math.max(0, item.quantity + delta)
+        const newQty = Math.max(0.1, parseFloat((item.quantity + delta).toFixed(2)))
         return { ...item, quantity: newQty }
       }
       return item
-    }).filter(item => item.quantity > 0))
+    }).filter(item => item.quantity >= 0.1))
   }
 
   const removeFromCart = (id) => {
@@ -620,19 +620,41 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           {/* Items - scrollable area */}
           <div className="cart-items">
             {cart.length === 0 ? (
-              <div className="cart-empty">Add products →</div>
+              <div className="cart-empty">
+                <ShoppingCart size={36} style={{ opacity: 0.2, marginBottom: 8 }} />
+                <span>Click products to add</span>
+              </div>
             ) : cart.map(item => (
               <div key={item.id} className="cart-item">
-                <div className="item-info">
+                <div className="item-row1">
                   <span className="item-name">{item.name}</span>
-                  <span className="item-price">₹{item.price}</span>
-                </div>
-                <div className="item-controls">
-                  <button onClick={() => updateQuantity(item.id, -1)}>−</button>
-                  <span>{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.id, 1)}>+</button>
                   <span className="item-total">₹{(item.price * item.quantity).toFixed(0)}</span>
                   <button className="item-delete" onClick={() => removeFromCart(item.id)}>×</button>
+                </div>
+                <div className="item-row2">
+                  <span className="item-rate">₹{item.price}/{item.unit || 'pcs'}</span>
+                  <div className="qty-group">
+                    <button className="qty-minus" onClick={() => updateQuantity(item.id, item.unit === 'kg' || item.unit === 'L' ? -0.25 : -1)}>−</button>
+                    <input
+                      type="number"
+                      className="qty-val"
+                      value={item.quantity}
+                      min="0.1"
+                      step={item.unit === 'kg' || item.unit === 'L' ? '0.25' : '1'}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        if (!isNaN(v) && v >= 0) setCart(cart.map(c => c.id === item.id ? { ...c, quantity: Math.max(0.1, v) } : c));
+                      }}
+                    />
+                    <select className="unit-sel" value={item.unit || 'pcs'} onChange={(e) => setCart(cart.map(c => c.id === item.id ? { ...c, unit: e.target.value } : c))}>
+                      <option value="pcs">pcs</option>
+                      <option value="kg">kg</option>
+                      <option value="g">g</option>
+                      <option value="L">L</option>
+                      <option value="ml">ml</option>
+                    </select>
+                    <button className="qty-plus" onClick={() => updateQuantity(item.id, item.unit === 'kg' || item.unit === 'L' ? 0.25 : 1)}>+</button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1057,211 +1079,267 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           color: var(--primary-400);
         }
         
-        /* ====== ULTRA-COMPACT CART ====== */
+        /* ====== PROFESSIONAL BILLING CART - Full Height ====== */
         .cart-panel {
-          width: 320px;
-          min-width: 320px;
-          height: calc(100vh - 120px);
+          width: 340px;
+          min-width: 340px;
+          height: calc(100vh - 80px);
+          position: sticky;
+          top: 10px;
           display: flex;
           flex-direction: column;
           background: var(--bg-card);
-          border-radius: 8px;
+          border-radius: 10px;
           border: 1px solid var(--border-subtle);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
           overflow: hidden;
-          margin-right: 55px;
+          margin-right: 60px;
         }
         
         .cart-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 8px 12px;
+          padding: 10px 14px;
           background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
           color: white;
-          font-weight: 600;
-          font-size: 0.9rem;
+          font-weight: 700;
+          font-size: 1rem;
+          flex-shrink: 0;
         }
         .cart-header button {
-          background: rgba(255,255,255,0.2);
+          background: rgba(255,255,255,0.25);
           border: none;
           color: white;
-          padding: 3px 8px;
+          padding: 4px 10px;
           border-radius: 4px;
           cursor: pointer;
-          font-size: 0.7rem;
+          font-size: 0.75rem;
+          font-weight: 600;
         }
+        .cart-header button:hover { background: rgba(255,255,255,0.35); }
         
         .cart-customer {
           display: flex;
-          gap: 4px;
-          padding: 6px 8px;
+          gap: 6px;
+          padding: 8px 10px;
           background: var(--bg-secondary);
+          flex-shrink: 0;
         }
         .cart-customer input {
           flex: 1;
           min-width: 0;
-          padding: 5px 6px;
+          padding: 7px 10px;
           border: 1px solid var(--border-subtle);
-          border-radius: 4px;
+          border-radius: 6px;
           background: var(--bg-card);
           color: var(--text-primary);
-          font-size: 0.75rem;
+          font-size: 0.8rem;
         }
+        .cart-customer input:focus { border-color: var(--primary-400); outline: none; }
         
+        /* Cart Items - Takes all available space */
         .cart-items {
           flex: 1;
           overflow-y: auto;
-          padding: 6px;
+          padding: 8px;
           min-height: 0;
         }
-        .cart-items::-webkit-scrollbar { width: 3px; }
-        .cart-items::-webkit-scrollbar-thumb { background: var(--primary-400); }
+        .cart-items::-webkit-scrollbar { width: 4px; }
+        .cart-items::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 2px; }
         
         .cart-empty {
           height: 100%;
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
           color: var(--text-tertiary);
-          font-size: 0.85rem;
+          font-size: 0.9rem;
+          gap: 4px;
         }
         
         .cart-item {
           background: var(--bg-secondary);
-          border-radius: 6px;
-          padding: 6px 8px;
-          margin-bottom: 4px;
+          border-radius: 8px;
+          padding: 8px 10px;
+          margin-bottom: 6px;
           border: 1px solid var(--border-subtle);
+          transition: border-color 0.2s;
         }
+        .cart-item:hover { border-color: var(--primary-400); }
         .cart-item:last-child { margin-bottom: 0; }
         
-        .item-info {
+        /* Item Row 1 - Name, Total, Delete */
+        .item-row1 {
           display: flex;
-          justify-content: space-between;
-          margin-bottom: 4px;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 6px;
         }
-        .item-name {
+        .item-row1 .item-name {
+          flex: 1;
           font-weight: 600;
-          font-size: 0.8rem;
+          font-size: 0.85rem;
           color: var(--text-primary);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .item-price {
-          font-size: 0.7rem;
-          color: var(--text-tertiary);
+        .item-row1 .item-total {
+          font-weight: 700;
+          font-size: 0.9rem;
+          color: var(--primary-400);
         }
+        .item-row1 .item-delete {
+          background: transparent;
+          border: none;
+          color: var(--text-tertiary);
+          font-size: 1.1rem;
+          cursor: pointer;
+          padding: 0 4px;
+          line-height: 1;
+        }
+        .item-row1 .item-delete:hover { color: #dc2626; }
         
-        .item-controls {
+        /* Item Row 2 - Rate, Quantity Controls */
+        .item-row2 {
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 8px;
         }
-        .item-controls button {
-          width: 22px;
-          height: 22px;
+        .item-rate {
+          font-size: 0.7rem;
+          color: var(--text-tertiary);
+          min-width: 55px;
+        }
+        .qty-group {
+          display: flex;
+          align-items: center;
+          gap: 3px;
+          flex: 1;
+        }
+        .qty-minus, .qty-plus {
+          width: 26px;
+          height: 26px;
           border: none;
-          border-radius: 4px;
+          border-radius: 5px;
           font-weight: bold;
-          font-size: 0.9rem;
+          font-size: 1rem;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .qty-minus { background: #dc2626; color: white; }
+        .qty-plus { background: #16a34a; color: white; }
+        .qty-minus:hover { background: #b91c1c; }
+        .qty-plus:hover { background: #15803d; }
+        
+        .qty-val {
+          width: 50px;
+          padding: 5px;
+          text-align: center;
+          border: 1px solid var(--border-subtle);
+          border-radius: 5px;
+          background: var(--bg-card);
+          color: var(--text-primary);
+          font-size: 0.85rem;
+          font-weight: 600;
+        }
+        .qty-val:focus { border-color: var(--primary-400); outline: none; }
+        
+        .unit-sel {
+          padding: 5px 3px;
+          border: 1px solid var(--border-subtle);
+          border-radius: 5px;
+          background: var(--bg-card);
+          color: var(--text-primary);
+          font-size: 0.75rem;
           cursor: pointer;
         }
-        .item-controls button:first-child { background: #dc2626; color: white; }
-        .item-controls button:nth-child(2) { background: none; }
-        .item-controls button:nth-child(3) { background: #16a34a; color: white; }
-        .item-controls > span {
-          min-width: 20px;
-          text-align: center;
-          font-weight: 600;
-          font-size: 0.85rem;
-        }
-        .item-total {
-          margin-left: auto;
-          font-weight: 700;
-          color: var(--primary-400);
-          font-size: 0.85rem;
-        }
-        .item-delete {
-          background: transparent !important;
-          color: var(--text-tertiary) !important;
-          font-size: 1rem !important;
-        }
-        .item-delete:hover { color: #dc2626 !important; }
+        .unit-sel:focus { border-color: var(--primary-400); outline: none; }
         
-        /* Cart Footer - Always visible */
+        /* Cart Footer - Fixed at Bottom, Never Hidden */
         .cart-footer {
-          padding: 8px;
-          background: var(--bg-secondary);
+          padding: 10px;
+          background: linear-gradient(to top, var(--bg-secondary), var(--bg-card));
           border-top: 2px solid var(--primary-400);
           flex-shrink: 0;
         }
         
         .quick-controls {
           display: flex;
-          gap: 8px;
-          margin-bottom: 4px;
-          font-size: 0.7rem;
+          gap: 12px;
+          margin-bottom: 6px;
+          font-size: 0.75rem;
           color: var(--text-secondary);
         }
         .quick-controls label {
           display: flex;
           align-items: center;
-          gap: 3px;
+          gap: 4px;
+          font-weight: 500;
         }
         .quick-controls input {
-          width: 35px;
-          padding: 3px;
+          width: 40px;
+          padding: 4px;
           border: 1px solid var(--border-subtle);
-          border-radius: 3px;
+          border-radius: 4px;
           background: var(--bg-card);
           color: var(--text-primary);
-          font-size: 0.7rem;
+          font-size: 0.75rem;
+          text-align: center;
         }
         .quick-controls select {
-          padding: 3px;
+          padding: 4px;
           border: 1px solid var(--border-subtle);
-          border-radius: 3px;
+          border-radius: 4px;
           background: var(--bg-card);
           color: var(--text-primary);
-          font-size: 0.7rem;
+          font-size: 0.75rem;
         }
         
         .totals-row {
           display: flex;
-          gap: 8px;
-          font-size: 0.75rem;
+          gap: 12px;
+          font-size: 0.8rem;
           color: var(--text-secondary);
-          margin-bottom: 4px;
+          margin-bottom: 6px;
+          font-weight: 500;
         }
+        .totals-row .discount { color: #22c55e; }
         
         .total-big {
-          background: rgba(249, 115, 22, 0.15);
+          background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.2));
           color: var(--primary-400);
-          font-size: 1.1rem;
-          font-weight: 700;
-          padding: 6px 10px;
-          border-radius: 6px;
+          font-size: 1.25rem;
+          font-weight: 800;
+          padding: 8px 12px;
+          border-radius: 8px;
           text-align: center;
-          margin-bottom: 6px;
+          margin-bottom: 8px;
+          border: 1px solid rgba(249, 115, 22, 0.3);
         }
         
         .payment-btns {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 3px;
-          margin-bottom: 6px;
+          gap: 4px;
+          margin-bottom: 8px;
         }
         .payment-btns button {
-          padding: 5px;
+          padding: 7px;
           border: 1px solid var(--border-subtle);
           background: var(--bg-card);
-          border-radius: 4px;
-          font-size: 0.65rem;
+          border-radius: 6px;
+          font-size: 0.75rem;
           font-weight: 600;
           cursor: pointer;
           color: var(--text-secondary);
+          transition: all 0.15s;
         }
+        .payment-btns button:hover { border-color: var(--primary-400); }
         .payment-btns button.active {
           background: var(--primary-500);
           border-color: var(--primary-500);
@@ -1270,22 +1348,28 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         
         .generate-bill-btn {
           width: 100%;
-          padding: 10px;
-          font-size: 0.9rem;
+          padding: 12px;
+          font-size: 1rem;
           font-weight: 700;
           background: linear-gradient(135deg, var(--primary-500), #ea580c);
           color: white;
           border: none;
-          border-radius: 6px;
+          border-radius: 8px;
           cursor: pointer;
-          box-shadow: 0 3px 10px rgba(249, 115, 22, 0.4);
+          box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+          transition: all 0.2s;
         }
-        .generate-bill-btn:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 5px 14px rgba(249, 115, 22, 0.5);
+        .generate-bill-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(249, 115, 22, 0.5);
+        }
+        .generate-bill-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
         }
         
-        /* Hide old styles */
+        /* Hide old conflicting styles */
         .cart-section, .cart-card, .cart-scroll-area,
         .customer-info, .empty-cart, .cart-items-list,
         .cart-items-header, .cart-item-row, .billing-controls,
@@ -1294,7 +1378,8 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .cart-panel-header, .customer-input, .cart-items-area,
         .empty-state, .items-list, .item-row, .item-details,
         .item-qty, .item-amt, .del-btn, .billing-summary,
-        .controls-row, .control, .totals, .payment-row, .generate-btn { display: none !important; }
+        .controls-row, .control, .totals, .payment-row, .generate-btn,
+        .item-info, .item-controls, .item-price { display: none !important; }
         
         .new-customer-badge {
           background: rgba(34, 197, 94, 0.1);
