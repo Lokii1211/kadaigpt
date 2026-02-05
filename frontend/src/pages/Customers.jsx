@@ -242,7 +242,7 @@ export default function Customers({ addToast, setCurrentPage }) {
             {/* Search */}
             <div className="card search-bar">
                 <div className="search-input">
-                    <Search size={18} />
+                    <Search size={18} className="icon" />
                     <input
                         type="text"
                         className="form-input"
@@ -256,11 +256,11 @@ export default function Customers({ addToast, setCurrentPage }) {
             {/* Empty State */}
             {customers.length === 0 && (
                 <div className="empty-state">
-                    <Users size={64} />
+                    <Users size={48} />
                     <h3>No Customers Yet</h3>
                     <p>Add your first customer to start managing credit</p>
-                    <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-                        <Plus size={18} /> Add First Customer
+                    <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
+                        <Plus size={16} /> Add Customer
                     </button>
                 </div>
             )}

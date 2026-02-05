@@ -54,8 +54,8 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     // Filter by search AND category
     const filteredProducts = products.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase())
-        const productCategory = typeof p.category === 'string' ? p.category : (p.category?.name || 'General')
-        const matchesCategory = selectedCategory === 'All' || productCategory.toLowerCase() === selectedCategory.toLowerCase()
+        const productCategory = (p.category || 'General').toLowerCase()
+        const matchesCategory = selectedCategory === 'All' || productCategory === selectedCategory.toLowerCase()
         return matchesSearch && matchesCategory
     })
 
@@ -500,7 +500,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                         ) : (
                             filteredProducts.map(product => (
                                 <div key={product.id} className="product-item" onClick={() => addToCart(product)}>
-                                    <div className="product-category-tag">{typeof product.category === 'string' ? product.category : product.category?.name || 'General'}</div>
+                                    <div className="product-category-tag">{product.category || 'General'}</div>
                                     <div className="product-name">{product.name}</div>
                                     <div className="product-price">₹{product.price}<span>/{product.unit}</span></div>
                                     <div className="product-stock">{product.stock} in stock</div>

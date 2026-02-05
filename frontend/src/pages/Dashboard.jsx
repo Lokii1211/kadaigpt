@@ -249,51 +249,6 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         )}
       </section>
 
-      {/* Manager Controls - Manager can manage staff */}
-      {userRole === 'manager' && (
-        <section className="owner-section">
-          <h3>Manager Controls</h3>
-          <div className="owner-btns">
-            <button onClick={() => setCurrentPage('staff')}>
-              <UserPlus size={20} />
-              Manage Staff
-            </button>
-            <button onClick={() => setCurrentPage('analytics')}>
-              <TrendingUp size={20} />
-              Analytics
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* Owner Quick Access */}
-      {(userRole === 'owner' || userRole === 'admin') && (
-        <section className="owner-section">
-          <div className="section-header">
-            <h3>Owner Controls</h3>
-            <span className={`plan-badge ${userPlan}`}>{userPlan.toUpperCase()} Plan</span>
-          </div>
-          <div className="owner-btns">
-            <button onClick={() => setCurrentPage('staff')}>
-              <UserPlus size={20} />
-              Manage Staff
-            </button>
-            <button onClick={() => setCurrentPage('stores')}>
-              <Store size={20} />
-              My Stores
-            </button>
-            <button onClick={() => setCurrentPage('analytics')}>
-              <TrendingUp size={20} />
-              Analytics
-            </button>
-            <button onClick={() => setCurrentPage('subscription')}>
-              <Settings size={20} />
-              {userPlan === 'free' ? 'Upgrade' : 'Subscription'}
-            </button>
-          </div>
-        </section>
-      )}
-
       <style>{`
         .dash { max-width: 1200px; margin: 0 auto; }
 
