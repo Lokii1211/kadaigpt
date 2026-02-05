@@ -12,6 +12,11 @@ from .core import (
     CustomerEngagementAgent
 )
 
+# Import agent instances
+from .print_agent import print_agent
+from .inventory_agent import inventory_agent
+from .offline_agent import offline_agent
+
 __all__ = [
     "BaseAgent",
     "AgentTool", 
@@ -19,5 +24,9 @@ __all__ = [
     "AgentOrchestrator",
     "StoreManagerAgent",
     "InventoryAgent",
-    "CustomerEngagementAgent"
+    "CustomerEngagementAgent",
+    # Agent instances
+    "print_agent",
+    "inventory_agent", 
+    "offline_agent"
 ]
