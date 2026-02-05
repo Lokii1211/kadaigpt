@@ -23,6 +23,7 @@ import DailySummary from './pages/DailySummary'
 import BulkOperations from './pages/BulkOperations'
 import AdminPanel from './pages/AdminPanel'
 import Subscription from './pages/Subscription'
+import StaffManagement from './pages/StaffManagement'
 import Login from './pages/Login'
 import AdminLogin from './pages/AdminLogin'
 import api from './services/api'
@@ -49,6 +50,12 @@ function App() {
     const [showCommandPalette, setShowCommandPalette] = useState(false)
     const [showUserMenu, setShowUserMenu] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+    const [showNotifications, setShowNotifications] = useState(false)
+    const [notifications, setNotifications] = useState([
+        { id: 1, type: 'warning', message: 'Sugar stock is low (3 left)', time: '5 min ago', read: false },
+        { id: 2, type: 'info', message: 'New bill #1234 created', time: '10 min ago', read: false },
+        { id: 3, type: 'success', message: 'Daily backup completed', time: '1 hour ago', read: true },
+    ])
 
     const setCurrentPage = (page) => {
         setCurrentPageState(page)
@@ -159,6 +166,7 @@ function App() {
             case 'bulk-operations': return <BulkOperations addToast={addToast} />
             case 'admin': return <AdminPanel addToast={addToast} />
             case 'subscription': return <Subscription addToast={addToast} />
+            case 'staff': return <StaffManagement addToast={addToast} />
             case 'settings': return <Settings addToast={addToast} />
             default: return <Dashboard addToast={addToast} setCurrentPage={setCurrentPage} />
         }
@@ -342,9 +350,40 @@ function App() {
                     </button>
 
                     {/* Notifications */}
-                    <button className="icon-btn">
-                        <Bell size={18} />
-                    </button>
+                    <div className="notification-wrapper">
+                        <button
+                            className={`icon-btn ${notifications.filter(n => !n.read).length > 0 ? 'has-notifications' : ''}`}
+                            onClick={() => setShowNotifications(!showNotifications)}
+                        >
+                            <Bell size={18} />
+                            {notifications.filter(n => !n.read).length > 0 && (
+                                <span className="notification-badge">{notifications.filter(n => !n.read).length}</span>
+                            )}
+                        </button>
+                        {showNotifications && (
+                            <div className="notification-dropdown">
+                                <div className="notification-header">
+                                    <span>Notifications</span>
+                                    <button onClick={() => setNotifications(notifications.map(n => ({ ...n, read: true })))}>
+                                        Mark all read
+                                    </button>
+                                </div>
+                                <div className="notification-list">
+                                    {notifications.length > 0 ? notifications.map(n => (
+                                        <div key={n.id} className={`notification-item ${n.type} ${n.read ? 'read' : ''}`}>
+                                            <div className="notification-dot"></div>
+                                            <div className="notification-content">
+                                                <p>{n.message}</p>
+                                                <span>{n.time}</span>
+                                            </div>
+                                        </div>
+                                    )) : (
+                                        <div className="no-notifications">No notifications</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
                     {/* User Menu */}
                     <div className="user-menu-wrapper">
