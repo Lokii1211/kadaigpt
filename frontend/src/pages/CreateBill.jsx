@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Plus, Minus, Trash2, Printer, Save, ShoppingCart, X, Eye, Loader2, MessageSquare, Send, Scale, Package } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, Printer, Save, ShoppingCart, X, Eye, Loader2, MessageSquare, Send, Package } from 'lucide-react'
 import realDataService from '../services/realDataService'
 import whatsappService from '../services/whatsapp'
 import api from '../services/api'
@@ -25,7 +25,6 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     const [existingCustomer, setExistingCustomer] = useState(null)
     const [redeemPoints, setRedeemPoints] = useState(0)
     const [lookingUpCustomer, setLookingUpCustomer] = useState(false)
-    const [showQtyModal, setShowQtyModal] = useState(null) // Product to add with custom qty
 
     useEffect(() => {
         loadProducts()
@@ -59,23 +58,6 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         const matchesCategory = selectedCategory === 'All' || productCategory.toLowerCase() === selectedCategory.toLowerCase()
         return matchesSearch && matchesCategory
     })
-
-    // Add with custom quantity
-    const addToCartWithQty = (product, customQty) => {
-        const qty = parseFloat(customQty) || 1
-        const existing = cart.find(item => item.id === product.id)
-        if (existing) {
-            setCart(cart.map(item =>
-                item.id === product.id
-                    ? { ...item, quantity: item.quantity + qty }
-                    : item
-            ))
-        } else {
-            setCart([...cart, { ...product, quantity: qty }])
-        }
-        addToast(`Added ${qty} ${product.unit} of ${product.name}`, 'success')
-        setShowQtyModal(null)
-    }
 
     const addToCart = (product) => {
         const existing = cart.find(item => item.id === product.id)
@@ -517,21 +499,14 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                             </div>
                         ) : (
                             filteredProducts.map(product => (
-                                <div key={product.id} className="product-item">
-                                    <div className="product-info" onClick={() => addToCart(product)}>
-                                        <div className="product-category-tag">{typeof product.category === 'string' ? product.category : product.category?.name || 'General'}</div>
-                                        <div className="product-name">{product.name}</div>
-                                        <div className="product-price">₹{product.price}<span>/{product.unit}</span></div>
-                                        <div className="product-stock">{product.stock} in stock</div>
-                                    </div>
-                                    <div className="product-actions">
-                                        <button className="quick-add" onClick={() => addToCart(product)}>
-                                            <Plus size={18} /> 1
-                                        </button>
-                                        <button className="qty-add" onClick={() => setShowQtyModal(product)}>
-                                            <Scale size={16} /> Qty
-                                        </button>
-                                    </div>
+                                <div key={product.id} className="product-item" onClick={() => addToCart(product)}>
+                                    <div className="product-category-tag">{typeof product.category === 'string' ? product.category : product.category?.name || 'General'}</div>
+                                    <div className="product-name">{product.name}</div>
+                                    <div className="product-price">₹{product.price}<span>/{product.unit}</span></div>
+                                    <div className="product-stock">{product.stock} in stock</div>
+                                    <button className="add-btn" onClick={(e) => { e.stopPropagation(); addToCart(product); }}>
+                                        <Plus size={16} />
+                                    </button>
                                 </div>
                             ))
                         )}
@@ -1005,12 +980,11 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         
         .products-grid { 
           display: grid; 
-          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
-          gap: 14px;
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+          gap: 10px;
           overflow-y: auto;
           flex: 1;
           padding: 4px;
-          padding-right: 8px;
           align-content: start;
         }
         
@@ -1020,79 +994,63 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 60px 20px;
+          padding: 40px 20px;
           color: var(--text-tertiary);
           text-align: center;
         }
-        .no-products p { font-size: 1.1rem; margin: 16px 0 4px; color: var(--text-secondary); }
-        .no-products span { font-size: 0.85rem; }
+        .no-products p { font-size: 1rem; margin: 12px 0 4px; color: var(--text-secondary); }
+        .no-products span { font-size: 0.8rem; }
         
-        .products-grid::-webkit-scrollbar { width: 6px; }
-        .products-grid::-webkit-scrollbar-track { background: var(--bg-tertiary); border-radius: 3px; }
-        .products-grid::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 3px; }
+        .products-grid::-webkit-scrollbar { width: 4px; }
+        .products-grid::-webkit-scrollbar-track { background: var(--bg-tertiary); border-radius: 2px; }
+        .products-grid::-webkit-scrollbar-thumb { background: var(--primary-400); border-radius: 2px; }
         
         .product-item {
           background: var(--bg-card); 
           border: 1px solid var(--border-subtle);
-          border-radius: 14px; 
-          padding: 14px; 
+          border-radius: 10px; 
+          padding: 10px; 
           transition: all 0.2s;
-          display: flex;
-          flex-direction: column;
+          cursor: pointer;
+          position: relative;
         }
         .product-item:hover { 
           border-color: var(--primary-400); 
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.12);
         }
         
-        .product-info { cursor: pointer; flex: 1; }
         .product-category-tag {
           display: inline-block;
-          padding: 2px 8px;
+          padding: 1px 6px;
           background: var(--bg-tertiary);
-          border-radius: 10px;
-          font-size: 0.65rem;
+          border-radius: 6px;
+          font-size: 0.55rem;
           color: var(--text-tertiary);
-          margin-bottom: 8px;
+          margin-bottom: 4px;
           text-transform: uppercase;
         }
-        .product-name { font-weight: 700; margin-bottom: 4px; font-size: 0.95rem; line-height: 1.3; }
-        .product-price { color: var(--primary-400); font-weight: 800; font-size: 1.1rem; }
-        .product-price span { font-weight: 500; font-size: 0.8rem; color: var(--text-tertiary); }
-        .product-stock { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 4px; }
+        .product-name { font-weight: 600; margin-bottom: 2px; font-size: 0.8rem; line-height: 1.2; }
+        .product-price { color: var(--primary-400); font-weight: 700; font-size: 0.9rem; }
+        .product-price span { font-weight: 500; font-size: 0.7rem; color: var(--text-tertiary); }
+        .product-stock { font-size: 0.65rem; color: var(--text-tertiary); margin-top: 2px; }
         
-        .product-actions {
-          display: flex;
-          gap: 8px;
-          margin-top: 12px;
-          padding-top: 12px;
-          border-top: 1px solid var(--border-subtle);
-        }
-        .quick-add, .qty-add {
-          flex: 1;
-          padding: 8px 12px;
-          border-radius: 8px;
+        .add-btn {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          background: var(--primary-500);
+          color: white;
           border: none;
           cursor: pointer;
-          font-size: 0.8rem;
-          font-weight: 600;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 4px;
         }
-        .quick-add {
-          background: var(--primary-500);
-          color: white;
-        }
-        .quick-add:hover { background: var(--primary-600); }
-        .qty-add {
-          background: var(--bg-tertiary);
-          color: var(--text-secondary);
-          border: 1px solid var(--border-subtle);
-        }
-        .qty-add:hover { border-color: var(--primary-400); color: var(--primary-400); }
+        .add-btn:hover { background: var(--primary-600); transform: scale(1.1); }
         
         /* Qty Modal Styles */
         .qty-modal { max-width: 400px; }
@@ -1159,26 +1117,26 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           color: var(--primary-400);
         }
         
-        /* Cart Section - Fixed width on desktop */
+        /* Cart Section - Wider for better visibility */
         .cart-section {
-          width: 300px;
+          width: 350px;
           flex-shrink: 0;
           display: flex;
           flex-direction: column;
           overflow: visible;
-          margin-right: 60px; /* Space for AI button */
+          margin-right: 50px;
         }
         
         .cart-card { 
           display: flex; 
           flex-direction: column; 
-          height: calc(100vh - 140px);
-          max-height: calc(100vh - 140px);
+          height: calc(100vh - 120px);
+          max-height: calc(100vh - 120px);
           overflow: hidden;
           background: var(--bg-card);
           border-radius: var(--radius-lg);
           border: 1px solid var(--border-subtle);
-          padding: 12px;
+          padding: 14px;
         }
         
         .cart-scroll-area {
