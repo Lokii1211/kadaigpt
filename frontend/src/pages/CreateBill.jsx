@@ -610,13 +610,12 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                 <div className="item-row2">
                   <span className="item-rate">₹{item.price}/{item.unit || 'pcs'}</span>
                   <div className="qty-group">
-                    <button className="qty-minus" onClick={() => updateQuantity(item.id, item.unit === 'kg' || item.unit === 'L' ? -0.25 : -1)}>−</button>
                     <input
                       type="number"
                       className="qty-val"
                       value={item.quantity}
                       min="0.1"
-                      step={item.unit === 'kg' || item.unit === 'L' ? '0.25' : '1'}
+                      step={item.unit === 'kg' || item.unit === 'L' ? '0.1' : '1'}
                       onChange={(e) => {
                         const v = parseFloat(e.target.value);
                         if (!isNaN(v) && v >= 0) setCart(cart.map(c => c.id === item.id ? { ...c, quantity: Math.max(0.1, v) } : c));
@@ -629,7 +628,6 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                       <option value="L">L</option>
                       <option value="ml">ml</option>
                     </select>
-                    <button className="qty-plus" onClick={() => updateQuantity(item.id, item.unit === 'kg' || item.unit === 'L' ? 0.25 : 1)}>+</button>
                   </div>
                 </div>
               </div>
@@ -1213,15 +1211,21 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .qty-plus:hover { background: #15803d; }
         
         .qty-val {
-          width: 50px;
-          padding: 5px;
+          width: 70px;
+          padding: 6px 8px;
           text-align: center;
           border: 1px solid var(--border-subtle);
-          border-radius: 5px;
+          border-radius: 6px;
           background: var(--bg-card);
           color: var(--text-primary);
-          font-size: 0.85rem;
+          font-size: 0.9rem;
           font-weight: 600;
+          -moz-appearance: textfield;
+        }
+        .qty-val::-webkit-outer-spin-button,
+        .qty-val::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
         }
         .qty-val:focus { border-color: var(--primary-400); outline: none; }
         
