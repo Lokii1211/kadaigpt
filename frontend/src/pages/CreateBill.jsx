@@ -202,11 +202,11 @@ export default function CreateBill({ addToast, setCurrentPage }) {
 
     // Items in API format
     items: cart.map(item => ({
-      product_id: item.id || null,
+      product_id: item.id && typeof item.id === 'number' ? item.id : null,
       product_name: item.name,
       product_sku: item.sku || '',
-      unit_price: item.price,
-      quantity: item.quantity,
+      unit_price: parseFloat(item.price) || 0,
+      quantity: parseFloat(item.quantity) || 1,
       discount_percent: 0,
       tax_rate: gstRate || 0
     })),
@@ -581,7 +581,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         <div className="cart-panel">
           {/* Header with count */}
           <div className="cart-header">
-            <span>🛒 Cart ({itemCount})</span>
+            <span>🛒 Cart ({cart.length} items, {itemCount} qty)</span>
             {cart.length > 0 && <button onClick={clearCart}>Clear</button>}
           </div>
 
@@ -1057,9 +1057,10 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         .cart-panel {
           width: 340px;
           min-width: 340px;
-          height: calc(100vh - 140px);
+          height: calc(100vh - 100px);
+          max-height: calc(100vh - 100px);
           position: sticky;
-          top: 10px;
+          top: 0;
           display: flex;
           flex-direction: column;
           background: var(--bg-card);
