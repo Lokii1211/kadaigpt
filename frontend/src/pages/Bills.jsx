@@ -206,7 +206,7 @@ export default function Bills({ addToast, setCurrentPage }) {
             {/* Search & Filter Bar */}
             <div className="card search-bar">
                 <div className="search-input">
-                    <Search size={18} />
+                    <Search size={18} className="icon" />
                     <input
                         type="text"
                         className="form-input"

@@ -214,7 +214,7 @@ export default function Products({ addToast, setCurrentPage }) {
             {/* Filters */}
             <div className="card filters-bar">
                 <div className="search-input">
-                    <Search size={18} />
+                    <Search size={18} className="icon" />
                     <input
                         type="text"
                         className="form-input"
