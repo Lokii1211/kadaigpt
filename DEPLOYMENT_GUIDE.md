@@ -1,205 +1,173 @@
-# 🚀 KadaiGPT - Vercel Deployment Guide
+# 🚀 KadaiGPT - Deployment Guide (Render.com)
 
-## Architecture Overview
+## Why Render.com?
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    VERCEL                            │
-│  ┌──────────────┐    ┌──────────────────────────┐   │
-│  │   Frontend    │    │   Backend (Serverless)   │   │
-│  │  React/Vite   │    │   FastAPI + Python       │   │
-│  │  Static CDN   │    │   api/index.py           │   │
-│  └──────────────┘    └──────────┬───────────────┘   │
-│                                 │                    │
-└─────────────────────────────────┼────────────────────┘
-                                  │
-                    ┌─────────────▼──────────────┐
-                    │    Neon PostgreSQL          │
-                    │  (Free Serverless DB)       │
-                    │  neon.tech                  │
-                    └────────────────────────────┘
-```
-
-**Railway → Vercel Migration Summary:**
-- **Frontend**: Vite static build → Vercel CDN (automatic)
-- **Backend**: FastAPI → Vercel Serverless Python Functions
-- **Database**: Railway PostgreSQL → Neon PostgreSQL (free tier)
-- **WhatsApp Gateway**: Cannot run on Vercel (needs persistent WebSocket). See alternatives below.
+| Feature | Vercel ❌ | Render ✅ |
+|---------|----------|----------|
+| FastAPI backend | 30s timeout serverless | Full long-running process |
+| WhatsApp Baileys Bot | ❌ No WebSocket support | ✅ Docker, always-on |
+| PostgreSQL | External only (Neon) | Built-in free DB |
+| Background tasks | ❌ No workers | ✅ Cron + workers |
+| File uploads | ❌ /tmp only | ✅ Persistent disk |
+| Python version | 3.14 only (broken) | Any version via Docker |
+| **Monthly Cost** | **$0 (limited)** | **$0 free tier** |
 
 ---
 
-## Step 1: Set Up Neon PostgreSQL (Free Database)
+## Architecture on Render
 
-1. Go to [neon.tech](https://neon.tech) and sign up (free tier: 0.5 GB storage)
-2. Create a new project: **"kadaigpt"**
-3. Select region: **Asia Pacific (Singapore)** for lowest latency to India
-4. Copy the connection string. It will look like:
-   ```
-   postgresql://username:password@ep-xxxxx.ap-southeast-1.aws.neon.tech/kadaigpt?sslmode=require
-   ```
-5. Save this - you'll need it for Vercel environment variables
-
----
-
-## Step 2: Push Code to GitHub
-
-```bash
-cd c:\Users\dell\Desktop\KadaiGPT\VyaparAI
-git add -A
-git commit -m "chore: migrate from Railway to Vercel deployment"
-git push origin main
+```
+┌──────────────────────────────────────────────────────────┐
+│                    RENDER.COM                            │
+│                                                          │
+│  ┌──────────────────────┐  ┌──────────────────────────┐  │
+│  │   Web Service         │  │   WhatsApp Bot           │  │
+│  │   (Docker)            │  │   (Docker)               │  │
+│  │                       │  │                           │  │
+│  │  FastAPI Backend      │  │  Baileys + Node.js       │  │
+│  │  + React Frontend     │  │  Persistent WebSocket    │  │
+│  │  + OCR + AI           │  │  24/7 Connection         │  │
+│  └──────────┬────────────┘  └───────────────────────────┘  │
+│             │                                              │
+│  ┌──────────▼────────────┐                                │
+│  │  PostgreSQL Database   │                                │
+│  │  (Render Free Tier)    │                                │
+│  └────────────────────────┘                                │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Step 3: Deploy to Vercel
+## Step 1: Create a Render Account
 
-### Option A: Via Vercel CLI (Recommended)
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Login to Vercel
-vercel login
-
-# Deploy from project root
-cd c:\Users\dell\Desktop\KadaiGPT\VyaparAI
-vercel
-
-# Follow the prompts:
-# - Link to existing project? No
-# - Project name: kadaigpt
-# - Directory: ./
-# - Override settings? No (vercel.json handles it)
-```
-
-### Option B: Via Vercel Dashboard
-
-1. Go to [vercel.com/new](https://vercel.com/new)
-2. Import your GitHub repo: `Lokii1211/kadaigpt`
-3. Vercel auto-detects `vercel.json` configuration
-4. Click **Deploy**
+1. Go to [render.com](https://render.com) → Sign up with **GitHub**
+2. This auto-connects your GitHub repos
 
 ---
 
-## Step 4: Configure Environment Variables
+## Step 2: One-Click Deploy with Blueprint
 
-Go to **Vercel Dashboard → Your Project → Settings → Environment Variables**
+The easiest way — uses the `render.yaml` file in the repo:
 
-Add these variables:
-
-| Variable | Value | Required |
-|----------|-------|----------|
-| `DATABASE_URL` | `postgresql://user:pass@ep-xxx.neon.tech/kadaigpt?sslmode=require` | ✅ Yes |
-| `SECRET_KEY` | `your-strong-random-secret-key-here` | ✅ Yes |
-| `JWT_SECRET_KEY` | `your-jwt-secret-key-here` | ✅ Yes |
-| `APP_ENV` | `production` | ✅ Yes |
-| `GOOGLE_API_KEY` | `your-gemini-api-key` | 🔄 For OCR/AI |
-| `TELEGRAM_BOT_TOKEN` | `your-telegram-bot-token` | 🔄 For Telegram |
-| `EVOLUTION_API_URL` | `https://your-whatsapp-api.com` | 🔄 For WhatsApp |
-| `EVOLUTION_API_KEY` | `your-evolution-api-key` | 🔄 For WhatsApp |
-| `ENCRYPTION_KEY` | (generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`) | 🔄 For data encryption |
-
-After adding variables, **redeploy** the project.
+1. Go to [render.com/deploy](https://render.com/deploy)
+2. Paste your repo URL: `https://github.com/Lokii1211/kadaigpt`
+3. Render reads `render.yaml` and auto-creates:
+   - ✅ Web Service (FastAPI + React)
+   - ✅ WhatsApp Bot Service
+   - ✅ PostgreSQL Database
+4. Click **Apply** → Wait for build (~3-5 minutes)
 
 ---
 
-## Step 5: Initialize Database Tables
+## Step 3 (Alternative): Manual Setup
 
-After first deployment, the FastAPI lifespan event will automatically create tables.
-Visit: `https://your-app.vercel.app/api/health` to trigger initialization.
+If Blueprint doesn't work, create services manually:
 
-If tables don't auto-create, you can run a one-time script:
+### 3a. Create PostgreSQL Database
+1. Dashboard → **New** → **PostgreSQL**
+2. Name: `kadaigpt-db`
+3. Region: **Singapore**
+4. Plan: **Free**
+5. Click **Create Database**
+6. Copy the **Internal Database URL** (starts with `postgres://...`)
 
-```python
-# Run locally with the Neon DATABASE_URL
-import asyncio
-from app.database import init_db
-asyncio.run(init_db())
-```
+### 3b. Create Web Service (Backend + Frontend)
+1. Dashboard → **New** → **Web Service**
+2. Connect your GitHub repo: `Lokii1211/kadaigpt`
+3. Settings:
+   - **Name**: `kadaigpt`
+   - **Region**: Singapore
+   - **Runtime**: Docker
+   - **Plan**: Free
+4. **Environment Variables** → Add:
+
+| Variable | Value |
+|----------|-------|
+| `DATABASE_URL` | *(paste Internal Database URL from step 3a)* |
+| `SECRET_KEY` | *(click Generate)* |
+| `JWT_SECRET_KEY` | *(click Generate)* |
+| `APP_ENV` | `production` |
+| `GOOGLE_API_KEY` | Your Gemini API key |
+| `TELEGRAM_BOT_TOKEN` | Your bot token |
+| `PORT` | `8000` |
+
+5. Click **Create Web Service**
+
+### 3c. Create WhatsApp Bot Service (Optional)
+1. Dashboard → **New** → **Web Service**
+2. Connect same repo
+3. Settings:
+   - **Name**: `kadaigpt-whatsapp`
+   - **Root Directory**: `whatsapp-gateway`
+   - **Runtime**: Docker
+   - **Dockerfile Path**: `./Dockerfile`
+4. **Environment Variables**:
+   - `KADAIGPT_BACKEND_URL` = `https://kadaigpt.onrender.com`
+   - `PORT` = `3001`
+5. Click **Create Web Service**
 
 ---
 
-## WhatsApp Gateway Alternative
+## Step 4: Verify Deployment
 
-⚠️ **The WhatsApp Gateway (Baileys) CANNOT run on Vercel** because it requires:
-- Persistent WebSocket connection to WhatsApp servers
-- Long-running process (not serverless compatible)
-- File system for auth session storage
-
-### Free Alternatives:
-
-1. **Render.com Free Tier** (Recommended)
-   - Supports Docker, 750 free hours/month
-   - Deploy the `whatsapp-gateway/` folder as a separate service
-   - Set env var: `KADAIGPT_BACKEND_URL=https://your-app.vercel.app`
-
-2. **Fly.io Free Tier**
-   - 3 shared VMs free
-   - Good for always-on services
-   ```bash
-   cd whatsapp-gateway
-   flyctl launch
-   flyctl deploy
-   ```
-
-3. **Oracle Cloud Free Tier**
-   - 2 free AMD VMs (forever free)
-   - Run the WhatsApp gateway as a Docker container
-
-4. **Use Telegram Instead** (Simplest)
-   - Telegram bot works perfectly with Vercel serverless
-   - Set `TELEGRAM_BOT_TOKEN` in Vercel env vars
-   - No persistent connection needed (webhook-based)
-
----
-
-## Verifying Deployment
-
-After deployment, check these URLs:
+After build completes (~3-5 min), check these URLs:
 
 | URL | Expected |
 |-----|----------|
-| `https://your-app.vercel.app/` | React frontend loads |
-| `https://your-app.vercel.app/api/health` | `{"status": "healthy", ...}` |
-| `https://your-app.vercel.app/api/docs` | FastAPI Swagger UI |
-| `https://your-app.vercel.app/api/v1/subscription/tiers` | Subscription tiers JSON |
+| `https://kadaigpt.onrender.com/` | React frontend ✅ |
+| `https://kadaigpt.onrender.com/api/health` | `{"status":"healthy"}` ✅ |
+| `https://kadaigpt.onrender.com/api/docs` | Swagger UI ✅ |
+
+---
+
+## Step 5: Set Up Telegram Webhook
+
+After deployment, set the Telegram webhook:
+
+```
+https://kadaigpt.onrender.com/api/v1/telegram/set-webhook
+```
+
+---
+
+## Free Tier Limitations
+
+| Limitation | Details | Workaround |
+|-----------|---------|------------|
+| **Sleep after 15 min** | Free services sleep after inactivity | First request takes ~30s to wake up |
+| **750 hours/month** | Enough for 1 service 24/7 | Use 2 services = ~375 hrs each |
+| **PostgreSQL 90 days** | Free DB expires after 90 days | Recreate or upgrade ($7/mo) |
+| **512 MB RAM** | Per free service | Enough for KadaiGPT |
 
 ---
 
 ## Troubleshooting
 
-### "Module not found" errors
-- Ensure `backend/requirements.txt` has all dependencies
-- Check Vercel build logs for pip install errors
+### Build fails
+- Check **Logs** tab in Render dashboard
+- Ensure `Dockerfile` exists at repo root
+- Check `requirements.txt` has all dependencies
 
 ### Database connection errors
-- Verify `DATABASE_URL` is set correctly in Vercel env vars
-- Ensure Neon project is active (free tier sleeps after inactivity)
-- Check that `?sslmode=require` is in the URL
+- Use the **Internal Database URL** (not External)
+- Render auto-injects `DATABASE_URL` if using Blueprint
 
-### CORS errors
-- The `vercel.json` headers handle CORS for API routes
-- Frontend is served from the same domain, so no CORS needed for it
+### Service sleeping (slow first request)
+- Normal on free tier — takes ~30s to wake
+- Tip: Use [UptimeRobot](https://uptimerobot.com) to ping every 14 min (keeps it awake for free)
 
-### Cold starts (slow first request)
-- Normal for Vercel serverless Python functions
-- First request may take 2-5 seconds, subsequent requests are fast
-- Neon also has cold starts (~1s) on free tier
-
-### 500 errors on API routes
-- Check Vercel Function Logs: Dashboard → Deployments → Functions tab
-- Common cause: missing environment variables
+### WhatsApp QR Code
+- Visit `https://kadaigpt-whatsapp.onrender.com` to see the QR
+- Scan with WhatsApp on your phone
+- Session persists across restarts
 
 ---
 
 ## Cost Comparison
 
-| Service | Railway (expired) | Vercel + Neon (new) |
-|---------|-------------------|---------------------|
-| Frontend | Included | Free (100GB bandwidth) |
-| Backend | $5/mo | Free (100GB-hrs serverless) |
-| Database | $5/mo (PostgreSQL) | Free (0.5GB on Neon) |
-| WhatsApp | $5/mo (Docker) | Free on Render/Fly.io |
-| **Total** | **~$15/mo** | **$0/mo** ✅ |
+| Platform | Backend | Database | WhatsApp Bot | Total |
+|----------|---------|----------|-------------|-------|
+| Railway (expired) | $5/mo | $5/mo | $5/mo | **$15/mo** |
+| Vercel + Neon | $0 | $0 | ❌ Can't run | **$0 (limited)** |
+| **Render.com** | **$0** | **$0** | **$0** | **$0/mo ✅** |
+| Render Paid | $7/mo | $7/mo | $7/mo | **$21/mo** |
