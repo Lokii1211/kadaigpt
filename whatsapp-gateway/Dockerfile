@@ -1,5 +1,5 @@
 # KadaiGPT WhatsApp AI Agent
-# Dockerfile for Railway Deployment
+# Dockerfile for Render/Docker Deployment
 
 FROM node:20-alpine
 
@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copy app source
 COPY . .
@@ -20,7 +20,6 @@ RUN mkdir -p auth_info
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV BACKEND_URL=https://kadaigpt.up.railway.app
 
 # Start the bot
 CMD ["node", "bot.js"]
