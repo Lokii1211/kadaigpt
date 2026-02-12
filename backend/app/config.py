@@ -2,6 +2,8 @@
 KadaiGPT - Configuration Settings
 India's First Agentic AI-Powered Retail Intelligence Platform
 "Kadai" (கடை) = Shop in Tamil | GPT = Next-Gen AI
+
+Supports deployment on Vercel (serverless) with Neon PostgreSQL.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -20,8 +22,9 @@ class Settings(BaseSettings):
     debug: bool = False
     secret_key: str = "kadaigpt-super-secret-key-change-in-production-2026"
     
-    # Database - Railway provides DATABASE_URL for PostgreSQL
-    # We need to convert postgres:// to postgresql+asyncpg:// for async support
+    # Database
+    # Vercel + Neon: Use DATABASE_URL env var (postgresql+asyncpg://)
+    # Local dev: Falls back to SQLite
     database_url: str = "sqlite+aiosqlite:///./kadaigpt.db"
     
     # JWT Settings
@@ -32,7 +35,7 @@ class Settings(BaseSettings):
     # Google AI (Gemini) for OCR & Predictions
     google_api_key: Optional[str] = None
     
-    # Redis
+    # Redis (optional - gracefully degrades without it)
     redis_url: str = "redis://localhost:6379/0"
     
     # Printer Settings
@@ -42,7 +45,7 @@ class Settings(BaseSettings):
     printer_type: str = "thermal"
     
     # File Storage
-    upload_dir: str = "./uploads"
+    upload_dir: str = "/tmp/uploads"  # Vercel uses /tmp for writable storage
     max_upload_size_mb: int = 10
     
     # API Settings
@@ -55,13 +58,16 @@ class Settings(BaseSettings):
     enable_whatsapp_integration: bool = True
     
     # Evolution API (WhatsApp Bot) Settings
-    EVOLUTION_API_URL: Optional[str] = None  # e.g., https://your-evolution.railway.app
-    EVOLUTION_API_KEY: Optional[str] = None  # Your API key
-    EVOLUTION_INSTANCE_NAME: str = "kadaigpt"  # Instance name
-    WHATSAPP_VERIFY_TOKEN: str = "kadaigpt_verify_token"  # For Meta API verification
+    EVOLUTION_API_URL: Optional[str] = None
+    EVOLUTION_API_KEY: Optional[str] = None
+    EVOLUTION_INSTANCE_NAME: str = "kadaigpt"
+    WHATSAPP_VERIFY_TOKEN: str = "kadaigpt_verify_token"
     
-    # Telegram Bot Settings (Easy & Reliable!)
-    TELEGRAM_BOT_TOKEN: Optional[str] = None  # Get from @BotFather
+    # Telegram Bot Settings
+    TELEGRAM_BOT_TOKEN: Optional[str] = None
+    
+    # Encryption
+    ENCRYPTION_KEY: Optional[str] = None
     
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -72,20 +78,35 @@ class Settings(BaseSettings):
     def get_async_database_url(self) -> str:
         """
         Convert database URL to async-compatible format.
-        Railway provides postgres:// but we need postgresql+asyncpg://
+        
+        Supports:
+        - Neon PostgreSQL (Vercel): postgres:// or postgresql://
+        - Railway PostgreSQL: postgres://
+        - Local SQLite: sqlite+aiosqlite://
         """
         url = self.database_url
         
-        # Check for Railway's DATABASE_URL environment variable
-        railway_url = os.environ.get("DATABASE_URL")
-        if railway_url:
-            url = railway_url
+        # Check for DATABASE_URL environment variable (Vercel/Railway/Neon)
+        env_url = os.environ.get("DATABASE_URL")
+        if env_url:
+            url = env_url
+        
+        # Also check POSTGRES_URL (Vercel Postgres integration)
+        if not env_url:
+            vercel_url = os.environ.get("POSTGRES_URL")
+            if vercel_url:
+                url = vercel_url
         
         # Convert postgres:// to postgresql+asyncpg://
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql+asyncpg://", 1)
         elif url.startswith("postgresql://"):
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        
+        # Neon requires SSL - add sslmode if not present
+        if "neon.tech" in url and "sslmode" not in url:
+            separator = "&" if "?" in url else "?"
+            url = f"{url}{separator}sslmode=require"
         
         return url
 
@@ -97,4 +118,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-

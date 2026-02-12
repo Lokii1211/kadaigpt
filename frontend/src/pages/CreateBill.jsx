@@ -1068,7 +1068,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           border: 1px solid var(--border-subtle);
           box-shadow: 0 4px 20px rgba(0,0,0,0.15);
           overflow: hidden;
-          margin-right: 60px;
+          margin-right: 0;
         }
         
         .cart-header {
@@ -1350,17 +1350,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           transform: none;
         }
         
-        /* Hide old conflicting styles */
-        .cart-section, .cart-card, .cart-scroll-area,
-        .customer-info, .empty-cart, .cart-items-list,
-        .cart-items-header, .cart-item-row, .billing-controls,
-        .cart-totals-compact, .payment-compact,
-        .cart-actions-fixed, .btn-generate-bill, .cart-actions,
-        .cart-panel-header, .customer-input, .cart-items-area,
-        .empty-state, .items-list, .item-row, .item-details,
-        .item-qty, .item-amt, .del-btn, .billing-summary,
-        .controls-row, .control, .totals, .payment-row, .generate-btn,
-        .item-info, .item-controls, .item-price { display: none !important; }
+        /* Legacy classnames no longer used (removed display:none override) */
         
         .new-customer-badge {
           background: rgba(34, 197, 94, 0.1);
@@ -1625,7 +1615,6 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         }
 
         .cart-actions { display: none; } /* Hide old cart actions */
-        }
         .cart-actions .btn { 
           flex: 1; 
           padding: 14px; 
@@ -1663,35 +1652,26 @@ export default function CreateBill({ addToast, setCurrentPage }) {
             max-height: none;
           }
           
-          .cart-section {
+          .cart-panel {
             position: fixed;
             bottom: 65px;
             left: 0;
             right: 0;
             width: 100%;
+            min-width: unset;
             z-index: 100;
             max-height: 45vh;
+            height: auto;
             background: var(--bg-card);
             border-top: 2px solid var(--primary-400);
             border-radius: 20px 20px 0 0;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
             padding: 0;
-          }
-          
-          .cart-card {
-            border: none;
-            border-radius: 0;
-            padding: 12px 16px;
-            max-height: 45vh;
-            overflow-y: auto;
+            margin-right: 0;
           }
           
           .cart-items {
             max-height: 120px;
-          }
-          
-          .cart-actions {
-            flex-direction: row;
           }
         }
 

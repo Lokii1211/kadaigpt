@@ -8,6 +8,7 @@ from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import logging
+import os
 import httpx
 
 from app.config import settings
@@ -162,7 +163,11 @@ async def set_telegram_webhook(webhook_url: str = None):
         
         # Use provided URL or construct from settings
         if not webhook_url:
-            webhook_url = f"https://kadaigpt.up.railway.app/api/v1/telegram/webhook"
+            # Use VERCEL_URL env var if available, otherwise fallback
+            base_url = os.environ.get("VERCEL_URL", "kadaigpt.vercel.app")
+            if not base_url.startswith("http"):
+                base_url = f"https://{base_url}"
+            webhook_url = f"{base_url}/api/v1/telegram/webhook"
         
         url = f"https://api.telegram.org/bot{telegram_bot.bot_token}/setWebhook"
         

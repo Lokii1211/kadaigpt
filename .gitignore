@@ -9,6 +9,7 @@ __pycache__/
 # Environment
 .env
 .env.local
+.env.production.local
 .venv/
 venv/
 ENV/
@@ -37,6 +38,10 @@ logs/
 htmlcov/
 coverage/
 
+# Build output
+frontend/dist/
+build/
+
 # Cache
 .cache/
 
@@ -44,3 +49,14 @@ coverage/
 *.tmp
 build_output.txt
 error.log
+
+# Vercel
+.vercel/
+
+# WhatsApp auth (sensitive)
+whatsapp-gateway/auth_info/
+whatsapp-gateway/auth_base64.txt
+whatsapp-gateway/creds_base64.txt
+
+# Uploads
+uploads/

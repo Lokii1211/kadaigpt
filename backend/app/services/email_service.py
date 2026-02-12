@@ -79,7 +79,7 @@ class EmailTemplate:
         <div class="footer">
             {footer if footer else 'Powered by KadaiGPT • AI-Powered Retail Operations'}
             <br><br>
-            <a href="https://kadaigpt.up.railway.app">Visit Dashboard</a>
+            <a href="https://kadaigpt.vercel.app">Visit Dashboard</a>
         </div>
     </div>
 </body>
@@ -119,7 +119,7 @@ class EmailTemplate:
             {''.join(f"<tr><td>{p.get('name', '')}</td><td>{p.get('qty', 0)}</td><td>₹{p.get('revenue', 0):,.0f}</td></tr>" for p in data.get('top_products', [])[:5])}
         </table>
         
-        <a href="https://kadaigpt.up.railway.app/daily-summary" class="btn">View Full Report →</a>
+        <a href="https://kadaigpt.vercel.app/daily-summary" class="btn">View Full Report →</a>
         """
         return EmailTemplate.base_template("📊 Daily Business Summary", content)
 
@@ -137,7 +137,7 @@ class EmailTemplate:
             {''.join(f"<tr><td>{p.get('name', '')}</td><td>{p.get('stock', 0)}</td><td>{p.get('min_stock', 10)}</td><td style='color: #ef4444;'>Low</td></tr>" for p in products)}
         </table>
         
-        <a href="https://kadaigpt.up.railway.app/suppliers" class="btn">Order Now →</a>
+        <a href="https://kadaigpt.vercel.app/suppliers" class="btn">Order Now →</a>
         """
         return EmailTemplate.base_template("⚠️ Low Stock Alert", content)
 
@@ -164,7 +164,7 @@ class EmailTemplate:
             <li>Last Purchase: {customer.get('last_purchase', 'N/A')}</li>
         </ul>
         
-        <a href="https://kadaigpt.up.railway.app/customers" class="btn">View Customer →</a>
+        <a href="https://kadaigpt.vercel.app/customers" class="btn">View Customer →</a>
         """
         return EmailTemplate.base_template("💰 Payment Reminder", content)
 
@@ -191,7 +191,7 @@ class EmailTemplate:
             <li>Start creating bills!</li>
         </ol>
         
-        <a href="https://kadaigpt.up.railway.app" class="btn">Go to Dashboard →</a>
+        <a href="https://kadaigpt.vercel.app" class="btn">Go to Dashboard →</a>
         """
         return EmailTemplate.base_template("🎉 Welcome to KadaiGPT!", content)
 

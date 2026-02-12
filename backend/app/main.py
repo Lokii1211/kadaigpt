@@ -34,6 +34,9 @@ from app.routers import (
 from app.routers.bulk import router as bulk_router
 from app.routers.telegram import router as telegram_router
 from app.services.scheduler import router as scheduler_router
+from app.routers.subscription import router as subscription_router
+from app.routers.gst import router as gst_router
+from app.routers.credit import router as credit_router
 
 settings = get_settings()
 
@@ -97,7 +100,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS - explicitly allow localhost origins for development
+# Configure CORS - allow Vercel deployment and local development origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -105,7 +108,8 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
-        "https://kadaigpt.up.railway.app",
+        "https://kadaigpt.vercel.app",
+        "https://kadaigpt-*.vercel.app",
         "*"
     ],
     allow_credentials=True,
@@ -171,6 +175,9 @@ app.include_router(notifications_router, prefix="/api/v1")
 app.include_router(bulk_router, prefix="/api/v1")
 app.include_router(scheduler_router, prefix="/api/v1")
 app.include_router(telegram_router, prefix="/api/v1")
+app.include_router(subscription_router, prefix="/api/v1")
+app.include_router(gst_router, prefix="/api/v1")
+app.include_router(credit_router, prefix="/api/v1")
 
 
 # Serve static files from frontend build (assets like JS, CSS, images)

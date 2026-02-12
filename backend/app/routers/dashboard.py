@@ -1,52 +1,92 @@
 """
 KadaiGPT - Dashboard Stats Router
 Provides real-time statistics for the dashboard
+
+FIXED: All column references now match actual model definitions
+- Bill.store_id (not user_id)
+- Product.store_id (not user_id)
+- Product.current_stock (not stock)
+- Product.min_stock_alert (not min_stock)
+- Product.selling_price (not price)
+- Bill.total_amount (not total)
 """
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 from datetime import datetime, timedelta
 from typing import Optional
 
 from app.database import get_db
-from app.models import User, Bill, Product
-from app.routers.auth import get_current_user
+from app.models import User, Bill, Product, BillStatus
+from app.routers.auth import get_current_active_user
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
 @router.get("/stats")
 async def get_dashboard_stats(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Get dashboard statistics for the current user
+    Get dashboard statistics for the current user's store
     """
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     
     try:
-        # Get today's bills
+        # Get today's completed bills for the store
         bills_result = await db.execute(
             select(Bill)
-            .where(Bill.user_id == current_user.id)
-            .where(Bill.created_at >= today)
+            .where(
+                and_(
+                    Bill.store_id == current_user.store_id,
+                    Bill.status == BillStatus.COMPLETED,
+                    Bill.bill_date >= today
+                )
+            )
         )
         today_bills = bills_result.scalars().all()
         
-        # Get all products
+        # Get all active products for the store
         products_result = await db.execute(
             select(Product)
-            .where(Product.user_id == current_user.id)
+            .where(
+                and_(
+                    Product.store_id == current_user.store_id,
+                    Product.is_active == True
+                )
+            )
         )
         products = products_result.scalars().all()
         
-        # Calculate stats
-        today_sales = sum(float(bill.total or 0) for bill in today_bills)
+        # Calculate stats using correct column names
+        today_sales = sum(float(bill.total_amount or 0) for bill in today_bills)
         today_bills_count = len(today_bills)
         avg_bill_value = today_sales / today_bills_count if today_bills_count > 0 else 0
-        low_stock_count = sum(1 for p in products if (p.stock or 0) <= (p.min_stock or 10))
+        low_stock_count = sum(
+            1 for p in products 
+            if (p.current_stock or 0) <= (p.min_stock_alert or 10)
+        )
+        
+        # Yesterday's stats for comparison
+        yesterday = today - timedelta(days=1)
+        yesterday_result = await db.execute(
+            select(func.sum(Bill.total_amount)).where(
+                and_(
+                    Bill.store_id == current_user.store_id,
+                    Bill.status == BillStatus.COMPLETED,
+                    Bill.bill_date >= yesterday,
+                    Bill.bill_date < today
+                )
+            )
+        )
+        yesterday_sales = float(yesterday_result.scalar() or 0)
+        
+        # Revenue change
+        revenue_change = 0
+        if yesterday_sales > 0:
+            revenue_change = round(((today_sales - yesterday_sales) / yesterday_sales) * 100, 1)
         
         return {
             "todaySales": round(today_sales, 2),
@@ -54,16 +94,20 @@ async def get_dashboard_stats(
             "avgBillValue": round(avg_bill_value, 2),
             "lowStockCount": low_stock_count,
             "totalProducts": len(products),
+            "yesterdaySales": round(yesterday_sales, 2),
+            "revenueChange": revenue_change,
             "lastUpdated": datetime.now().isoformat()
         }
     except Exception as e:
-        # Return default stats if database query fails
+        print(f"[Dashboard] Stats error: {e}")
         return {
             "todaySales": 0,
             "todayBills": 0,
             "avgBillValue": 0,
             "lowStockCount": 0,
             "totalProducts": 0,
+            "yesterdaySales": 0,
+            "revenueChange": 0,
             "lastUpdated": datetime.now().isoformat(),
             "error": str(e)
         }
@@ -72,7 +116,7 @@ async def get_dashboard_stats(
 @router.get("/activity")
 async def get_activity_feed(
     limit: int = 10,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -81,10 +125,10 @@ async def get_activity_feed(
     activities = []
     
     try:
-        # Get recent bills
+        # Get recent bills for the store
         bills_result = await db.execute(
             select(Bill)
-            .where(Bill.user_id == current_user.id)
+            .where(Bill.store_id == current_user.store_id)
             .order_by(Bill.created_at.desc())
             .limit(5)
         )
@@ -95,17 +139,23 @@ async def get_activity_feed(
             activities.append({
                 "id": f"bill_{bill.id}",
                 "type": "sale",
-                "message": f"New bill #{bill.bill_number} created",
+                "message": f"Bill #{bill.bill_number} - ₹{bill.total_amount:.0f}",
                 "time": time_ago,
-                "amount": float(bill.total or 0)
+                "amount": float(bill.total_amount or 0),
+                "payment": bill.payment_method.value if bill.payment_method else "cash"
             })
         
-        # Get low stock products
+        # Get low stock products for the store
         products_result = await db.execute(
             select(Product)
-            .where(Product.user_id == current_user.id)
-            .where(Product.stock <= Product.min_stock)
-            .limit(3)
+            .where(
+                and_(
+                    Product.store_id == current_user.store_id,
+                    Product.is_active == True,
+                    Product.current_stock <= Product.min_stock_alert
+                )
+            )
+            .limit(5)
         )
         low_stock = products_result.scalars().all()
         
@@ -113,12 +163,13 @@ async def get_activity_feed(
             activities.append({
                 "id": f"stock_{product.id}",
                 "type": "stock",
-                "message": f"Low stock alert: {product.name} ({product.stock} left)",
+                "message": f"Low stock: {product.name} ({product.current_stock} left)",
                 "time": "now"
             })
         
         return activities[:limit]
-    except Exception:
+    except Exception as e:
+        print(f"[Dashboard] Activity error: {e}")
         return []
 
 
@@ -128,11 +179,16 @@ def get_time_ago(dt: datetime) -> str:
         return "unknown"
     
     now = datetime.now()
-    diff = now - dt
+    # Handle timezone-aware datetimes
+    if dt.tzinfo is not None:
+        dt = dt.replace(tzinfo=None)
     
+    diff = now - dt
     seconds = diff.total_seconds()
     
-    if seconds < 60:
+    if seconds < 0:
+        return "just now"
+    elif seconds < 60:
         return "just now"
     elif seconds < 3600:
         minutes = int(seconds / 60)
@@ -147,7 +203,7 @@ def get_time_ago(dt: datetime) -> str:
 
 @router.get("/insights")
 async def get_ai_insights(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -156,50 +212,91 @@ async def get_ai_insights(
     insights = []
     
     try:
-        # Get product data
+        # Get product data for the store
         products_result = await db.execute(
             select(Product)
-            .where(Product.user_id == current_user.id)
+            .where(
+                and_(
+                    Product.store_id == current_user.store_id,
+                    Product.is_active == True
+                )
+            )
         )
         products = products_result.scalars().all()
         
         # Low stock insight
-        low_stock_products = [p for p in products if (p.stock or 0) <= (p.min_stock or 10)]
+        low_stock_products = [
+            p for p in products 
+            if (p.current_stock or 0) <= (p.min_stock_alert or 10)
+        ]
         if low_stock_products:
+            names = ', '.join(p.name for p in low_stock_products[:3])
             insights.append({
                 "icon": "📦",
                 "title": "Stock Alert",
-                "text": f"{len(low_stock_products)} products are running low. Consider reordering soon.",
+                "text": f"{len(low_stock_products)} products low: {names}",
                 "priority": "high"
             })
         
-        # High value inventory
-        high_value = sorted(products, key=lambda p: (p.stock or 0) * (p.price or 0), reverse=True)[:3]
-        if high_value:
-            total_value = sum((p.stock or 0) * (p.price or 0) for p in products)
+        # High value inventory using correct field names
+        if products:
+            total_value = sum(
+                (p.current_stock or 0) * (p.selling_price or 0) 
+                for p in products
+            )
+            high_value = sorted(
+                products, 
+                key=lambda p: (p.current_stock or 0) * (p.selling_price or 0), 
+                reverse=True
+            )[:3]
             insights.append({
                 "icon": "💰",
                 "title": "Inventory Value",
-                "text": f"Your inventory is worth ₹{total_value:,.0f}. Top item: {high_value[0].name if high_value else 'N/A'}",
+                "text": f"Total inventory worth ₹{total_value:,.0f}. Top: {high_value[0].name if high_value else 'N/A'}",
                 "priority": "medium"
             })
         
-        # General tips
+        # Sales insight
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        bills_result = await db.execute(
+            select(func.count(Bill.id), func.sum(Bill.total_amount))
+            .where(
+                and_(
+                    Bill.store_id == current_user.store_id,
+                    Bill.status == BillStatus.COMPLETED,
+                    Bill.bill_date >= today
+                )
+            )
+        )
+        row = bills_result.one()
+        bill_count = row[0] or 0
+        bill_total = float(row[1] or 0)
+        
+        if bill_count > 0:
+            insights.append({
+                "icon": "📈",
+                "title": "Today's Sales",
+                "text": f"{bill_count} bills worth ₹{bill_total:,.0f} today",
+                "priority": "medium"
+            })
+        
+        # Pro tip
         insights.append({
             "icon": "💡",
             "title": "Pro Tip",
-            "text": "Scan handwritten bills with our OCR feature to save time on data entry!",
+            "text": "Use voice commands or scan handwritten bills with OCR to save time!",
             "priority": "low"
         })
         
         return {"insights": insights}
     except Exception as e:
+        print(f"[Dashboard] Insights error: {e}")
         return {
             "insights": [
                 {
                     "icon": "🚀",
-                    "title": "Welcome",
-                    "text": "Add products and start creating bills to see AI-powered insights!",
+                    "title": "Welcome to KadaiGPT",
+                    "text": "Add products and create bills to see AI-powered insights!",
                     "priority": "low"
                 }
             ]

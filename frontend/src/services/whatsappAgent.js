@@ -5,8 +5,8 @@
 
 import realDataService from './realDataService'
 
-// WhatsApp Bot API URL (deployed on Railway)
-const WA_BOT_API = 'https://kadaigpt-bot.up.railway.app' // Will be set via env
+// WhatsApp Bot API URL (configurable via env var)
+const WA_BOT_API = import.meta.env.VITE_WA_BOT_URL || ''
 
 class WhatsAppAgentService {
     constructor() {

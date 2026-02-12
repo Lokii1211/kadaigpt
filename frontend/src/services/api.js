@@ -1,7 +1,7 @@
 // Complete API Configuration and Service with Offline Sync
-// Uses relative URL for same-host deployment
-// For local development, use http://localhost:8000/api/v1
-// For production (Railway), use /api/v1 (relative)
+// Uses relative URL for same-host deployment (works on Vercel & local dev)
+// For local development, Vite proxy forwards /api to localhost:8000
+// For production (Vercel), /api routes are handled by serverless functions
 const API_BASE_URL = import.meta.env.PROD
     ? '/api/v1'
     : 'http://localhost:8000/api/v1'
