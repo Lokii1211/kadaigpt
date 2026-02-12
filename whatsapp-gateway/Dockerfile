@@ -9,8 +9,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --omit=dev
+# Install dependencies (npm install is more forgiving than npm ci)
+RUN npm install --omit=dev
 
 # Copy app source
 COPY . .
