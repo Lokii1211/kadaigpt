@@ -29,6 +29,8 @@ services:
         sync: false
       - key: PORT
         value: "8000"
+      - key: RENDER_EXTERNAL_URL
+        value: "https://kadaigpt.onrender.com"
     healthCheckPath: /api/health
 
   # ── WhatsApp Baileys Bot (Persistent Process) ──

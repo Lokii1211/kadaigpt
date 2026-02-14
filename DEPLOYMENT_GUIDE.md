@@ -27,13 +27,66 @@
 │  │  FastAPI Backend      │  │  Baileys + Node.js       │  │
 │  │  + React Frontend     │  │  Persistent WebSocket    │  │
 │  │  + OCR + AI           │  │  24/7 Connection         │  │
+│  │  + Keep-Alive ♻️      │  │                           │  │
 │  └──────────┬────────────┘  └───────────────────────────┘  │
 │             │                                              │
-│  ┌──────────▼────────────┐                                │
-│  │  PostgreSQL Database   │                                │
-│  │  (Render Free Tier)    │                                │
-│  └────────────────────────┘                                │
+│  ┌──────────▼────────────┐  ┌──────────────────────────┐  │
+│  │  PostgreSQL Database   │  │  UptimeRobot (External)  │  │
+│  │  (Render Free Tier)    │  │  Pings /api/ping q5min   │  │
+│  └────────────────────────┘  └──────────────────────────┘  │
 └──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🟢 24/7 Uptime System (3-Layer Protection)
+
+KadaiGPT uses a **triple-layer** keep-alive strategy to stay online 24/7 on free tier:
+
+### Layer 1: Built-in Self-Ping (Automatic)
+The backend has a built-in `KeepAliveService` that self-pings `/api/health` every 10 minutes.
+- **Zero config needed** — it starts automatically in production
+- Runs as an asyncio background task
+- Logs uptime stats hourly
+
+### Layer 2: UptimeRobot (Free External Monitor) ⭐ Recommended
+1. Go to [uptimerobot.com](https://uptimerobot.com) → Create free account
+2. Click **Add New Monitor**:
+   - **Monitor Type**: HTTP(s)
+   - **Friendly Name**: `KadaiGPT`
+   - **URL**: `https://kadaigpt.onrender.com/api/ping`
+   - **Monitoring Interval**: `5 minutes`
+3. Click **Create Monitor**
+4. (Optional) Add a 2nd monitor for WhatsApp:
+   - **URL**: `https://kadaigpt-whatsapp.onrender.com/health`
+   - **Interval**: `5 minutes`
+
+### Layer 3: Frontend Warm-Up (User Experience)
+When a user visits the site during a cold start:
+1. A beautiful loading screen shows with the KadaiGPT brand
+2. Animated progress bar with status: *"Server is waking up... (~30s)"*
+3. Auto-retries every 5 seconds until the backend responds
+4. Once warm, the app loads instantly on subsequent visits (10-min cache)
+
+### Verify Uptime System
+After deployment, check: `https://kadaigpt.onrender.com/api/health`
+
+You'll see:
+```json
+{
+  "status": "healthy",
+  "uptime": "12h 34m",
+  "database": "healthy",
+  "keepalive": {
+    "running": true,
+    "total_pings": 72,
+    "ping_interval_minutes": 10
+  },
+  "scheduler": {
+    "running": true,
+    "tasks": 7
+  }
+}
 ```
 
 ---
@@ -115,29 +168,53 @@ After build completes (~3-5 min), check these URLs:
 | URL | Expected |
 |-----|----------|
 | `https://kadaigpt.onrender.com/` | React frontend ✅ |
-| `https://kadaigpt.onrender.com/api/health` | `{"status":"healthy"}` ✅ |
+| `https://kadaigpt.onrender.com/api/health` | Full health status with uptime ✅ |
+| `https://kadaigpt.onrender.com/api/ping` | `{"pong": true}` ✅ |
 | `https://kadaigpt.onrender.com/api/docs` | Swagger UI ✅ |
 
 ---
 
-## Step 5: Set Up Telegram Webhook
+## Step 5: Set Up UptimeRobot (Keep Alive)
 
-After deployment, set the Telegram webhook:
+**This is the most important step for 24/7 uptime!**
 
+1. Go to [uptimerobot.com](https://uptimerobot.com) → Sign up (free)
+2. Add monitor:
+   - URL: `https://kadaigpt.onrender.com/api/ping`
+   - Interval: **5 minutes**
+3. This ensures the server NEVER sleeps
+
+---
+
+## Step 6: Set Up Telegram Webhook
+
+After deployment, hit this URL once:
 ```
 https://kadaigpt.onrender.com/api/v1/telegram/set-webhook
 ```
 
 ---
 
-## Free Tier Limitations
+## Monitoring Endpoints
 
-| Limitation | Details | Workaround |
-|-----------|---------|------------|
-| **Sleep after 15 min** | Free services sleep after inactivity | First request takes ~30s to wake up |
-| **750 hours/month** | Enough for 1 service 24/7 | Use 2 services = ~375 hrs each |
+| Endpoint | Purpose | Response |
+|----------|---------|----------|
+| `/api/ping` | Ultra-fast uptime check | `{"pong": true}` |
+| `/api/health` | Full system status | Uptime, DB, keepalive, scheduler |
+| `/api/info` | App info & features | Version, features list |
+| `/api/docs` | Swagger API docs | Interactive API explorer |
+
+---
+
+## Free Tier Limits & Solutions
+
+| Limitation | Details | Solution |
+|-----------|---------|----------|
+| **Sleep after 15 min** | Free services sleep after inactivity | ✅ Self-ping + UptimeRobot makes it 24/7 |
+| **750 hours/month** | Enough for 1 service 24/7 (31 days = 744 hrs) | ✅ WhatsApp service uses remaining ~6 hrs |
 | **PostgreSQL 90 days** | Free DB expires after 90 days | Recreate or upgrade ($7/mo) |
-| **512 MB RAM** | Per free service | Enough for KadaiGPT |
+| **512 MB RAM** | Per free service | ✅ Enough for KadaiGPT |
+| **Cold start ~30s** | First request after deploy | ✅ Frontend shows beautiful loading screen |
 
 ---
 
@@ -152,9 +229,10 @@ https://kadaigpt.onrender.com/api/v1/telegram/set-webhook
 - Use the **Internal Database URL** (not External)
 - Render auto-injects `DATABASE_URL` if using Blueprint
 
-### Service sleeping (slow first request)
-- Normal on free tier — takes ~30s to wake
-- Tip: Use [UptimeRobot](https://uptimerobot.com) to ping every 14 min (keeps it awake for free)
+### Service sleeping despite UptimeRobot
+- Verify UptimeRobot monitor is **active** (green checkmark)
+- Check the monitor URL is exactly: `https://kadaigpt.onrender.com/api/ping`
+- Verify interval is 5 minutes (not 30 minutes)
 
 ### WhatsApp QR Code
 - Visit `https://kadaigpt-whatsapp.onrender.com` to see the QR
@@ -165,9 +243,9 @@ https://kadaigpt.onrender.com/api/v1/telegram/set-webhook
 
 ## Cost Comparison
 
-| Platform | Backend | Database | WhatsApp Bot | Total |
-|----------|---------|----------|-------------|-------|
-| Railway (expired) | $5/mo | $5/mo | $5/mo | **$15/mo** |
-| Vercel + Neon | $0 | $0 | ❌ Can't run | **$0 (limited)** |
-| **Render.com** | **$0** | **$0** | **$0** | **$0/mo ✅** |
-| Render Paid | $7/mo | $7/mo | $7/mo | **$21/mo** |
+| Platform | Backend | Database | WhatsApp Bot | Uptime | Total |
+|----------|---------|----------|-------------|--------|-------|
+| Railway (expired) | $5/mo | $5/mo | $5/mo | ✅ | **$15/mo** |
+| Vercel + Neon | $0 | $0 | ❌ Can't run | ✅ | **$0 (limited)** |
+| **Render + UptimeRobot** | **$0** | **$0** | **$0** | **✅ 24/7** | **$0/mo ✅** |
+| Render Paid | $7/mo | $7/mo | $7/mo | ✅ | **$21/mo** |

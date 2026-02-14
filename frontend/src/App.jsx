@@ -28,6 +28,7 @@ import StoreManager from './pages/StoreManager'
 import Login from './pages/Login'
 import AdminLogin from './pages/AdminLogin'
 import api from './services/api'
+import { warmup } from './services/warmup'
 import { demoProducts } from './services/demoData'
 import './App.css'
 import './styles/mobile.css'
@@ -52,6 +53,7 @@ function App() {
     const [showUserMenu, setShowUserMenu] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
+    const [warmupStatus, setWarmupStatus] = useState({ status: 'checking', message: '' })
     const [notifications, setNotifications] = useState([
         { id: 1, type: 'warning', message: 'Sugar stock is low (3 left)', time: '5 min ago', read: false },
         { id: 2, type: 'info', message: 'New bill #1234 created', time: '10 min ago', read: false },
@@ -76,7 +78,31 @@ function App() {
     }, [currentPage])
 
     useEffect(() => {
-        const checkAuth = async () => {
+        // Start backend warmup + auth check in parallel
+        const unsub = warmup.onStatusChange((status, message) => {
+            setWarmupStatus({ status, message })
+        })
+
+        const init = async () => {
+            // Run warmup and auth check in parallel
+            const [warmupResult] = await Promise.allSettled([
+                warmup.ensureReady(),
+                checkAuthAsync()
+            ])
+
+            // If warmup failed, still allow the app to load (offline mode)
+            if (warmupResult.status === 'fulfilled' && !warmupResult.value.ready) {
+                console.warn('[App] Backend warmup failed, app may work in offline mode')
+            }
+
+            setLoading(false)
+
+            if (!localStorage.getItem('kadai_onboarding_complete') && !localStorage.getItem('kadai_demo_mode')) {
+                setShowOnboarding(true)
+            }
+        }
+
+        const checkAuthAsync = async () => {
             const token = api.getToken()
             if (token) {
                 try {
@@ -86,13 +112,9 @@ function App() {
                     api.logout()
                 }
             }
-            setLoading(false)
-
-            if (!localStorage.getItem('kadai_onboarding_complete') && !localStorage.getItem('kadai_demo_mode')) {
-                setShowOnboarding(true)
-            }
         }
-        checkAuth()
+
+        init()
 
         const handleKeyboard = (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -103,7 +125,10 @@ function App() {
             if (e.key === 'Escape') setShowCommandPalette(false)
         }
         window.addEventListener('keydown', handleKeyboard)
-        return () => window.removeEventListener('keydown', handleKeyboard)
+        return () => {
+            window.removeEventListener('keydown', handleKeyboard)
+            unsub()
+        }
     }, [])
 
     useEffect(() => {
@@ -280,8 +305,58 @@ function App() {
                     }}>KadaiGPT</h1>
                     <p style={{ color: '#666', fontSize: '0.9375rem' }}>AI-Powered Retail Intelligence</p>
                 </div>
+
+                {/* Warmup Status */}
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginTop: '8px'
+                }}>
+                    {warmupStatus.status === 'warming' && (
+                        <>
+                            <div style={{
+                                width: '200px',
+                                height: '4px',
+                                background: 'rgba(255,255,255,0.1)',
+                                borderRadius: '4px',
+                                overflow: 'hidden'
+                            }}>
+                                <div style={{
+                                    height: '100%',
+                                    background: 'linear-gradient(90deg, #f97316, #fbbf24, #f97316)',
+                                    backgroundSize: '200% 100%',
+                                    animation: 'shimmer 1.5s ease-in-out infinite',
+                                    borderRadius: '4px'
+                                }} />
+                            </div>
+                            <p style={{
+                                color: '#f97316',
+                                fontSize: '0.8125rem',
+                                fontWeight: '500',
+                                animation: 'fadeInOut 2s ease-in-out infinite'
+                            }}>
+                                ☕ {warmupStatus.message || 'Waking up the server...'}
+                            </p>
+                        </>
+                    )}
+                    {warmupStatus.status === 'checking' && (
+                        <p style={{ color: '#888', fontSize: '0.8125rem' }}>
+                            Connecting to server...
+                        </p>
+                    )}
+                    {warmupStatus.status === 'error' && (
+                        <p style={{ color: '#ef4444', fontSize: '0.8125rem' }}>
+                            ⚠️ {warmupStatus.message}
+                        </p>
+                    )}
+                </div>
+
                 <style>{`
                     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+                    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+                    @keyframes fadeInOut { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
                 `}</style>
             </div>
         )

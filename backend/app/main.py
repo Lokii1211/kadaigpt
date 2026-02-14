@@ -9,13 +9,16 @@ This backend serves both the API and the React frontend from a single host.
 """
 
 import os
+import time
 from pathlib import Path
+from datetime import datetime
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from contextlib import asynccontextmanager
 
+from sqlalchemy import text
 from app.config import get_settings
 from app.database import engine, Base
 from app.routers import (
@@ -37,8 +40,13 @@ from app.services.scheduler import router as scheduler_router
 from app.routers.subscription import router as subscription_router
 from app.routers.gst import router as gst_router
 from app.routers.credit import router as credit_router
+from app.services.keepalive import keepalive
+from app.services.scheduler import scheduler, register_default_tasks
 
 settings = get_settings()
+
+# Track server start time for uptime reporting
+SERVER_START_TIME = time.time()
 
 # Path to frontend build directory
 FRONTEND_BUILD_DIR = Path(__file__).parent.parent.parent / "frontend" / "dist"
@@ -58,6 +66,14 @@ async def lifespan(app: FastAPI):
     
     print("✅ Database tables created")
     
+    # Start keep-alive service (prevents Render free tier from sleeping)
+    await keepalive.start()
+    
+    # Start task scheduler
+    register_default_tasks()
+    await scheduler.start()
+    print("✅ Scheduler started with", len(scheduler.tasks), "tasks")
+    
     # Check if frontend build exists
     if FRONTEND_BUILD_DIR.exists():
         print(f"✅ Frontend build found at {FRONTEND_BUILD_DIR}")
@@ -71,6 +87,8 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     print("👋 KadaiGPT shutting down... நன்றி!")
+    await keepalive.stop()
+    await scheduler.stop()
     await engine.dispose()
 
 
@@ -119,14 +137,37 @@ app.add_middleware(
 )
 
 
-# API Health check endpoint
+# API Health check endpoint — production-grade
 @app.get("/api/health")
 async def health_check():
+    """Comprehensive health check with DB, uptime, and keepalive status."""
+    uptime_seconds = time.time() - SERVER_START_TIME
+    hours = int(uptime_seconds // 3600)
+    minutes = int((uptime_seconds % 3600) // 60)
+    
+    # Quick DB connectivity check
+    db_status = "healthy"
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+    except Exception as e:
+        db_status = f"error: {str(e)[:50]}"
+    
     return {
         "status": "healthy",
         "app": settings.app_name,
         "tagline": settings.app_tagline,
+        "version": "2.0.0",
         "environment": settings.app_env,
+        "uptime": f"{hours}h {minutes}m",
+        "uptime_seconds": int(uptime_seconds),
+        "server_started": datetime.fromtimestamp(SERVER_START_TIME).isoformat(),
+        "database": db_status,
+        "keepalive": keepalive.get_status(),
+        "scheduler": {
+            "running": scheduler.running,
+            "tasks": len(scheduler.tasks)
+        },
         "features": {
             "voice_commands": settings.enable_voice_commands,
             "multilingual": settings.enable_multilingual,
@@ -134,6 +175,13 @@ async def health_check():
             "whatsapp": settings.enable_whatsapp_integration
         }
     }
+
+
+# Ultra-lightweight ping endpoint for external monitors (UptimeRobot, etc.)
+@app.get("/api/ping")
+async def ping():
+    """Minimal response for uptime monitors. Returns instantly."""
+    return {"pong": True, "ts": int(time.time())}
 
 
 # API Info endpoint
