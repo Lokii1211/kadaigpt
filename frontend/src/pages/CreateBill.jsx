@@ -290,6 +290,9 @@ export default function CreateBill({ addToast, setCurrentPage }) {
 
       addToast(`✅ Bill ${newBillNumber} created - ₹${total.toFixed(2)} (Demo Mode)`, 'success')
 
+      // Invalidate cache so Bills page gets fresh data
+      realDataService.invalidateCache()
+
       // Open WhatsApp if phone provided
       if (customer.phone && customer.phone.length >= 10) {
         const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
@@ -386,7 +389,10 @@ export default function CreateBill({ addToast, setCurrentPage }) {
       }
 
       // Success! Bill is created
-      addToast(`✅ Bill ${newBillNumber} created - ₹${total.toFixed(2)} (${paymentMode})`, 'success')
+      addToast(`✅ Bill ${apiNewBillNumber} created - ₹${total.toFixed(2)} (${paymentMode})`, 'success')
+
+      // Invalidate cache so Bills/Dashboard pages get fresh data immediately
+      realDataService.invalidateCache()
 
       // Auto-send to WhatsApp if phone provided
       if (customer.phone && customer.phone.length >= 10) {
@@ -1374,4 +1380,4 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     </div>
   )
 }
-
+

@@ -65,6 +65,7 @@ export default function Dashboard({ addToast, setCurrentPage }) {
 
   const refresh = () => {
     setIsRefreshing(true)
+    realDataService.invalidateCache()
     loadDashboardData().finally(() => {
       setIsRefreshing(false)
       addToast('Dashboard refreshed', 'success')

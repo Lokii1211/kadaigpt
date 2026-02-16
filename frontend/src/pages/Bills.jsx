@@ -26,21 +26,12 @@ export default function Bills({ addToast, setCurrentPage }) {
         setLoading(true)
 
         try {
-            // Always fetch from real API - no more demo mode
+            // Invalidate cache to get fresh data
+            realDataService.invalidateCache('bills')
             const billList = await realDataService.getBills()
 
             if (Array.isArray(billList) && billList.length > 0) {
-                // Normalize bill data
-                const normalizedBills = billList.map(b => ({
-                    ...b,
-                    bill_number: b.billNumber || b.bill_number || `INV-${b.id}`,
-                    customer_name: b.customerName || b.customer_name || 'Walk-in',
-                    total: b.total || b.total_amount || 0,
-                    payment_mode: b.paymentMethod || b.payment_mode || 'cash',
-                    created_at: b.createdAt || b.created_at,
-                    status: b.status || 'completed'
-                }))
-                setBills(normalizedBills)
+                setBills(billList)
             } else {
                 setBills([])
             }
@@ -301,13 +292,17 @@ export default function Bills({ addToast, setCurrentPage }) {
                                                 {bill.customer_phone && <span className="customer-phone">{bill.customer_phone}</span>}
                                             </div>
                                         </td>
-                                        <td><span className="items-count">{bill.items?.length || 0} items</span></td>
+                                        <td><span className="items-count">{bill.items_count || bill.items?.length || 0} items</span></td>
                                         <td><span className="amount">₹{bill.total?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></td>
-                                        <td><span className={`badge badge-${bill.payment_mode === 'Cash' ? 'success' : bill.payment_mode === 'UPI' ? 'info' : 'warning'}`}>{bill.payment_mode}</span></td>
+                                        <td><span className={`badge badge-${bill.payment_mode?.toLowerCase() === 'cash' ? 'success' : bill.payment_mode?.toLowerCase() === 'upi' ? 'info' : 'warning'}`}>{bill.payment_mode}</span></td>
                                         <td><span className="date-cell">{formatDate(bill.created_at)}</span></td>
                                         <td>
                                             <div className="action-buttons">
-                                                <button className="btn btn-ghost btn-sm" onClick={() => setSelectedBill(bill)} title="View Details">
+                                                <button className="btn btn-ghost btn-sm" onClick={async () => {
+                                                    // Fetch full bill details with items
+                                                    const fullBill = await realDataService.getBillById(bill.id)
+                                                    setSelectedBill(fullBill || bill)
+                                                }} title="View Details">
                                                     <Eye size={16} />
                                                 </button>
                                                 <button className="btn btn-ghost btn-sm" onClick={() => printBill(bill)} title="Print Receipt">

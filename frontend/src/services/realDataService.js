@@ -16,6 +16,15 @@ class RealDataService {
         this.cache.clear()
     }
 
+    // Invalidate specific cache keys (e.g., after creating a bill)
+    invalidateCache(...keys) {
+        if (keys.length === 0) {
+            this.cache.clear()
+        } else {
+            keys.forEach(key => this.cache.delete(key))
+        }
+    }
+
     // Get cached data or fetch new
     async getCached(key, fetchFn) {
         const cached = this.cache.get(key)
@@ -115,15 +124,21 @@ class RealDataService {
                 bill_number: b.bill_number || `BILL-${b.id}`,
                 customerName: b.customer_name || b.customer?.name || 'Walk-in',
                 customer_name: b.customer_name || b.customer?.name || 'Walk-in',
+                customer_phone: b.customer_phone || '',
                 customerId: b.customer_id,
+                // Backend BillSummary returns total_amount, BillResponse returns total_amount
                 total: b.total_amount || b.total || 0,
-                subtotal: b.subtotal || b.total || 0,
+                total_amount: b.total_amount || b.total || 0,
+                subtotal: b.subtotal || b.total_amount || b.total || 0,
                 tax: b.tax_amount || b.tax || 0,
                 discount: b.discount_amount || b.discount || 0,
-                paymentMethod: b.payment_mode || b.payment_method || 'cash',
-                payment_mode: b.payment_mode || b.payment_method || 'cash',
+                // Backend uses payment_method enum
+                paymentMethod: b.payment_method || b.payment_mode || 'cash',
+                payment_mode: b.payment_method || b.payment_mode || 'cash',
                 status: b.status || 'completed',
+                // BillSummary has items_count (integer), not items array
                 items: b.items || [],
+                items_count: b.items_count || b.items?.length || 0,
                 createdAt: b.created_at,
                 created_at: b.created_at,
                 createdBy: b.created_by
@@ -131,6 +146,42 @@ class RealDataService {
         } catch (error) {
             console.error('Failed to fetch bills:', error)
             return []
+        }
+    }
+
+    // Get a single bill with full details (including items)
+    async getBillById(billId) {
+        try {
+            const response = await api.request(`/bills/${billId}`)
+            const b = response
+            return {
+                id: b.id,
+                bill_number: b.bill_number,
+                customer_name: b.customer_name || 'Walk-in',
+                customer_phone: b.customer_phone || '',
+                total: b.total_amount || 0,
+                subtotal: b.subtotal || 0,
+                tax: b.tax_amount || 0,
+                discount: b.discount_amount || 0,
+                payment_mode: b.payment_method || 'cash',
+                status: b.status || 'completed',
+                items: (b.items || []).map(item => ({
+                    product_name: item.product_name,
+                    product_id: item.product_id,
+                    quantity: item.quantity,
+                    unit_price: item.unit_price,
+                    total: item.total,
+                    subtotal: item.subtotal,
+                    tax_amount: item.tax_amount,
+                    discount_amount: item.discount_amount
+                })),
+                created_at: b.created_at,
+                amount_paid: b.amount_paid || 0,
+                change_amount: b.change_amount || 0
+            }
+        } catch (error) {
+            console.error('Failed to fetch bill details:', error)
+            return null
         }
     }
 

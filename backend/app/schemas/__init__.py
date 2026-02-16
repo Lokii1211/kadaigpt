@@ -256,6 +256,7 @@ class BillSummary(BaseModel):
     status: BillStatusEnum
     payment_method: PaymentMethodEnum
     customer_name: Optional[str]
+    customer_phone: Optional[str] = None
     items_count: int
     created_at: datetime
 

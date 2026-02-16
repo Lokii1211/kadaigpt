@@ -108,6 +108,7 @@ async def list_bills(
             status=bill.status,
             payment_method=bill.payment_method,
             customer_name=bill.customer_name,
+            customer_phone=bill.customer_phone,
             items_count=items_count,
             created_at=bill.created_at
         ))
