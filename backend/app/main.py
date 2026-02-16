@@ -20,7 +20,7 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy import text
 from app.config import get_settings
-from app.database import engine, Base, check_db_health
+from app.database import engine, Base, check_db_health, init_db
 from app.routers import (
     auth_router,
     products_router,
@@ -65,11 +65,8 @@ async def lifespan(app: FastAPI):
     print("   கடை சிறியது, கனவுகள் பெரியது")
     print("   'The shop may be small, but dreams are big'")
     
-    # Create database tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    print("✅ Database tables created")
+    # Create database tables + run migrations + create indexes
+    await init_db()
     
     # Start keep-alive service (prevents Render free tier from sleeping)
     await keepalive.start()
