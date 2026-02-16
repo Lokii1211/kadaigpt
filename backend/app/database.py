@@ -74,7 +74,39 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("[Database] Tables created successfully!")
+    await run_migrations()
     await create_indexes()
+
+
+async def run_migrations():
+    """Run lightweight migrations to add missing columns to existing tables"""
+    migration_statements = [
+        # Add deleted_at to customers if missing (soft delete support)
+        """DO $$ BEGIN
+            ALTER TABLE customers ADD COLUMN deleted_at TIMESTAMPTZ;
+        EXCEPTION WHEN duplicate_column THEN NULL;
+        END $$;""",
+        # Add loyalty_points to customers if missing
+        """DO $$ BEGIN
+            ALTER TABLE customers ADD COLUMN loyalty_points INTEGER DEFAULT 0;
+        EXCEPTION WHEN duplicate_column THEN NULL;
+        END $$;""",
+        # Add last_purchase to customers if missing
+        """DO $$ BEGIN
+            ALTER TABLE customers ADD COLUMN last_purchase TIMESTAMP;
+        EXCEPTION WHEN duplicate_column THEN NULL;
+        END $$;""",
+    ]
+    try:
+        async with engine.begin() as conn:
+            for stmt in migration_statements:
+                try:
+                    await conn.execute(text(stmt))
+                except Exception as e:
+                    logger.debug(f"Migration skipped: {e}")
+        logger.info(f"[Database] {len(migration_statements)} migrations checked")
+    except Exception as e:
+        logger.warning(f"[Database] Migrations skipped: {e}")
 
 
 async def create_indexes():
