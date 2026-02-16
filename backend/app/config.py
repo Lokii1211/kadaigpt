@@ -20,17 +20,16 @@ class Settings(BaseSettings):
     app_tagline: str = "AI-Powered Retail Intelligence for Bharat"
     app_env: str = "development"
     debug: bool = False
-    secret_key: str = "kadaigpt-super-secret-key-change-in-production-2026"
+    secret_key: str = "kadaigpt-dev-secret-key-CHANGE-IN-PRODUCTION"
     
     # Database
-    # Vercel + Neon: Use DATABASE_URL env var (postgresql+asyncpg://)
-    # Local dev: Falls back to SQLite
     database_url: str = "sqlite+aiosqlite:///./kadaigpt.db"
     
     # JWT Settings
-    jwt_secret_key: str = "kadaigpt-jwt-secret-key-2026"
+    jwt_secret_key: str = "kadaigpt-dev-jwt-key-CHANGE-IN-PRODUCTION"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440  # 24 hours
+    refresh_token_expire_days: int = 30
     
     # Google AI (Gemini) for OCR & Predictions
     google_api_key: Optional[str] = None
@@ -45,11 +44,15 @@ class Settings(BaseSettings):
     printer_type: str = "thermal"
     
     # File Storage
-    upload_dir: str = "/tmp/uploads"  # Vercel uses /tmp for writable storage
+    upload_dir: str = "/tmp/uploads"
     max_upload_size_mb: int = 10
     
     # API Settings
     api_v1_prefix: str = "/api/v1"
+    
+    # Rate Limiting
+    rate_limit_per_minute: int = 100
+    auth_rate_limit_per_minute: int = 5
     
     # Feature Flags
     enable_voice_commands: bool = True
@@ -68,6 +71,9 @@ class Settings(BaseSettings):
     
     # Encryption
     ENCRYPTION_KEY: Optional[str] = None
+    
+    # Allowed Hosts (production)
+    allowed_hosts: str = "localhost,127.0.0.1,kadaigpt.onrender.com,kadaigpt.vercel.app"
     
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -20,7 +20,7 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy import text
 from app.config import get_settings
-from app.database import engine, Base
+from app.database import engine, Base, check_db_health
 from app.routers import (
     auth_router,
     products_router,
@@ -40,8 +40,13 @@ from app.services.scheduler import router as scheduler_router
 from app.routers.subscription import router as subscription_router
 from app.routers.gst import router as gst_router
 from app.routers.credit import router as credit_router
+from app.routers.audit import router as audit_router
+from app.routers.inapp_notifications import router as inapp_notifications_router
+from app.routers.backup import router as backup_router
 from app.services.keepalive import keepalive
 from app.services.scheduler import scheduler, register_default_tasks
+from app.middleware.security import rate_limiter, get_rate_limit_type, RATE_LIMITS, audit_logger
+import uuid
 
 settings = get_settings()
 
@@ -118,40 +123,93 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS - allow Vercel deployment and local development origins
+# ═══════════════════════════════════════════════════════════════════
+# CORS — Production-safe origins (NO wildcard "*")
+# ═══════════════════════════════════════════════════════════════════
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+    "https://kadaigpt.vercel.app",
+    "https://kadaigpt.onrender.com",
+]
+
+# In development, allow all origins for convenience
+if settings.app_env == "development":
+    ALLOWED_ORIGINS.append("*")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
-        "https://kadaigpt.vercel.app",
-        "https://kadaigpt-*.vercel.app",
-        "*"
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
-    expose_headers=["*"],
+    expose_headers=["X-Request-ID", "X-Response-Time"],
 )
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Security Middleware — Rate Limiting + Headers + Request Timing
+# ═══════════════════════════════════════════════════════════════════
+@app.middleware("http")
+async def security_middleware(request: Request, call_next):
+    """Adds rate limiting, security headers, request IDs, and timing."""
+    start_time = time.time()
+    request_id = str(uuid.uuid4())[:8]
+    
+    # Rate limiting (skip for health/ping/docs endpoints)
+    client_ip = request.client.host if request.client else "unknown"
+    path = request.url.path
+    
+    if not path.startswith(("/api/ping", "/api/health", "/api/docs", "/api/redoc", "/api/openapi")):
+        limit_type = get_rate_limit_type(path)
+        limits = RATE_LIMITS.get(limit_type, RATE_LIMITS['api'])
+        allowed, remaining = rate_limiter.check_rate_limit(
+            f"{client_ip}:{limit_type}",
+            max_requests=limits['max'],
+            window_seconds=limits['window']
+        )
+        if not allowed:
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "error": True,
+                    "message": "Too many requests. Please slow down.",
+                    "retry_after": limits['window']
+                },
+                headers={"Retry-After": str(limits['window'])}
+            )
+    
+    # Process request
+    response = await call_next(request)
+    
+    # Add security headers
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Response-Time"] = f"{(time.time() - start_time)*1000:.1f}ms"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(self), geolocation=()"
+    
+    # HSTS in production
+    if settings.app_env == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    
+    return response
 
 
 # API Health check endpoint — production-grade
 @app.get("/api/health")
 async def health_check():
-    """Comprehensive health check with DB, uptime, and keepalive status."""
+    """Comprehensive health check with DB pool stats, uptime, and keepalive status."""
     uptime_seconds = time.time() - SERVER_START_TIME
     hours = int(uptime_seconds // 3600)
     minutes = int((uptime_seconds % 3600) // 60)
     
-    # Quick DB connectivity check
-    db_status = "healthy"
-    try:
-        async with engine.connect() as conn:
-            await conn.execute(text("SELECT 1"))
-    except Exception as e:
-        db_status = f"error: {str(e)[:50]}"
+    # Detailed DB health check with pool stats
+    db_health = await check_db_health()
     
     return {
         "status": "healthy",
@@ -162,7 +220,7 @@ async def health_check():
         "uptime": f"{hours}h {minutes}m",
         "uptime_seconds": int(uptime_seconds),
         "server_started": datetime.fromtimestamp(SERVER_START_TIME).isoformat(),
-        "database": db_status,
+        "database": db_health,
         "keepalive": keepalive.get_status(),
         "scheduler": {
             "running": scheduler.running,
@@ -173,6 +231,11 @@ async def health_check():
             "multilingual": settings.enable_multilingual,
             "predictive_analytics": settings.enable_predictive_analytics,
             "whatsapp": settings.enable_whatsapp_integration
+        },
+        "security": {
+            "cors_restricted": settings.app_env == "production",
+            "rate_limiting": True,
+            "security_headers": True
         }
     }
 
@@ -226,6 +289,9 @@ app.include_router(telegram_router, prefix="/api/v1")
 app.include_router(subscription_router, prefix="/api/v1")
 app.include_router(gst_router, prefix="/api/v1")
 app.include_router(credit_router, prefix="/api/v1")
+app.include_router(audit_router)  # Already has /api/audit prefix
+app.include_router(inapp_notifications_router)  # Already has /api/notifications prefix
+app.include_router(backup_router, prefix="/api/v1")  # /api/v1/backup
 
 
 # Serve static files from frontend build (assets like JS, CSS, images)
@@ -281,18 +347,30 @@ async def serve_spa(request: Request, full_path: str):
 # Error handlers
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    # Log the error for debugging
+    # Log the error for debugging (never leak sensitive info in production)
     print(f"[Error] {type(exc).__name__}: {str(exc)}")
+    
+    # Audit log the error
+    client_ip = request.client.host if request.client else "unknown"
+    audit_logger.log_event(
+        event_type="server_error",
+        user_id=None,
+        ip_address=client_ip,
+        path=str(request.url.path),
+        method=request.method,
+        status_code=500,
+        details={"error": type(exc).__name__}
+    )
+    
+    # Don't expose internal errors in production
+    message = str(exc) if settings.app_env == "development" else "An unexpected error occurred"
+    
     return JSONResponse(
         status_code=500,
         content={
             "error": True,
-            "message": str(exc),
-            "detail": "An unexpected error occurred"
-        },
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Credentials": "true",
+            "message": message,
+            "detail": "Internal server error"
         }
     )
 

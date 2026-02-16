@@ -15,6 +15,8 @@ from app.models import Bill, BillItem, Product, User, Store, BillStatus, Payment
 from app.schemas import BillCreate, BillResponse, BillSummary, PrintRequest, PrintStatus
 from app.routers.auth import get_current_active_user
 from app.agents import print_agent, inventory_agent, offline_agent
+from app.routers.audit import log_audit_event
+from app.routers.inapp_notifications import create_system_notification
 
 
 router = APIRouter(prefix="/bills", tags=["Bills"])
@@ -324,6 +326,24 @@ async def create_bill(
     
     # Build response
     response = BillResponse.model_validate(bill)
+    
+    # 📝 AUDIT: Log bill creation
+    await log_audit_event(
+        db=db,
+        store_id=current_user.store_id,
+        user_id=current_user.id,
+        action="create",
+        entity_type="bill",
+        entity_id=bill.id,
+        new_values={
+            "bill_number": bill.bill_number,
+            "total_amount": bill.total_amount,
+            "payment_method": bill.payment_method.value if hasattr(bill.payment_method, 'value') else str(bill.payment_method),
+            "items_count": len(bill.items),
+            "customer_name": bill.customer_name,
+        }
+    )
+    await db.commit()
     
     return response
 

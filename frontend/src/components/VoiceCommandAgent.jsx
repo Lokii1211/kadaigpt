@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Mic, MicOff, Volume2, Loader2, X, Sparkles, MessageCircle, Send, Bot } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { getSpeechCode } from '../i18n'
 import realDataService from '../services/realDataService'
 
 export default function VoiceCommandAgent({ addToast, setCurrentPage }) {
+    const { t, i18n } = useTranslation()
     const [isListening, setIsListening] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
     const [transcript, setTranscript] = useState('')
@@ -13,6 +16,9 @@ export default function VoiceCommandAgent({ addToast, setCurrentPage }) {
     const recognitionRef = useRef(null)
     const synthRef = useRef(null)
 
+    // Get speech code based on current i18n language (ta-IN, hi-IN, te-IN, kn-IN, ml-IN, en-IN)
+    const currentSpeechLang = getSpeechCode(i18n.language)
+
     useEffect(() => {
         // Initialize Speech Recognition
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -20,7 +26,7 @@ export default function VoiceCommandAgent({ addToast, setCurrentPage }) {
             recognitionRef.current = new SpeechRecognition()
             recognitionRef.current.continuous = false
             recognitionRef.current.interimResults = true
-            recognitionRef.current.lang = 'en-IN'
+            recognitionRef.current.lang = currentSpeechLang
 
             recognitionRef.current.onresult = (event) => {
                 const result = event.results[event.results.length - 1]
@@ -65,7 +71,7 @@ export default function VoiceCommandAgent({ addToast, setCurrentPage }) {
     const speak = useCallback((text) => {
         if (synthRef.current) {
             const utterance = new SpeechSynthesisUtterance(text)
-            utterance.lang = 'en-IN'
+            utterance.lang = currentSpeechLang
             utterance.rate = 1
             utterance.pitch = 1
             synthRef.current.speak(utterance)

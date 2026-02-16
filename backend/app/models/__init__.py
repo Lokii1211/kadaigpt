@@ -397,7 +397,59 @@ class Customer(Base):
     
     # Status
     is_active = Column(Boolean, default=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)  # Soft delete
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class AuditTrail(Base):
+    """Audit trail for tracking all critical business operations"""
+    __tablename__ = "audit_trails"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    
+    # What happened
+    action = Column(String(100), nullable=False)  # create, update, delete, login, etc.
+    entity_type = Column(String(50), nullable=False)  # bill, product, customer, etc.
+    entity_id = Column(Integer, nullable=True)
+    
+    # Details
+    old_values = Column(JSON, nullable=True)  # Previous state (for updates)
+    new_values = Column(JSON, nullable=True)  # New state
+    
+    # Context
+    ip_address = Column(String(50))
+    user_agent = Column(String(500))
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Notification(Base):
+    """In-app notifications for users"""
+    __tablename__ = "notifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # None = broadcast
+    
+    # Content
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+    notification_type = Column(String(50), default="info")  # info, warning, alert, success
+    
+    # Status
+    is_read = Column(Boolean, default=False)
+    
+    # Reference (optional link to entity)
+    entity_type = Column(String(50), nullable=True)  # bill, product, etc.
+    entity_id = Column(Integer, nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    read_at = Column(DateTime(timezone=True), nullable=True)
+
