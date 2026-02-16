@@ -278,7 +278,7 @@ class ApiService {
     // Analytics endpoint
     async getAnalytics(period = 'week') {
         try {
-            return await this.request(`/dashboard/analytics?period=${period}`)
+            return await this.request(`/analytics/sales/overview?period=${period}`)
         } catch (error) {
             // Return computed analytics from bills if endpoint doesn't exist
             console.log('Analytics endpoint not available, computing from bills')

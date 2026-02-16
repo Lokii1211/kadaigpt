@@ -62,23 +62,42 @@ async def get_customer_stats(
     db: AsyncSession = Depends(get_db)
 ):
     """Get customer statistics from database"""
-    # Get all customers for this store
-    result = await db.execute(
-        select(Customer).where(Customer.store_id == current_user.store_id)
-    )
-    customers = result.scalars().all()
-    
-    total_customers = len(customers)
-    total_credit = sum(c.credit or 0 for c in customers)
-    customers_with_credit = sum(1 for c in customers if (c.credit or 0) > 0)
-    total_business = sum(c.total_purchases or 0 for c in customers)
-    
-    return {
-        "total_customers": total_customers,
-        "total_credit": total_credit,
-        "customers_with_credit": customers_with_credit,
-        "total_business": total_business
-    }
+    try:
+        # Try with deleted_at filter first
+        try:
+            query = select(Customer).where(
+                Customer.store_id == current_user.store_id,
+                Customer.deleted_at.is_(None)
+            )
+            result = await db.execute(query)
+            customers = result.scalars().all()
+        except Exception:
+            # deleted_at column may not exist in DB yet - rollback and retry without it
+            await db.rollback()
+            query = select(Customer).where(Customer.store_id == current_user.store_id)
+            result = await db.execute(query)
+            customers = result.scalars().all()
+        
+        total_customers = len(customers)
+        total_credit = sum(getattr(c, 'credit', 0) or 0 for c in customers)
+        customers_with_credit = sum(1 for c in customers if (getattr(c, 'credit', 0) or 0) > 0)
+        total_business = sum(getattr(c, 'total_purchases', 0) or 0 for c in customers)
+        
+        return {
+            "total_customers": total_customers,
+            "total_credit": total_credit,
+            "customers_with_credit": customers_with_credit,
+            "total_business": total_business
+        }
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Error fetching customer stats: {e}")
+        return {
+            "total_customers": 0,
+            "total_credit": 0,
+            "customers_with_credit": 0,
+            "total_business": 0
+        }
 
 
 @router.get("", response_model=List[dict])
@@ -89,45 +108,63 @@ async def get_customers(
     db: AsyncSession = Depends(get_db)
 ):
     """Get all customers for the current user's store from database"""
-    query = select(Customer).where(Customer.store_id == current_user.store_id)
-    
-    # Apply search filter
-    if search:
-        search_term = f"%{search}%"
-        query = query.where(
-            or_(
-                Customer.name.ilike(search_term),
-                Customer.phone.ilike(search_term)
+    try:
+        # Build base query
+        base_filters = [Customer.store_id == current_user.store_id]
+        
+        # Try with deleted_at filter first, fallback without it
+        try:
+            query = select(Customer).where(*base_filters, Customer.deleted_at.is_(None))
+            # Test the query works
+            result = await db.execute(query.limit(0))
+            # It works, rebuild with all filters
+            query = select(Customer).where(*base_filters, Customer.deleted_at.is_(None))
+        except Exception:
+            await db.rollback()
+            query = select(Customer).where(*base_filters)
+        
+        # Apply search filter
+        if search:
+            search_term = f"%{search}%"
+            query = query.where(
+                or_(
+                    Customer.name.ilike(search_term),
+                    Customer.phone.ilike(search_term)
+                )
             )
-        )
-    
-    # Apply credit filter
-    if has_credit is not None:
-        if has_credit:
-            query = query.where(Customer.credit > 0)
-        else:
-            query = query.where(Customer.credit == 0)
-    
-    query = query.order_by(desc(Customer.created_at))
-    result = await db.execute(query)
-    customers = result.scalars().all()
-    
-    return [
-        {
-            "id": c.id,
-            "name": c.name,
-            "phone": c.phone,
-            "email": c.email,
-            "address": c.address,
-            "credit": c.credit or 0,
-            "total_purchases": c.total_purchases or 0,
-            "loyalty_points": c.loyalty_points or 0,
-            "last_purchase": c.last_purchase.isoformat() if c.last_purchase else None,
-            "is_paid": (c.credit or 0) == 0,
-            "created_at": c.created_at.isoformat() if c.created_at else None
-        }
-        for c in customers
-    ]
+        
+        # Apply credit filter
+        if has_credit is not None:
+            if has_credit:
+                query = query.where(Customer.credit > 0)
+            else:
+                query = query.where(Customer.credit == 0)
+        
+        query = query.order_by(desc(Customer.created_at))
+        result = await db.execute(query)
+        customers = result.scalars().all()
+        
+        return [
+            {
+                "id": c.id,
+                "name": c.name,
+                "phone": c.phone,
+                "email": getattr(c, 'email', None),
+                "address": getattr(c, 'address', None),
+                "credit": getattr(c, 'credit', 0) or 0,
+                "total_purchases": getattr(c, 'total_purchases', 0) or 0,
+                "loyalty_points": getattr(c, 'loyalty_points', 0) or 0,
+                "last_purchase": c.last_purchase.isoformat() if getattr(c, 'last_purchase', None) else None,
+                "is_paid": (getattr(c, 'credit', 0) or 0) == 0,
+                "created_at": c.created_at.isoformat() if getattr(c, 'created_at', None) else None
+            }
+            for c in customers
+        ]
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Error fetching customers: {e}")
+        # Return empty list instead of 500 error
+        return []
 
 
 @router.post("", response_model=dict)

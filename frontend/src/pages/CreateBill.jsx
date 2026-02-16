@@ -306,7 +306,8 @@ export default function CreateBill({ addToast, setCurrentPage }) {
 
       setTimeout(() => {
         clearCart()
-        addToast('Ready for next bill!', 'info')
+        addToast('Redirecting to All Bills...', 'info')
+        setTimeout(() => setCurrentPage?.('bills'), 500)
       }, 1500)
       return
     }
@@ -405,10 +406,11 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         window.open(waUrl, '_blank')
       }
 
-      // Clear cart and prepare for next bill
+      // Clear cart and navigate to All Bills so user sees the new bill
       setTimeout(() => {
         clearCart()
-        addToast('Ready for next bill!', 'info')
+        addToast('Redirecting to All Bills...', 'info')
+        setTimeout(() => setCurrentPage?.('bills'), 500)
       }, 2000)
 
     } catch (error) {
@@ -616,6 +618,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                 <div className="item-row2">
                   <span className="item-rate">₹{item.price}/{item.unit || 'pcs'}</span>
                   <div className="qty-group">
+                    <button className="qty-btn" onClick={() => updateQuantity(item.id, -(item.unit === 'kg' || item.unit === 'L' ? 0.1 : 1))}>−</button>
                     <input
                       type="number"
                       className="qty-val"
@@ -627,6 +630,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                         if (!isNaN(v) && v >= 0) setCart(cart.map(c => c.id === item.id ? { ...c, quantity: Math.max(0.1, v) } : c));
                       }}
                     />
+                    <button className="qty-btn" onClick={() => updateQuantity(item.id, item.unit === 'kg' || item.unit === 'L' ? 0.1 : 1)}>+</button>
                     <select className="unit-sel" value={item.unit || 'pcs'} onChange={(e) => setCart(cart.map(c => c.id === item.id ? { ...c, unit: e.target.value } : c))}>
                       <option value="pcs">pcs</option>
                       <option value="kg">kg</option>
@@ -982,9 +986,27 @@ export default function CreateBill({ addToast, setCurrentPage }) {
           flex: 1;
           justify-content: flex-end;
         }
+        .qty-btn {
+          width: 30px;
+          height: 30px;
+          border: 1px solid var(--border-subtle);
+          border-radius: 8px;
+          background: var(--bg-card);
+          color: var(--text-primary);
+          font-size: 1.1rem;
+          font-weight: 700;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.15s;
+          flex-shrink: 0;
+        }
+        .qty-btn:hover { border-color: var(--primary-400); color: var(--primary-400); background: rgba(249, 115, 22, 0.08); }
+        .qty-btn:active { transform: scale(0.92); }
         .qty-val {
-          width: 65px;
-          padding: 6px 8px;
+          width: 50px;
+          padding: 6px 4px;
           text-align: center;
           border: 1px solid var(--border-subtle);
           border-radius: 6px;
@@ -1343,17 +1365,58 @@ export default function CreateBill({ addToast, setCurrentPage }) {
             height: auto;
           }
           
+          .page-header {
+            display: flex !important;
+            padding: 12px 16px;
+          }
+          .header-left .page-title { font-size: 1.1rem; }
+          
           /* On mobile: Products on TOP, Cart on BOTTOM (fixed) */
           .products-section {
             overflow: visible;
-            padding: 12px;
-            padding-bottom: 340px; /* Space for fixed cart */
+            padding: 10px 12px;
+            padding-bottom: 320px; /* Space for fixed cart */
+          }
+
+          .product-filters {
+            margin-bottom: 8px;
+          }
+
+          .search-input.large input {
+            padding: 12px 12px 12px 42px;
+            font-size: 0.9rem;
+          }
+
+          .category-tabs {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+          }
+          .category-tabs::-webkit-scrollbar { display: none; }
+          .cat-tab {
+            white-space: nowrap;
+            flex-shrink: 0;
+            padding: 6px 12px;
+            font-size: 0.75rem;
           }
           
           .products-grid {
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 8px;
             overflow: visible;
             max-height: none;
           }
+
+          .product-item {
+            padding: 10px;
+          }
+          .product-name { font-size: 0.8rem; }
+          .product-price { font-size: 0.85rem; }
+          .product-stock { font-size: 0.6rem; }
+          .product-category-tag { font-size: 0.55rem; padding: 1px 6px; }
+          .add-btn { width: 26px; height: 26px; top: 6px; right: 6px; }
           
           .cart-panel {
             position: fixed;
@@ -1363,18 +1426,73 @@ export default function CreateBill({ addToast, setCurrentPage }) {
             width: 100%;
             min-width: unset;
             height: auto;
-            max-height: 50vh;
+            max-height: 55vh;
             z-index: 100;
             border-right: none;
             border-top: 2px solid var(--primary-400);
             border-radius: 20px 20px 0 0;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+            box-shadow: 0 -6px 30px rgba(0,0,0,0.35);
             order: 1;
+          }
+
+          .cart-header {
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            border-radius: 20px 20px 0 0;
+          }
+
+          .cart-customer {
+            padding: 8px 10px;
+            gap: 4px;
+          }
+          .cart-customer input {
+            padding: 7px 10px;
+            font-size: 0.8rem;
           }
           
           .cart-items {
-            max-height: 120px;
+            max-height: 130px;
+            padding: 8px 10px;
           }
+
+          .cart-item {
+            padding: 8px 10px;
+            margin-bottom: 6px;
+          }
+          .item-row1 .item-name { font-size: 0.8rem; }
+          .item-row1 .item-total { font-size: 0.85rem; }
+          .item-rate { font-size: 0.7rem; }
+          .qty-btn { width: 28px; height: 28px; font-size: 1rem; }
+          .qty-val { width: 42px; font-size: 0.8rem; padding: 5px 2px; }
+          .unit-sel { font-size: 0.7rem; padding: 5px 2px; }
+
+          .cart-footer {
+            padding: 8px 10px;
+          }
+          .quick-controls { font-size: 0.7rem; gap: 8px; margin-bottom: 6px; }
+          .quick-controls input { width: 40px; padding: 4px; font-size: 0.75rem; }
+          .quick-controls select { padding: 4px; font-size: 0.75rem; }
+          .totals-row { font-size: 0.75rem; margin-bottom: 4px; }
+          .total-big { font-size: 1.1rem; padding: 8px 12px; margin-bottom: 6px; }
+          .payment-btns { gap: 3px; margin-bottom: 6px; }
+          .payment-btns button { padding: 7px 3px; font-size: 0.75rem; border-radius: 6px; }
+          .generate-bill-btn { padding: 12px; font-size: 0.9rem; }
+
+          /* Modals on mobile */
+          .modal { margin: 16px; max-width: calc(100vw - 32px) !important; }
+          .payment-modal, .preview-modal, .qty-modal { max-width: calc(100vw - 32px) !important; }
+        }
+
+        /* Extra small screens */
+        @media (max-width: 480px) {
+          .products-grid {
+            grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+            gap: 6px;
+          }
+          .product-item { padding: 8px; }
+          .product-name { font-size: 0.75rem; }
+          .product-price { font-size: 0.8rem; }
+          .cart-panel { max-height: 60vh; }
         }
       `}</style>
     </div>
