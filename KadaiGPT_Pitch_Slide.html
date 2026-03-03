@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KadaiGPT — Product Overview</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: landscape;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .slide {
+            width: 1280px;
+            height: 720px;
+            background: linear-gradient(145deg, #0f0f23 0%, #1a1a35 40%, #0d1b2a 100%);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            color: white;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Subtle grid pattern overlay */
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 25% 25%, rgba(99, 102, 241, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(245, 158, 11, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Left Panel — Hero */
+        .left-panel {
+            padding: 52px 48px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fff 0%, #c7d2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .tagline-hindi {
+            font-size: 14px;
+            color: #f59e0b;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 900;
+            line-height: 1.15;
+            letter-spacing: -0.8px;
+            color: #f1f5f9;
+        }
+
+        h1 .highlight {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 15px;
+            color: #94a3b8;
+            line-height: 1.6;
+            max-width: 420px;
+            font-weight: 400;
+        }
+
+        .market-stats {
+            display: flex;
+            gap: 28px;
+            padding-top: 8px;
+        }
+
+        .market-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .market-stat .number {
+            font-size: 28px;
+            font-weight: 900;
+            color: #fbbf24;
+            letter-spacing: -0.5px;
+            line-height: 1;
+        }
+
+        .market-stat .label {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .bottom-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .tech-stack {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tech-tag {
+            font-size: 10px;
+            padding: 4px 10px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: 6px;
+            color: #a5b4fc;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            padding: 6px 14px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 8px;
+            color: #4ade80;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* Right Panel — Features & Data */
+        .right-panel {
+            padding: 52px 48px 52px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #6366f1;
+            margin-bottom: 4px;
+        }
+
+        /* Feature Grid */
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .feature {
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .feature-icon {
+            font-size: 18px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .feature-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 2px;
+        }
+
+        .feature-desc {
+            font-size: 10.5px;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        /* Differentiators */
+        .differentiators {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .diff-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12.5px;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        .diff-icon {
+            width: 24px;
+            height: 24px;
+            background: rgba(34, 197, 94, 0.15);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .diff-item strong {
+            color: #f1f5f9;
+            font-weight: 700;
+        }
+
+        /* Competitor bar */
+        .vs-bar {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .vs-item {
+            text-align: center;
+        }
+
+        .vs-name {
+            font-size: 10px;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
+        }
+
+        .vs-value {
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .vs-value.winner {
+            color: #4ade80;
+        }
+
+        .vs-value.loser {
+            color: #64748b;
+        }
+
+        .divider-v {
+            width: 1px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Accent line */
+        .accent-line {
+            position: absolute;
+            left: 50%;
+            top: 72px;
+            bottom: 72px;
+            width: 1px;
+            background: linear-gradient(180deg, transparent, rgba(99, 102, 241, 0.2), rgba(245, 158, 11, 0.15), transparent);
+            z-index: 1;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                background: #0a0a1a;
+            }
+
+            .slide {
+                border-radius: 0;
+                box-shadow: none;
+                width: 100vw;
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="slide">
+        <div class="accent-line"></div>
+
+        <!-- LEFT PANEL — Hero & Market -->
+        <div class="left-panel">
+            <div class="logo-area">
+                <div class="logo-icon">🏪</div>
+                <span class="logo-text">KadaiGPT</span>
+            </div>
+
+            <div class="hero-content">
+                <div class="tagline-hindi">கடை சிறியது, கனவுகள் பெரியது</div>
+                <h1>
+                    India's First <span class="highlight">Agentic AI</span><br>
+                    Retail Intelligence Platform<br>
+                    for <span class="highlight">12M+ Kirana Stores</span>
+                </h1>
+                <p class="subtitle">
+                    Offline-first, multilingual POS system with AI-powered inventory,
+                    voice billing in 6 Indian languages, and WhatsApp-native commerce —
+                    built for the ₹90 Lakh Crore unorganized retail market.
+                </p>
+
+                <div class="market-stats">
+                    <div class="market-stat">
+                        <span class="number">12M+</span>
+                        <span class="label">Kirana Stores</span>
+                    </div>
+                    <div class="market-stat">
+                        <span class="number">₹90L Cr</span>
+                        <span class="label">Market Size</span>
+                    </div>
+                    <div class="market-stat">
+                        <span class="number">&lt;5%</span>
+                        <span class="label">Digitized Today</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-bar">
+                <div class="tech-stack">
+                    <span class="tech-tag">React 19</span>
+                    <span class="tech-tag">FastAPI</span>
+                    <span class="tech-tag">PostgreSQL</span>
+                    <span class="tech-tag">Gemini AI</span>
+                    <span class="tech-tag">PWA</span>
+                    <span class="tech-tag">WebSocket</span>
+                </div>
+                <div class="status-badge">● LIVE & DEPLOYED</div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL — Features & Proof -->
+        <div class="right-panel">
+            <div>
+                <div class="section-title">Core Capabilities</div>
+                <div class="features">
+                    <div class="feature">
+                        <span class="feature-icon">📴</span>
+                        <div class="feature-name">Offline-First Billing</div>
+                        <div class="feature-desc">Works without internet. Auto-syncs when connected. Zero data loss.
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">🎙️</span>
+                        <div class="feature-name">Voice Commerce</div>
+                        <div class="feature-desc">Bill via voice in Tamil, Hindi, Telugu, Kannada, Malayalam & English.
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">🤖</span>
+                        <div class="feature-name">8 AI Agents</div>
+                        <div class="feature-desc">Pricing, restock, anomaly, churn, forecast — autonomous retail
+                            intelligence.</div>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">💬</span>
+                        <div class="feature-name">WhatsApp Bills</div>
+                        <div class="feature-desc">1-tap formatted receipt via WhatsApp. Customers expect it.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-title">Why We Win</div>
+                <div class="differentiators">
+                    <div class="diff-item">
+                        <div class="diff-icon">⚡</div>
+                        <span><strong>3-second billing</strong> — faster than calculator + paper</span>
+                    </div>
+                    <div class="diff-item">
+                        <div class="diff-icon">🌐</div>
+                        <span><strong>6 Indian languages</strong> — competitors support max 2</span>
+                    </div>
+                    <div class="diff-item">
+                        <div class="diff-icon">📡</div>
+                        <span><strong>True offline</strong> — not "offline-capable", genuinely offline-first</span>
+                    </div>
+                    <div class="diff-item">
+                        <div class="diff-icon">💰</div>
+                        <span><strong>₹10/day pricing</strong> — cheaper than one chai, saves ₹2K/month on
+                            accountant</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-title" style="margin-bottom:8px">Setup Speed — vs Competitors</div>
+                <div class="vs-bar">
+                    <div class="vs-item">
+                        <div class="vs-name">KadaiGPT</div>
+                        <div class="vs-value winner">2 min</div>
+                    </div>
+                    <div class="divider-v"></div>
+                    <div class="vs-item">
+                        <div class="vs-name">Vyapar</div>
+                        <div class="vs-value loser">15 min</div>
+                    </div>
+                    <div class="divider-v"></div>
+                    <div class="vs-item">
+                        <div class="vs-name">Marg ERP</div>
+                        <div class="vs-value loser">3 hrs</div>
+                    </div>
+                    <div class="divider-v"></div>
+                    <div class="vs-item">
+                        <div class="vs-name">Tally</div>
+                        <div class="vs-value loser">2 days</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto">
+                <div style="font-size:10px;color:#475569;line-height:1.5">
+                    <span style="color:#94a3b8;font-weight:700">22 Pages</span> · <span
+                        style="color:#94a3b8;font-weight:700">48 Components</span> · <span
+                        style="color:#94a3b8;font-weight:700">21 APIs</span> · <span
+                        style="color:#94a3b8;font-weight:700">94% Feature Complete</span><br>
+                    Deployed on Render · PostgreSQL + Neon · Docker · CI/CD Ready
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

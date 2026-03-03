@@ -8,6 +8,7 @@ import VoiceCommandAgent from './components/VoiceCommandAgent'
 import OfflineIndicator from './components/OfflineIndicator'
 import LoadingScreen from './components/LoadingScreen'
 import ErrorBoundary from './components/ErrorBoundary'
+import CelebrationEngine from './components/CelebrationEngine'
 import LanguageSwitcher from './components/LanguageSwitcher'
 import errorTracker from './services/errorTracker'
 // ═══════════════════════════════════════════════════════════════
@@ -45,15 +46,34 @@ import './i18n'
 import './App.css'
 import './styles/mobile.css'
 import './styles/enhancements.css'
+import './styles/ux-rules.css'
 
 // Initialize error tracking on app load
 errorTracker.init()
 
 function App() {
+    // Role-specific default pages (mental model alignment)
+    // Cashier: goes straight to billing (their only job)
+    // Accountant: goes to GST reports (their primary task)
+    // Warehouse: goes to inventory (stock in/out)
+    // Owner/Manager: dashboard overview
+    const getRoleDefaultPage = (role) => {
+        const defaults = {
+            cashier: 'create-bill',
+            staff: 'create-bill',
+            accountant: 'gst',
+            warehouse: 'products',
+            manager: 'dashboard',
+            owner: 'dashboard',
+        }
+        return defaults[(role || 'owner').toLowerCase()] || 'dashboard'
+    }
+
     const getInitialPage = () => {
         const hash = window.location.hash.replace('#', '')
         const validPages = ['dashboard', 'bills', 'create-bill', 'ocr', 'products', 'analytics', 'customers', 'gst', 'whatsapp', 'suppliers', 'loyalty', 'ai-insights', 'expenses', 'daily-summary', 'bulk-operations', 'admin', 'settings', 'staff', 'stores', 'subscription', 'admin-login']
-        return validPages.includes(hash) ? hash : 'dashboard'
+        const savedRole = localStorage.getItem('kadai_user_role') || 'owner'
+        return validPages.includes(hash) ? hash : getRoleDefaultPage(savedRole)
     }
 
     const [currentPage, setCurrentPageState] = useState(getInitialPage)
@@ -313,7 +333,7 @@ function App() {
     }
 
     return (
-        <div className="app-layout no-sidebar">
+        <div className={`app-layout no-sidebar role-${userRole}`}>
             {/* Offline Status Indicator */}
             <OfflineIndicator />
 
@@ -350,12 +370,14 @@ function App() {
                     </div>
 
                     {/* Desktop Navigation */}
-                    <nav className="nav-links desktop-only">
+                    <nav className="nav-links desktop-only" role="navigation" aria-label="Primary navigation">
                         {navItems.map(item => (
                             <button
                                 key={item.id}
                                 className={`nav-link ${currentPage === item.id ? 'active' : ''} ${item.primary ? 'primary' : ''}`}
                                 onClick={() => setCurrentPage(item.id)}
+                                aria-label={item.label}
+                                aria-current={currentPage === item.id ? 'page' : undefined}
                             >
                                 <item.icon size={18} />
                                 <span>{item.label}</span>
@@ -529,10 +551,11 @@ function App() {
             {/* Mobile Bottom Nav */}
             <MobileNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
 
-            {/* Offline Banner */}
+            {/* Offline Banner — subtle, non-alarming (UX Rule #10) */}
             {!isOnline && (
-                <div className="offline-banner">
-                    <span>📴 Offline Mode - Data will sync when connected</span>
+                <div className="offline-banner-subtle" role="status" aria-live="polite">
+                    <span className="sync-status-dot offline"></span>
+                    <span>ऑफलाइन — बिल फोन में सेव होगा</span>
                 </div>
             )}
         </div>
@@ -543,7 +566,9 @@ function App() {
 export default function AppWithErrorBoundary() {
     return (
         <ErrorBoundary>
-            <App />
+            <CelebrationEngine>
+                <App />
+            </CelebrationEngine>
         </ErrorBoundary>
     )
 }

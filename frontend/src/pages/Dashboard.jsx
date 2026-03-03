@@ -74,39 +74,79 @@ export default function Dashboard({ addToast, setCurrentPage }) {
 
   const getGreeting = () => {
     const hour = currentTime.getHours()
-    if (hour < 12) return 'Good Morning'
-    if (hour < 17) return 'Good Afternoon'
-    return 'Good Evening'
+    if (hour < 12) return 'शुभ प्रभात' // Good Morning
+    if (hour < 17) return 'नमस्ते' // Hello/Good Afternoon
+    return 'शुभ संध्या' // Good Evening
+  }
+
+  const getGreetingEmoji = () => {
+    const hour = currentTime.getHours()
+    if (hour < 12) return '☀️'
+    if (hour < 17) return '🌤️'
+    return '🌙'
   }
 
   return (
     <div className="dash">
-      {/* Header */}
+      {/* Header — "Aaj Ka Hisaab" design */}
       <header className="dash-header">
         <div>
-          <h1>{getGreeting()}! 👋</h1>
+          <h1>{getGreeting()}! {getGreetingEmoji()}</h1>
           <p>{storeName} • {formatDate()}</p>
         </div>
         <div className="dash-time">
           <span>{formatTime()}</span>
-          <button onClick={refresh} className={isRefreshing ? 'spinning' : ''}>
+          <button onClick={refresh} className={isRefreshing ? 'spinning' : ''} aria-label="Refresh dashboard">
             <RefreshCw size={16} />
           </button>
         </div>
       </header>
 
-      {/* Low Stock Alert Banner */}
+      {/* Hero Revenue Card — ONE big number (UX Rule: Owner mental model) */}
+      {(userRole === 'owner' || userRole === 'admin' || userRole === 'manager') && (
+        <div className="revenue-hero" style={{
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+          borderRadius: '20px', padding: '28px 24px', color: 'white',
+          marginBottom: '16px', position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <p style={{ fontSize: '13px', opacity: 0.8, marginBottom: '4px', fontWeight: 500 }}>
+              📊 आज की बिक्री (Today's Sales)
+            </p>
+            <div className="currency-display currency-big" style={{ color: '#fbbf24', fontSize: '40px', fontWeight: 800 }}>
+              {formatCurrency(stats.todaySales)}
+            </div>
+            <div style={{ display: 'flex', gap: '20px', marginTop: '12px', fontSize: '14px', opacity: 0.9 }}>
+              <span>🧾 {stats.todayBills} bills</span>
+              <span>📊 Avg {formatCurrency(stats.avgBillValue)}</span>
+            </div>
+          </div>
+          {/* Decorative circles */}
+          <div style={{
+            position: 'absolute', top: '-30px', right: '-30px',
+            width: '120px', height: '120px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)',
+          }} />
+          <div style={{
+            position: 'absolute', bottom: '-20px', right: '40px',
+            width: '80px', height: '80px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.03)',
+          }} />
+        </div>
+      )}
+
+      {/* Low Stock Alert Banner — Hindi, solution-focused (UX Rule #6) */}
       {lowStockProducts.length > 0 && (
         <div className="low-stock-alert">
           <div className="alert-icon">
             <AlertTriangle size={20} />
           </div>
           <div className="alert-content">
-            <strong>{lowStockProducts.length} products need restocking!</strong>
-            <span>{lowStockProducts.slice(0, 3).map(p => p.name).join(', ')}{lowStockProducts.length > 3 ? ` +${lowStockProducts.length - 3} more` : ''}</span>
+            <strong>⚠️ {lowStockProducts.length} items stock कम है!</strong>
+            <span>{lowStockProducts.slice(0, 3).map(p => p.name).join(', ')}{lowStockProducts.length > 3 ? ` +${lowStockProducts.length - 3} और` : ''}</span>
           </div>
-          <button className="alert-btn" onClick={() => setCurrentPage('products')}>
-            View All →
+          <button className="alert-btn" onClick={() => setCurrentPage('products')} aria-label="View low stock products">
+            Order करें →
           </button>
         </div>
       )}

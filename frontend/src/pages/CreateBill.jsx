@@ -3,6 +3,7 @@ import { Search, Plus, Minus, Trash2, Printer, Save, ShoppingCart, X, Eye, Loade
 import realDataService from '../services/realDataService'
 import whatsappService from '../services/whatsapp'
 import api from '../services/api'
+import { trackBillCreated } from '../components/CelebrationEngine'
 import { demoProducts } from '../services/demoData'
 
 const categories = ["All", "Grains", "Pulses", "Essentials", "Oils", "Beverages", "Dairy", "General", "Snacks", "Packaged", "Household", "Personal Care"]
@@ -316,6 +317,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
       // Save bill to API - backend handles stock updates via inventory_agent
       const result = await api.createBill(billData)
       console.log('✅ Bill created:', result)
+      trackBillCreated() // Trigger celebration milestones
 
       const apiNewBillNumber = result.bill_number || newBillNumber
       setBillNumber(apiNewBillNumber)
