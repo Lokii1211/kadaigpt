@@ -11,9 +11,9 @@ export default function Subscription({ addToast }) {
             name: 'Free',
             icon: Zap,
             price: { monthly: 0, yearly: 0 },
-            description: 'Get started with basic features',
+            description: 'शुरुआत करें — Start free, upgrade later',
             features: [
-                { text: '50 bills/month', included: true },
+                { text: '100 bills/month', included: true },
                 { text: 'Basic inventory', included: true },
                 { text: '1 store', included: true },
                 { text: '2 AI insights/day', included: true },
@@ -28,7 +28,8 @@ export default function Subscription({ addToast }) {
             name: 'Pro',
             icon: Star,
             price: { monthly: 299, yearly: 2999 },
-            description: 'For growing businesses',
+            perDay: '₹10/day — एक चाय से सस्ता!',
+            description: 'बढ़ते business के लिए — For growing stores',
             popular: true,
             features: [
                 { text: 'Unlimited bills', included: true },
@@ -46,7 +47,8 @@ export default function Subscription({ addToast }) {
             name: 'Business',
             icon: Building2,
             price: { monthly: 999, yearly: 9999 },
-            description: 'For multi-store owners',
+            perDay: '₹33/day — saves ₹2K/month on accountant',
+            description: 'कई दुकानों के मालिक — Multi-store owners',
             features: [
                 { text: 'Unlimited bills', included: true },
                 { text: 'Full inventory', included: true },
@@ -88,8 +90,9 @@ export default function Subscription({ addToast }) {
     return (
         <div className="subscription-page">
             <div className="page-header">
-                <h1>Choose Your Plan</h1>
-                <p>Select the plan that fits your business needs</p>
+                <h1>अपना Plan चुनें</h1>
+                <p>Choose the right plan for your business</p>
+                <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '4px' }}>₹10/day = एक चाय से सस्ता! बदले में — accountant की ₹2000/month बचत</p>
             </div>
 
             {/* Billing Toggle */}
@@ -132,9 +135,14 @@ export default function Subscription({ addToast }) {
 
                             <div className="plan-price">
                                 <span className="currency">₹</span>
-                                <span className="amount">{price}</span>
+                                <span className="amount">{price.toLocaleString('en-IN')}</span>
                                 <span className="period">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
                             </div>
+                            {plan.perDay && (
+                                <div style={{ textAlign: 'center', fontSize: '12px', color: '#22c55e', fontWeight: 600, marginTop: '-16px', marginBottom: '16px' }}>
+                                    {plan.perDay}
+                                </div>
+                            )}
 
                             <ul className="features-list">
                                 {plan.features.map((feature, i) => (
