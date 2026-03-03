@@ -9,6 +9,7 @@ import OfflineIndicator from './components/OfflineIndicator'
 import LoadingScreen from './components/LoadingScreen'
 import ErrorBoundary from './components/ErrorBoundary'
 import CelebrationEngine from './components/CelebrationEngine'
+import HelpSupport from './components/HelpSupport'
 import LanguageSwitcher from './components/LanguageSwitcher'
 import errorTracker from './services/errorTracker'
 // ═══════════════════════════════════════════════════════════════
@@ -538,6 +539,9 @@ function App() {
             {/* AI Assistants */}
             <UnifiedAIAssistant addToast={addToast} setCurrentPage={setCurrentPage} products={products} />
             <VoiceCommandAgent addToast={addToast} setCurrentPage={setCurrentPage} />
+
+            {/* Help & Support (FAQ + Contact) */}
+            <HelpSupport />
 
             {/* Toast Notifications */}
             <div className="toast-container">

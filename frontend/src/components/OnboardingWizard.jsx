@@ -54,26 +54,26 @@ export default function OnboardingWizard({ onComplete }) {
                             <div className="welcome-icon">
                                 <Zap size={48} />
                             </div>
-                            <h2>Welcome to KadaiGPT! 🎉</h2>
+                            <h2>KadaiGPT में स्वागत है! 🎉</h2>
                             <p>India's First AI-Powered Retail Intelligence Platform</p>
 
                             <div className="features-list">
                                 <div className="feature">
                                     <Package size={20} />
-                                    <span>Smart Inventory Management</span>
+                                    <span>📦 Smart Inventory — Stock कभी कम नहीं होगा</span>
                                 </div>
                                 <div className="feature">
                                     <Users size={20} />
-                                    <span>Customer Credit Tracking</span>
+                                    <span>👥 Credit Tracking — उधार का पूरा हिसाब</span>
                                 </div>
                                 <div className="feature">
                                     <Zap size={20} />
-                                    <span>AI-Powered Insights</span>
+                                    <span>📴 Offline Mode — बिना internet भी चले</span>
                                 </div>
                             </div>
 
                             <button className="btn btn-primary btn-lg" onClick={() => setStep(2)}>
-                                Let's Get Started <ArrowRight size={18} />
+                                शुरू करें — Let's Go! <ArrowRight size={18} />
                             </button>
                         </div>
                     )}
@@ -83,12 +83,12 @@ export default function OnboardingWizard({ onComplete }) {
                             <div className="step-icon">
                                 <Store size={32} />
                             </div>
-                            <h2>Tell us about your store</h2>
-                            <p>This helps us personalize your experience</p>
+                            <h2>अपनी दुकान के बारे में बताएं</h2>
+                            <p>Tell us about your store — ताकि हम आपके लिए setup करें</p>
 
                             <div className="form-grid">
                                 <div className="form-group">
-                                    <label className="form-label">Store Name *</label>
+                                    <label className="form-label">दुकान का नाम (Store Name) *</label>
                                     <input
                                         type="text"
                                         className="form-input"
@@ -155,27 +155,27 @@ export default function OnboardingWizard({ onComplete }) {
                             <div className="complete-icon">
                                 <Check size={48} />
                             </div>
-                            <h2>You're all set! 🚀</h2>
-                            <p>Your store <strong>{storeData.storeName || 'My Store'}</strong> is ready</p>
+                            <h2>तैयार हो गया! 🚀</h2>
+                            <p>आपकी दुकान <strong>{storeData.storeName || 'My Store'}</strong> तैयार है!</p>
 
                             <div className="next-steps">
-                                <h4>Quick Start Guide:</h4>
+                                <h4>अब ये करें (Quick Start):</h4>
                                 <div className="next-step">
                                     <span className="step-num">1</span>
-                                    <span>Add your products in the Products page</span>
+                                    <span>Products पेज में अपने items जोड़ें</span>
                                 </div>
                                 <div className="next-step">
                                     <span className="step-num">2</span>
-                                    <span>Create your first bill</span>
+                                    <span>पहला बिल बनाएं — बस 3 tap!</span>
                                 </div>
                                 <div className="next-step">
                                     <span className="step-num">3</span>
-                                    <span>Add customers to track credit</span>
+                                    <span>Customer जोड़ें, credit track करें</span>
                                 </div>
                             </div>
 
                             <button className="btn btn-primary btn-lg" onClick={handleComplete}>
-                                Start Using KadaiGPT <ArrowRight size={18} />
+                                KadaiGPT चालू करें 🏪 <ArrowRight size={18} />
                             </button>
                         </div>
                     )}
