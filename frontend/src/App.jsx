@@ -36,6 +36,7 @@ const AdminPanel = lazy(() => import('./pages/AdminPanel'))
 const Subscription = lazy(() => import('./pages/Subscription'))
 const StaffManagement = lazy(() => import('./pages/StaffManagement'))
 const StoreManager = lazy(() => import('./pages/StoreManager'))
+const LegalPages = lazy(() => import('./pages/LegalPages'))
 // Auth pages stay eagerly loaded (critical path)
 import Login from './pages/Login'
 import AdminLogin from './pages/AdminLogin'
@@ -72,7 +73,7 @@ function App() {
 
     const getInitialPage = () => {
         const hash = window.location.hash.replace('#', '')
-        const validPages = ['dashboard', 'bills', 'create-bill', 'ocr', 'products', 'analytics', 'customers', 'gst', 'whatsapp', 'suppliers', 'loyalty', 'ai-insights', 'expenses', 'daily-summary', 'bulk-operations', 'admin', 'settings', 'staff', 'stores', 'subscription', 'admin-login']
+        const validPages = ['dashboard', 'bills', 'create-bill', 'ocr', 'products', 'analytics', 'customers', 'gst', 'whatsapp', 'suppliers', 'loyalty', 'ai-insights', 'expenses', 'daily-summary', 'bulk-operations', 'admin', 'settings', 'staff', 'stores', 'subscription', 'admin-login', 'privacy', 'terms']
         const savedRole = localStorage.getItem('kadai_user_role') || 'owner'
         return validPages.includes(hash) ? hash : getRoleDefaultPage(savedRole)
     }
@@ -244,7 +245,16 @@ function App() {
             case 'staff': return <StaffManagement addToast={addToast} />
             case 'stores': return <StoreManager addToast={addToast} setCurrentPage={setCurrentPage} />
             case 'settings': return <Settings addToast={addToast} />
-            default: return <Dashboard addToast={addToast} setCurrentPage={setCurrentPage} />
+            case 'privacy': return <LegalPages page="privacy" onBack={() => setCurrentPage('settings')} />
+            case 'terms': return <LegalPages page="terms" onBack={() => setCurrentPage('settings')} />
+            default: return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', textAlign: 'center', padding: '20px' }}>
+                    <div style={{ fontSize: '64px', marginBottom: '16px' }}>🔍</div>
+                    <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '8px' }}>Page Not Found</h2>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>The page you're looking for doesn't exist.</p>
+                    <button onClick={() => setCurrentPage('dashboard')} style={{ padding: '12px 24px', borderRadius: '12px', background: 'var(--primary, #6366f1)', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer', fontSize: '14px' }}>← Go to Dashboard</button>
+                </div>
+            )
         }
     }
 

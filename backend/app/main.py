@@ -43,6 +43,7 @@ from app.routers.credit import router as credit_router
 from app.routers.audit import router as audit_router
 from app.routers.inapp_notifications import router as inapp_notifications_router
 from app.routers.backup import router as backup_router
+from app.routers.privacy import router as privacy_router
 from app.services.keepalive import keepalive
 from app.services.scheduler import scheduler, register_default_tasks
 from app.middleware.security import rate_limiter, get_rate_limit_type, RATE_LIMITS, audit_logger
@@ -303,6 +304,7 @@ app.include_router(credit_router, prefix="/api/v1")
 app.include_router(audit_router)  # Already has /api/audit prefix
 app.include_router(inapp_notifications_router)  # Already has /api/notifications prefix
 app.include_router(backup_router, prefix="/api/v1")  # /api/v1/backup
+app.include_router(privacy_router, prefix="/api/v1")  # /api/v1/privacy
 
 
 # Serve static files from frontend build (assets like JS, CSS, images)

@@ -2,6 +2,7 @@
 KadaiGPT - Authentication Router
 User registration, login, and session management
 """
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -28,6 +29,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+logger = logging.getLogger("KadaiGPT.Auth")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -51,9 +53,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     
     to_encode.update({"exp": expire})
     
-    # Debug: log key being used
     jwt_key = settings.jwt_secret_key
-    print(f"[Auth] Creating token with key: {jwt_key[:10]}... for user: {data.get('sub')}")
+    logger.debug(f"Creating token for user: {data.get('sub')}")
     
     encoded_jwt = jwt.encode(to_encode, jwt_key, algorithm=settings.jwt_algorithm)
     
@@ -73,10 +74,8 @@ async def get_current_user(
     
     try:
         jwt_key = settings.jwt_secret_key
-        print(f"[Auth] Validating token with key: {jwt_key[:10]}...")
         payload = jwt.decode(token, jwt_key, algorithms=[settings.jwt_algorithm])
         user_id_raw = payload.get("sub")
-        print(f"[Auth] Token decoded successfully, user_id: {user_id_raw}")
         if user_id_raw is None:
             raise credentials_exception
         # Handle both string and int user_id
@@ -86,14 +85,14 @@ async def get_current_user(
             raise credentials_exception
         token_data = TokenData(user_id=user_id)
     except JWTError as e:
-        print(f"[Auth] JWT decode error: {e}")
+        logger.warning(f"JWT validation failed: {type(e).__name__}")
         raise credentials_exception
     
     result = await db.execute(select(User).where(User.id == token_data.user_id))
     user = result.scalar_one_or_none()
     
     if user is None:
-        print(f"[Auth] User not found for id: {token_data.user_id}")
+        logger.warning(f"Token valid but user not found (id: {token_data.user_id})")
         raise credentials_exception
     
     if not user.is_active:

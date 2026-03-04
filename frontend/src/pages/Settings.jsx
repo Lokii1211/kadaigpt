@@ -360,7 +360,7 @@ export default function Settings({ addToast }) {
                     <div className="system-info">
                         <div className="info-row">
                             <span>App Version</span>
-                            <span className="info-value">1.0.0</span>
+                            <span className="info-value">2.0.0</span>
                         </div>
                         <div className="info-row">
                             <span>Backend Status</span>
@@ -368,7 +368,7 @@ export default function Settings({ addToast }) {
                         </div>
                         <div className="info-row">
                             <span>Database</span>
-                            <span className="info-value">SQLite (Local)</span>
+                            <span className="info-value">PostgreSQL (Cloud)</span>
                         </div>
                         <div className="info-row">
                             <span>OCR Engine</span>
@@ -481,6 +481,72 @@ export default function Settings({ addToast }) {
                             </ul>
                             <button className="btn btn-ghost" onClick={() => addToast('Contact sales@kadaigpt.com', 'info')}>Contact Sales</button>
                         </div>
+                    </div>
+                </div>
+
+                {/* Legal & Privacy — DPDP Act 2023 Compliance */}
+                <div className="card settings-card" style={{ gridColumn: '1 / -1' }}>
+                    <div className="card-header">
+                        <h3 className="card-title">🔒 Legal & Privacy</h3>
+                        <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>DPDP Act 2023</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', padding: '4px 0' }}>
+                        <button
+                            className="btn btn-ghost"
+                            onClick={() => {
+                                const hash = window.location.hash
+                                window.location.hash = 'privacy'
+                                window.dispatchEvent(new HashChangeEvent('hashchange'))
+                            }}
+                            style={{ justifyContent: 'flex-start', gap: '8px' }}
+                        >
+                            🛡️ Privacy Policy / गोपनीयता नीति
+                        </button>
+                        <button
+                            className="btn btn-ghost"
+                            onClick={() => {
+                                const hash = window.location.hash
+                                window.location.hash = 'terms'
+                                window.dispatchEvent(new HashChangeEvent('hashchange'))
+                            }}
+                            style={{ justifyContent: 'flex-start', gap: '8px' }}
+                        >
+                            📄 Terms of Service / सेवा शर्तें
+                        </button>
+                        <button
+                            className="btn btn-ghost"
+                            onClick={async () => {
+                                try {
+                                    const data = await api.get('/privacy/export')
+                                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+                                    const url = URL.createObjectURL(blob)
+                                    const a = document.createElement('a')
+                                    a.href = url
+                                    a.download = `kadaigpt_data_export_${new Date().toISOString().slice(0, 10)}.json`
+                                    a.click()
+                                    URL.revokeObjectURL(url)
+                                    addToast('Data exported successfully!', 'success')
+                                } catch { addToast('Export available in your account', 'info') }
+                            }}
+                            style={{ justifyContent: 'flex-start', gap: '8px' }}
+                        >
+                            📥 Download My Data / मेरा डेटा डाउनलोड
+                        </button>
+                        <button
+                            className="btn btn-ghost"
+                            onClick={() => {
+                                if (window.confirm('⚠️ Are you sure you want to delete your account? This action cannot be undone.\n\nक्या आप वाकई अपना अकाउंट डिलीट करना चाहते हैं?')) {
+                                    if (window.prompt('Type DELETE to confirm:') === 'DELETE') {
+                                        api.delete('/privacy/account?confirmation=DELETE')
+                                            .then(() => { addToast('Account deleted', 'info'); api.logout(); window.location.reload() })
+                                            .catch(() => addToast('Contact support to delete account', 'info'))
+                                    }
+                                }
+                            }}
+                            style={{ justifyContent: 'flex-start', gap: '8px', color: 'var(--error, #ef4444)' }}
+                        >
+                            🗑️ Delete Account / अकाउंट हटाएं
+                        </button>
                     </div>
                 </div>
             </div>
