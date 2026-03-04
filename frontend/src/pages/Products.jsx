@@ -5,7 +5,28 @@ import api from '../services/api'
 import EmptyState from '../components/EmptyState'
 import FloatingActionButton from '../components/FloatingActionButton'
 
-const categories = ["All", "Grains", "Pulses", "Essentials", "Oils", "Beverages", "Dairy", "General"]
+const categories = ["All", "Grains", "Pulses", "Essentials", "Oils", "Beverages", "Dairy", "Snacks", "Packaged", "Household", "Personal Care", "General"]
+
+// Smart category detection based on product name keywords
+const CATEGORY_KEYWORDS = {
+    Grains: ['rice', 'wheat', 'atta', 'maida', 'rava', 'sooji', 'ragi', 'bajra', 'jowar', 'corn', 'flour', 'basmati', 'sella', 'ponni', 'idli'],
+    Pulses: ['dal', 'toor', 'chana', 'moong', 'urad', 'masoor', 'rajma', 'lentil', 'chickpea', 'peas', 'beans', 'lobia'],
+    Oils: ['oil', 'ghee', 'butter', 'vanaspati', 'coconut oil', 'sunflower', 'mustard oil', 'sesame', 'groundnut'],
+    Dairy: ['milk', 'curd', 'paneer', 'cheese', 'yogurt', 'cream', 'buttermilk', 'lassi', 'khoya'],
+    Beverages: ['tea', 'coffee', 'juice', 'water', 'soda', 'cola', 'pepsi', 'sprite', 'drink', 'shake'],
+    Essentials: ['salt', 'sugar', 'jaggery', 'turmeric', 'chilli', 'pepper', 'cumin', 'coriander', 'masala', 'spice', 'garam'],
+    Snacks: ['chips', 'biscuit', 'cookie', 'namkeen', 'mixture', 'murukku', 'cake', 'chocolate', 'candy', 'sweet'],
+    Packaged: ['noodle', 'maggi', 'pasta', 'sauce', 'ketchup', 'jam', 'pickle', 'papad', 'ready'],
+    Household: ['soap', 'detergent', 'cleaner', 'broom', 'mop', 'tissue', 'foil', 'bag', 'candle', 'match'],
+    'Personal Care': ['shampoo', 'toothpaste', 'brush', 'cream', 'lotion', 'powder', 'deodorant', 'razor', 'comb'],
+}
+function detectCategory(productName) {
+    const name = (productName || '').toLowerCase()
+    for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+        if (keywords.some(kw => name.includes(kw))) return cat
+    }
+    return 'General'
+}
 
 export default function Products({ addToast, setCurrentPage }) {
     const [products, setProducts] = useState([])
@@ -16,7 +37,7 @@ export default function Products({ addToast, setCurrentPage }) {
     const [showAddModal, setShowAddModal] = useState(false)
     const [editProduct, setEditProduct] = useState(null)
     const [newProduct, setNewProduct] = useState({
-        name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'Essentials'
+        name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'General'
     })
 
     useEffect(() => {
@@ -39,9 +60,9 @@ export default function Products({ addToast, setCurrentPage }) {
                     minStock: p.minStock || p.min_stock_alert || 10,
                     dailySales: p.dailySales || p.daily_sales || 2,
                     trend: p.trend || 'stable',
-                    // Properly map category - handle both string and object formats
-                    category: typeof p.category === 'string' ? p.category :
-                        (p.category?.name || p.category_name || 'General')
+                    // Smart category: use backend name if available, else auto-detect from product name
+                    category: typeof p.category === 'string' && p.category !== 'General' ? p.category :
+                        (p.category?.name || detectCategory(p.name))
                 }))
                 setProducts(mappedProducts)
             } else {
@@ -126,7 +147,7 @@ export default function Products({ addToast, setCurrentPage }) {
             addToast('✅ Product added successfully!', 'success')
 
             setShowAddModal(false)
-            setNewProduct({ name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'Essentials' })
+            setNewProduct({ name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'General' })
 
             // Refresh products list to ensure sync with backend
             setTimeout(() => loadProducts(), 500)
@@ -337,7 +358,11 @@ export default function Products({ addToast, setCurrentPage }) {
                                 <div className="form-group">
                                     <label className="form-label">Product Name *</label>
                                     <input type="text" className="form-input" placeholder="e.g., Basmati Rice"
-                                        value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} />
+                                        value={newProduct.name} onChange={(e) => {
+                                            const name = e.target.value
+                                            const autoCategory = detectCategory(name)
+                                            setNewProduct({ ...newProduct, name, category: autoCategory })
+                                        }} />
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">SKU</label>

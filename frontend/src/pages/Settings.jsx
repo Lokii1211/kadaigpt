@@ -500,7 +500,7 @@ export default function Settings({ addToast }) {
                             }}
                             style={{ justifyContent: 'flex-start', gap: '8px' }}
                         >
-                            🛡️ Privacy Policy / गोपनीयता नीति
+                            🛡️ Privacy Policy
                         </button>
                         <button
                             className="btn btn-ghost"
@@ -511,7 +511,7 @@ export default function Settings({ addToast }) {
                             }}
                             style={{ justifyContent: 'flex-start', gap: '8px' }}
                         >
-                            📄 Terms of Service / सेवा शर्तें
+                            📄 Terms of Service
                         </button>
                         <button
                             className="btn btn-ghost"
@@ -530,12 +530,12 @@ export default function Settings({ addToast }) {
                             }}
                             style={{ justifyContent: 'flex-start', gap: '8px' }}
                         >
-                            📥 Download My Data / मेरा डेटा डाउनलोड
+                            📥 Download My Data
                         </button>
                         <button
                             className="btn btn-ghost"
                             onClick={() => {
-                                if (window.confirm('⚠️ Are you sure you want to delete your account? This action cannot be undone.\n\nक्या आप वाकई अपना अकाउंट डिलीट करना चाहते हैं?')) {
+                                if (window.confirm('⚠️ Are you sure you want to delete your account? This action cannot be undone.')) {
                                     if (window.prompt('Type DELETE to confirm:') === 'DELETE') {
                                         api.delete('/privacy/account?confirmation=DELETE')
                                             .then(() => { addToast('Account deleted', 'info'); api.logout(); window.location.reload() })
@@ -545,7 +545,7 @@ export default function Settings({ addToast }) {
                             }}
                             style={{ justifyContent: 'flex-start', gap: '8px', color: 'var(--error, #ef4444)' }}
                         >
-                            🗑️ Delete Account / अकाउंट हटाएं
+                            🗑️ Delete Account
                         </button>
                     </div>
                 </div>

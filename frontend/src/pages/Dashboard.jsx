@@ -74,9 +74,9 @@ export default function Dashboard({ addToast, setCurrentPage }) {
 
   const getGreeting = () => {
     const hour = currentTime.getHours()
-    if (hour < 12) return 'शुभ प्रभात' // Good Morning
-    if (hour < 17) return 'नमस्ते' // Hello/Good Afternoon
-    return 'शुभ संध्या' // Good Evening
+    if (hour < 12) return 'Good Morning'
+    if (hour < 17) return 'Good Afternoon'
+    return 'Good Evening'
   }
 
   const getGreetingEmoji = () => {
@@ -111,7 +111,7 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         }}>
           <div style={{ position: 'relative', zIndex: 1 }}>
             <p style={{ fontSize: '13px', opacity: 0.8, marginBottom: '4px', fontWeight: 500 }}>
-              📊 आज की बिक्री (Today's Sales)
+              📊 Today's Sales
             </p>
             <div className="currency-display currency-big" style={{ color: '#fbbf24', fontSize: '40px', fontWeight: 800 }}>
               {formatCurrency(stats.todaySales)}
@@ -135,18 +135,18 @@ export default function Dashboard({ addToast, setCurrentPage }) {
         </div>
       )}
 
-      {/* Low Stock Alert Banner — Hindi, solution-focused (UX Rule #6) */}
+      {/* Low Stock Alert Banner */}
       {lowStockProducts.length > 0 && (
         <div className="low-stock-alert">
           <div className="alert-icon">
             <AlertTriangle size={20} />
           </div>
           <div className="alert-content">
-            <strong>⚠️ {lowStockProducts.length} items stock कम है!</strong>
-            <span>{lowStockProducts.slice(0, 3).map(p => p.name).join(', ')}{lowStockProducts.length > 3 ? ` +${lowStockProducts.length - 3} और` : ''}</span>
+            <strong>⚠️ {lowStockProducts.length} items are low on stock!</strong>
+            <span>{lowStockProducts.slice(0, 3).map(p => p.name).join(', ')}{lowStockProducts.length > 3 ? ` +${lowStockProducts.length - 3} more` : ''}</span>
           </div>
           <button className="alert-btn" onClick={() => setCurrentPage('products')} aria-label="View low stock products">
-            Order करें →
+            Reorder →
           </button>
         </div>
       )}

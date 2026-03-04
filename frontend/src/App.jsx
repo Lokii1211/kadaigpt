@@ -4,12 +4,10 @@ import MobileNav from './components/MobileNav'
 import OnboardingWizard from './components/OnboardingWizard'
 import CommandPalette from './components/CommandPalette'
 import UnifiedAIAssistant from './components/UnifiedAIAssistant'
-import VoiceCommandAgent from './components/VoiceCommandAgent'
 import OfflineIndicator from './components/OfflineIndicator'
 import LoadingScreen from './components/LoadingScreen'
 import ErrorBoundary from './components/ErrorBoundary'
 import CelebrationEngine from './components/CelebrationEngine'
-import HelpSupport from './components/HelpSupport'
 import LanguageSwitcher from './components/LanguageSwitcher'
 import errorTracker from './services/errorTracker'
 // ═══════════════════════════════════════════════════════════════
@@ -546,12 +544,8 @@ function App() {
                 </Suspense>
             </main>
 
-            {/* AI Assistants */}
+            {/* AI Assistant — Single unified FAB (merged Help + AI + Voice) */}
             <UnifiedAIAssistant addToast={addToast} setCurrentPage={setCurrentPage} products={products} />
-            <VoiceCommandAgent addToast={addToast} setCurrentPage={setCurrentPage} />
-
-            {/* Help & Support (FAQ + Contact) */}
-            <HelpSupport />
 
             {/* Toast Notifications */}
             <div className="toast-container">
@@ -565,11 +559,11 @@ function App() {
             {/* Mobile Bottom Nav */}
             <MobileNav currentPage={currentPage} setCurrentPage={setCurrentPage} />
 
-            {/* Offline Banner — subtle, non-alarming (UX Rule #10) */}
+            {/* Offline Banner */}
             {!isOnline && (
                 <div className="offline-banner-subtle" role="status" aria-live="polite">
                     <span className="sync-status-dot offline"></span>
-                    <span>ऑफलाइन — बिल फोन में सेव होगा</span>
+                    <span>Offline — Bills saved locally, will sync when online</span>
                 </div>
             )}
         </div>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
     Brain, Bot, Cpu, Zap, TrendingUp, Package, Users,
     Mic, MicOff, Send, X, ChevronRight, Settings,
@@ -146,12 +147,28 @@ export default function UnifiedAIAssistant({ addToast, setCurrentPage, products 
     const [voiceEnabled, setVoiceEnabled] = useState(true)
     const [insights, setInsights] = useState([])
     const [showQuickPanel, setShowQuickPanel] = useState(false)
-    const [language, setLanguage] = useState('en')
+    const [language, setLanguageLocal] = useState('en')
     const [showLangMenu, setShowLangMenu] = useState(false)
 
     const messagesEndRef = useRef(null)
     const recognitionRef = useRef(null)
     const inputRef = useRef(null)
+
+    // Sync with global i18n language
+    const { i18n } = useTranslation()
+    useEffect(() => {
+        const globalLang = i18n.language?.substring(0, 2) || 'en'
+        // Only use languages we support in AI (en, hi, ta), default to 'en'
+        const supported = ['en', 'hi', 'ta']
+        setLanguageLocal(supported.includes(globalLang) ? globalLang : 'en')
+    }, [i18n.language])
+
+    const setLanguage = (lang) => {
+        setLanguageLocal(lang)
+        // Also update global i18n so entire app switches
+        i18n.changeLanguage(lang)
+        localStorage.setItem('kadaigpt_language', lang)
+    }
 
     const t = translations[language]
     const commands = quickCommands[language]

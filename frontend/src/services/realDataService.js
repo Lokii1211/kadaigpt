@@ -72,6 +72,27 @@ class RealDataService {
         }
     }
 
+    // Smart category detection from product name (when backend sends category_id only)
+    _detectCategory(name) {
+        const n = (name || '').toLowerCase()
+        const map = {
+            Grains: ['rice', 'wheat', 'atta', 'maida', 'rava', 'sooji', 'ragi', 'bajra', 'jowar', 'corn', 'flour', 'basmati', 'sella', 'ponni', 'idli'],
+            Pulses: ['dal', 'toor', 'chana', 'moong', 'urad', 'masoor', 'rajma', 'lentil', 'chickpea', 'peas', 'beans'],
+            Oils: ['oil', 'ghee', 'butter', 'vanaspati', 'sunflower', 'mustard', 'sesame', 'groundnut'],
+            Dairy: ['milk', 'curd', 'paneer', 'cheese', 'yogurt', 'cream', 'buttermilk', 'lassi'],
+            Beverages: ['tea', 'coffee', 'juice', 'water', 'soda', 'cola', 'pepsi', 'sprite', 'drink'],
+            Essentials: ['salt', 'sugar', 'jaggery', 'turmeric', 'chilli', 'pepper', 'cumin', 'coriander', 'masala', 'spice'],
+            Snacks: ['chips', 'biscuit', 'cookie', 'namkeen', 'mixture', 'murukku', 'cake', 'chocolate', 'candy'],
+            Packaged: ['noodle', 'maggi', 'pasta', 'sauce', 'ketchup', 'jam', 'pickle', 'papad'],
+            Household: ['soap', 'detergent', 'cleaner', 'broom', 'mop', 'tissue', 'foil', 'candle', 'match'],
+            'Personal Care': ['shampoo', 'toothpaste', 'brush', 'lotion', 'powder', 'deodorant', 'razor'],
+        }
+        for (const [cat, kws] of Object.entries(map)) {
+            if (kws.some(kw => n.includes(kw))) return cat
+        }
+        return 'General'
+    }
+
     // ==================== PRODUCTS DATA ====================
     async getProducts(includeDemoFallback = false) {
         try {
@@ -89,7 +110,8 @@ class RealDataService {
                 stock: p.current_stock || p.stock || 0,
                 minStock: p.min_stock_alert || p.minStock || 10,
                 unit: p.unit || 'piece',
-                category: p.category?.name || p.category || 'General',
+                // Use backend category name if available, else auto-detect from product name
+                category: p.category?.name || (typeof p.category === 'string' && p.category !== 'General' ? p.category : null) || this._detectCategory(p.name),
                 categoryId: p.category_id || null,
                 isActive: p.is_active !== false,
                 createdAt: p.created_at,

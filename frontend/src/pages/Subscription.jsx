@@ -11,7 +11,7 @@ export default function Subscription({ addToast }) {
             name: 'Free',
             icon: Zap,
             price: { monthly: 0, yearly: 0 },
-            description: 'शुरुआत करें — Start free, upgrade later',
+            description: 'Start free, upgrade later',
             features: [
                 { text: '100 bills/month', included: true },
                 { text: 'Basic inventory', included: true },
@@ -28,8 +28,8 @@ export default function Subscription({ addToast }) {
             name: 'Pro',
             icon: Star,
             price: { monthly: 299, yearly: 2999 },
-            perDay: '₹10/day — एक चाय से सस्ता!',
-            description: 'बढ़ते business के लिए — For growing stores',
+            perDay: '₹10/day — Cheaper than a chai!',
+            description: 'For growing stores',
             popular: true,
             features: [
                 { text: 'Unlimited bills', included: true },
@@ -48,7 +48,7 @@ export default function Subscription({ addToast }) {
             icon: Building2,
             price: { monthly: 999, yearly: 9999 },
             perDay: '₹33/day — saves ₹2K/month on accountant',
-            description: 'कई दुकानों के मालिक — Multi-store owners',
+            description: 'For multi-store owners',
             features: [
                 { text: 'Unlimited bills', included: true },
                 { text: 'Full inventory', included: true },
@@ -90,9 +90,9 @@ export default function Subscription({ addToast }) {
     return (
         <div className="subscription-page">
             <div className="page-header">
-                <h1>अपना Plan चुनें</h1>
+                <h1>Choose Your Plan</h1>
                 <p>Choose the right plan for your business</p>
-                <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '4px' }}>₹10/day = एक चाय से सस्ता! बदले में — accountant की ₹2000/month बचत</p>
+                <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '4px' }}>₹10/day — Cheaper than a chai! Save ₹2,000/month on accountant fees</p>
             </div>
 
             {/* Billing Toggle */}
