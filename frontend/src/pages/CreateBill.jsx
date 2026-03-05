@@ -419,29 +419,12 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         }
       }
 
-      // Success! Bill is created
+      // BUG-007 FIX: Show bill preview modal immediately instead of redirecting
+      setShowPayment(true)
       addToast(`✅ Bill ${apiNewBillNumber} created - ₹${total.toFixed(2)} (${paymentMode})`, 'success')
 
       // Invalidate cache so Bills/Dashboard pages get fresh data immediately
       realDataService.invalidateCache()
-
-      // Auto-send to WhatsApp if phone provided
-      if (customer.phone && customer.phone.length >= 10) {
-        const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
-        const loyaltyPoints = Math.floor(total / 100) * 10
-        const itemsList = cart.map(i => `• ${i.name} x${i.quantity} = ₹${i.price * i.quantity}`).join('\n')
-        const whatsappMessage = `🧾 *BILL - ${newBillNumber}*\n📍 ${storeName}\n\n${itemsList}\n\n💰 *Total: ₹${total.toFixed(2)}*\n📱 Payment: ${paymentMode}\n⭐ Loyalty Points: +${loyaltyPoints}\n\nThank you! 🙏\n_Powered by KadaiGPT_`
-
-        const waUrl = `https://wa.me/91${customer.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
-        window.open(waUrl, '_blank')
-      }
-
-      // Clear cart and navigate to All Bills so user sees the new bill
-      setTimeout(() => {
-        clearCart()
-        addToast('Redirecting to All Bills...', 'info')
-        setTimeout(() => setCurrentPage?.('bills'), 500)
-      }, 2000)
 
     } catch (error) {
       console.error('❌ Error saving bill:', error)

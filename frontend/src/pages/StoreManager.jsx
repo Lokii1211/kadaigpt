@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Store, Plus, ChevronRight, Settings, Users, BarChart3, MapPin, Phone, Edit2, Trash2, Check, X } from 'lucide-react'
+import realDataService from '../services/realDataService'
 
 export default function StoreManager({ addToast, setCurrentPage, onStoreChange }) {
     const [stores, setStores] = useState([])
@@ -77,10 +78,28 @@ export default function StoreManager({ addToast, setCurrentPage, onStoreChange }
         const store = stores.find(s => s.id === storeId)
         if (store) {
             setActiveStoreId(storeId)
+
+            // BUG-009 FIX: Clear ALL cached data on store switch
             localStorage.setItem('kadai_active_store_id', storeId)
             localStorage.setItem('kadai_store_name', store.name)
-            addToast(`Switched to ${store.name}`, 'success')
+            if (store.address) localStorage.setItem('kadai_store_address', store.address)
+            if (store.phone) localStorage.setItem('kadai_store_phone', store.phone)
+
+            // Clear cached product/customer/bill data so fresh data loads
+            localStorage.removeItem('kadai_products_cache')
+            localStorage.removeItem('kadai_customers_cache')
+            localStorage.removeItem('kadai_bills_cache')
+
+            // BUG-009: Clear in-memory API cache
+            realDataService.clearCache()
+
+            addToast(`🏪 Switched to ${store.name}`, 'success')
+
+            // Trigger parent callback to refresh all data
             if (onStoreChange) onStoreChange(store)
+
+            // Navigate to dashboard to show fresh store data
+            if (setCurrentPage) setCurrentPage('dashboard')
         }
     }
 

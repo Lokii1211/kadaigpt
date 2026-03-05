@@ -66,8 +66,15 @@ export default function Suppliers({ addToast }) {
             return
         }
 
+        // BUG-004: Validate phone
+        const cleanPhone = newSupplier.phone.replace(/\D/g, '')
+        if (cleanPhone.length !== 10 || !/^[6-9]/.test(cleanPhone)) {
+            addToast('Phone must be 10 digits starting with 6, 7, 8, or 9', 'error')
+            return
+        }
+
         try {
-            const supplier = await api.createSupplier(newSupplier)
+            const supplier = await api.createSupplier({ ...newSupplier, phone: cleanPhone })
             setSuppliers([supplier, ...suppliers])
             setNewSupplier({ name: '', contact: '', phone: '', email: '', address: '', category: 'General' })
             setShowAddModal(false)
@@ -85,6 +92,13 @@ export default function Suppliers({ addToast }) {
     const handleUpdateSupplier = async () => {
         if (!editSupplier?.name || !editSupplier?.phone) {
             addToast('Name and phone are required', 'error')
+            return
+        }
+
+        // BUG-004: Validate phone
+        const cleanPhone = editSupplier.phone.replace(/\D/g, '')
+        if (cleanPhone.length !== 10 || !/^[6-9]/.test(cleanPhone)) {
+            addToast('Phone must be 10 digits starting with 6, 7, 8, or 9', 'error')
             return
         }
 
@@ -194,9 +208,18 @@ export default function Suppliers({ addToast }) {
         )
     }
 
-    const markDelivered = (orderId) => {
-        setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'delivered' } : o))
-        addToast('Order marked as delivered', 'success')
+    const markDelivered = async (orderId) => {
+        try {
+            const updated = await api.updateOrderStatus(orderId, 'delivered')
+            setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'delivered' } : o))
+            addToast('Order marked as delivered ✅', 'success')
+            // Refresh supplier data to update pending amounts
+            loadData()
+        } catch (error) {
+            // Fallback to local update if API fails
+            setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'delivered' } : o))
+            addToast('Order marked as delivered (will sync later)', 'warning')
+        }
     }
 
     if (loading) {
@@ -422,8 +445,11 @@ export default function Suppliers({ addToast }) {
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Phone *</label>
-                                    <input type="tel" className="form-input" placeholder="10-digit number"
-                                        value={newSupplier.phone} onChange={(e) => setNewSupplier({ ...newSupplier, phone: e.target.value })} />
+                                    <input type="tel" inputMode="numeric" className="form-input" placeholder="10-digit number"
+                                        maxLength={10} value={newSupplier.phone} onChange={(e) => {
+                                            const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10)
+                                            setNewSupplier({ ...newSupplier, phone: cleaned })
+                                        }} />
                                 </div>
                             </div>
                             <div className="form-group">
@@ -544,8 +570,11 @@ export default function Suppliers({ addToast }) {
                             <div className="form-row">
                                 <div className="form-group">
                                     <label className="form-label">Phone *</label>
-                                    <input type="tel" className="form-input" placeholder="10-digit number"
-                                        value={editSupplier.phone} onChange={(e) => setEditSupplier({ ...editSupplier, phone: e.target.value })} />
+                                    <input type="tel" inputMode="numeric" className="form-input" placeholder="10-digit number"
+                                        maxLength={10} value={editSupplier.phone} onChange={(e) => {
+                                            const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10)
+                                            setEditSupplier({ ...editSupplier, phone: cleaned })
+                                        }} />
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Email</label>
