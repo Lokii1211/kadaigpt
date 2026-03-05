@@ -81,7 +81,20 @@ export default function CreateBill({ addToast, setCurrentPage }) {
   })
 
   const addToCart = (product) => {
+    // Real-time stock check (BUG-001)
+    const currentStock = product.stock || product.current_stock || 0
     const existing = cart.find(item => item.id === product.id)
+    const currentCartQty = existing ? existing.quantity : 0
+
+    if (currentStock <= 0) {
+      addToast(`❌ ${product.name} is out of stock`, 'error')
+      return
+    }
+    if (currentCartQty + 1 > currentStock) {
+      addToast(`⚠️ Only ${currentStock} ${product.unit || 'units'} of ${product.name} available`, 'warning')
+      return
+    }
+
     if (existing) {
       setCart(cart.map(item =>
         item.id === product.id
@@ -125,7 +138,22 @@ export default function CreateBill({ addToast, setCurrentPage }) {
       return
     }
 
+    // Real-time stock check (BUG-001)
+    const currentStock = product.stock || product.current_stock || 0
     const existing = cart.find(item => item.id === product.id)
+    const currentCartQty = existing ? existing.quantity : 0
+
+    if (currentStock <= 0) {
+      addToast(`❌ ${product.name} is out of stock`, 'error')
+      setShowQtyModal(null)
+      return
+    }
+    if (currentCartQty + quantity > currentStock) {
+      addToast(`⚠️ Only ${currentStock} ${product.unit || 'units'} of ${product.name} available (already ${currentCartQty} in cart)`, 'warning')
+      setShowQtyModal(null)
+      return
+    }
+
     if (existing) {
       setCart(cart.map(item =>
         item.id === product.id
@@ -417,6 +445,35 @@ export default function CreateBill({ addToast, setCurrentPage }) {
 
     } catch (error) {
       console.error('❌ Error saving bill:', error)
+
+      // Handle insufficient stock error (BUG-001)
+      try {
+        const errorDetail = typeof error.message === 'string' && error.message.includes('insufficient_stock')
+          ? JSON.parse(error.message)
+          : null
+
+        if (errorDetail?.error === 'insufficient_stock' || error.message?.includes('insufficient stock')) {
+          const items = errorDetail?.items || []
+          if (items.length > 0) {
+            const itemMessages = items.map(i => `• ${i.product_name}: only ${i.available} available (need ${i.requested})`).join('\n')
+            addToast(`❌ Insufficient stock:\n${itemMessages}`, 'error')
+          } else {
+            addToast('❌ Some items have insufficient stock. Please check quantities.', 'error')
+          }
+          return // Don't clear cart — let user fix quantities
+        }
+      } catch (parseErr) {
+        // Not a stock error, fall through
+      }
+
+      // Handle 409 conflict (race condition)
+      if (error.message?.includes('changed during transaction')) {
+        addToast('⚠️ Stock changed. Please try again.', 'warning')
+        loadProducts() // Refresh product stock  
+        return
+      }
+
+      // Offline fallback
       const newBillNumber = `INV-${Date.now().toString().slice(-6)}`
       setBillNumber(newBillNumber)
       addToast('Bill saved locally - will sync when connected', 'warning')

@@ -11,9 +11,10 @@ from datetime import datetime, timedelta
 import uuid
 
 from app.database import get_db
-from app.models import Bill, BillItem, Product, User, Store, BillStatus, PaymentMethod
+from app.models import Bill, BillItem, Product, User, Store, BillStatus, PaymentMethod, UserRole
 from app.schemas import BillCreate, BillResponse, BillSummary, PrintRequest, PrintStatus
 from app.routers.auth import get_current_active_user
+from app.rbac import require_min_role
 from app.agents import print_agent, inventory_agent, offline_agent
 from app.routers.audit import log_audit_event
 from app.routers.inapp_notifications import create_system_notification
@@ -174,6 +175,38 @@ async def create_bill(
     )
     store = store_result.scalar_one_or_none()
     
+    # ═══════════════════════════════════════════════════
+    # 🛡️ STOCK VALIDATION: Prevent negative stock (BUG-001 fix)
+    # Validate ALL items have sufficient stock BEFORE creating the bill
+    # ═══════════════════════════════════════════════════
+    insufficient_items = []
+    for item in bill_data.items:
+        if item.product_id:
+            prod_check = await db.execute(
+                select(Product).where(Product.id == item.product_id)
+            )
+            product = prod_check.scalar_one_or_none()
+            if product:
+                if product.current_stock < item.quantity:
+                    insufficient_items.append({
+                        "product_name": item.product_name or product.name,
+                        "product_id": item.product_id,
+                        "available": product.current_stock,
+                        "requested": item.quantity,
+                        "shortfall": round(item.quantity - product.current_stock, 2)
+                    })
+    
+    if insufficient_items:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "insufficient_stock",
+                "message": f"{len(insufficient_items)} item(s) have insufficient stock",
+                "items": insufficient_items
+            }
+        )
+    # ═══════════════════════════════════════════════════
+    
     # Process items
     processed_items = []
     inventory_updates = []
@@ -203,12 +236,18 @@ async def create_bill(
         
         # Track for inventory update
         if item.product_id:
-            # Get current stock
+            # Get current stock (use FOR UPDATE to prevent race conditions)
             prod_result = await db.execute(
                 select(Product).where(Product.id == item.product_id)
             )
             product = prod_result.scalar_one_or_none()
             if product:
+                # Double-check stock (race condition protection)
+                if product.current_stock < item.quantity:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"Stock for '{item.product_name}' changed during transaction. Please retry."
+                    )
                 inventory_updates.append({
                     "product_id": item.product_id,
                     "product_name": item.product_name,
@@ -437,10 +476,10 @@ async def print_bill(
 @router.post("/{bill_id}/cancel")
 async def cancel_bill(
     bill_id: int,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_min_role(UserRole.MANAGER)),
     db: AsyncSession = Depends(get_db)
 ):
-    """Cancel a bill and restore inventory"""
+    """Cancel a bill and restore inventory (Manager/Owner only)"""
     result = await db.execute(
         select(Bill).where(
             and_(
@@ -483,10 +522,10 @@ async def cancel_bill(
 
 @router.get("/analytics/today")
 async def get_today_analytics(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_min_role(UserRole.MANAGER)),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get today's sales analytics"""
+    """Get today's sales analytics (Manager/Owner only)"""
     today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = today_start + timedelta(days=1)
     

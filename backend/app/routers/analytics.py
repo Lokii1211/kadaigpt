@@ -13,7 +13,8 @@ import random
 
 from app.database import get_db
 from app.routers.auth import get_current_user
-from app.models import User
+from app.models import User, UserRole
+from app.rbac import require_min_role
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 @router.get("/sales/overview")
 async def get_sales_overview(
     period: str = Query("month", enum=["day", "week", "month", "quarter", "year"]),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_min_role(UserRole.MANAGER)),
     db: AsyncSession = Depends(get_db)
 ):
     """Get sales overview with comparisons"""
@@ -422,7 +423,7 @@ async def get_cashflow(
 @router.get("/reports/summary")
 async def get_summary_report(
     period: str = Query("month", enum=["day", "week", "month", "quarter"]),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_min_role(UserRole.MANAGER))
 ):
     """Get comprehensive summary report"""
     return {

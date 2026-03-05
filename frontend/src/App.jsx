@@ -222,6 +222,30 @@ function App() {
     }
 
     const renderPage = () => {
+        // ═══════════════════════════════════════════════════
+        // 🔐 ROLE-BASED PAGE ACCESS (BUG-003 fix)
+        // Prevent users from accessing pages above their role level
+        // ═══════════════════════════════════════════════════
+        const ownerOnlyPages = ['analytics', 'gst', 'whatsapp', 'suppliers', 'loyalty', 'ai-insights', 'expenses', 'daily-summary', 'bulk-operations', 'admin', 'subscription', 'stores']
+        const managerPages = ['analytics', 'gst', 'expenses', 'daily-summary', 'staff']
+        const cashierPages = ['dashboard', 'create-bill', 'bills', 'products', 'customers', 'ocr', 'settings']
+
+        if (userRole === 'cashier' || userRole === 'staff') {
+            if (!cashierPages.includes(currentPage)) {
+                addToast('🔒 Permission denied. Redirecting to your dashboard...', 'warning')
+                setTimeout(() => setCurrentPage(getRoleDefaultPage(userRole)), 100)
+                return null
+            }
+        } else if (userRole === 'manager') {
+            const managerAllowed = [...cashierPages, ...managerPages]
+            if (!managerAllowed.includes(currentPage) && ownerOnlyPages.includes(currentPage)) {
+                addToast('🔒 This feature requires owner access.', 'warning')
+                setTimeout(() => setCurrentPage('dashboard'), 100)
+                return null
+            }
+        }
+        // ═══════════════════════════════════════════════════
+
         switch (currentPage) {
             case 'dashboard': return <Dashboard addToast={addToast} setCurrentPage={setCurrentPage} />
             case 'bills': return <Bills addToast={addToast} setCurrentPage={setCurrentPage} />
