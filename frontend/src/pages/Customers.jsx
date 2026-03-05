@@ -65,9 +65,17 @@ export default function Customers({ addToast, setCurrentPage }) {
             return
         }
 
+        // BUG-004: Validate phone format
+        const cleanPhone = newCustomer.phone.replace(/\D/g, '')
+        if (cleanPhone.length !== 10 || !/^[6-9]/.test(cleanPhone)) {
+            addToast('Phone must be 10 digits starting with 6, 7, 8, or 9', 'error')
+            return
+        }
+
         try {
             const customerData = {
                 ...newCustomer,
+                phone: cleanPhone,
                 credit: parseFloat(newCustomer.initialCredit) || 0
             }
             const customer = await api.createCustomer(customerData)
@@ -120,6 +128,13 @@ export default function Customers({ addToast, setCurrentPage }) {
     const handleUpdateCustomer = async () => {
         if (!editCustomer?.name || !editCustomer?.phone) {
             addToast('Name and phone are required', 'error')
+            return
+        }
+
+        // BUG-004: Validate phone
+        const cleanPhone = editCustomer.phone.replace(/\D/g, '')
+        if (cleanPhone.length !== 10 || !/^[6-9]/.test(cleanPhone)) {
+            addToast('Phone must be 10 digits starting with 6, 7, 8, or 9', 'error')
             return
         }
 
@@ -364,8 +379,21 @@ export default function Customers({ addToast, setCurrentPage }) {
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Phone Number *</label>
-                                    <input type="tel" className="form-input" placeholder="10-digit mobile"
-                                        value={newCustomer.phone} onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
+                                    <input type="tel" inputMode="numeric" className="form-input" placeholder="10-digit mobile (e.g. 9876543210)"
+                                        maxLength={10} pattern="[6-9][0-9]{9}"
+                                        value={newCustomer.phone} onChange={(e) => {
+                                            const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10)
+                                            setNewCustomer({ ...newCustomer, phone: cleaned })
+                                        }} />
+                                    {newCustomer.phone.length > 0 && newCustomer.phone.length < 10 && (
+                                        <small style={{ color: '#f59e0b' }}>{10 - newCustomer.phone.length} digits remaining</small>
+                                    )}
+                                    {newCustomer.phone.length === 10 && !/^[6-9]/.test(newCustomer.phone) && (
+                                        <small style={{ color: '#ef4444' }}>Must start with 6, 7, 8, or 9</small>
+                                    )}
+                                    {newCustomer.phone.length === 10 && /^[6-9]/.test(newCustomer.phone) && (
+                                        <small style={{ color: '#22c55e' }}>✓ Valid phone number</small>
+                                    )}
                                 </div>
                             </div>
                             <div className="form-row">
@@ -457,8 +485,12 @@ export default function Customers({ addToast, setCurrentPage }) {
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Phone Number *</label>
-                                    <input type="tel" className="form-input" placeholder="10-digit mobile"
-                                        value={editCustomer.phone} onChange={(e) => setEditCustomer({ ...editCustomer, phone: e.target.value })} />
+                                    <input type="tel" inputMode="numeric" className="form-input" placeholder="10-digit mobile"
+                                        maxLength={10} pattern="[6-9][0-9]{9}"
+                                        value={editCustomer.phone} onChange={(e) => {
+                                            const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10)
+                                            setEditCustomer({ ...editCustomer, phone: cleaned })
+                                        }} />
                                 </div>
                             </div>
                             <div className="form-row">

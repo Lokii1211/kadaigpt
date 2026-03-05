@@ -8,8 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from datetime import datetime
+import re
 
 from app.database import get_db
 from app.models import User, Customer
@@ -30,6 +31,15 @@ class CustomerCreate(BaseModel):
     loyalty_points: Optional[int] = 0
     total_purchases: Optional[float] = 0.0
 
+    @validator('phone')
+    def validate_phone(cls, v):
+        cleaned = re.sub(r'\D', '', v)
+        if len(cleaned) != 10:
+            raise ValueError('Phone number must be exactly 10 digits')
+        if not re.match(r'^[6-9]', cleaned):
+            raise ValueError('Phone number must start with 6, 7, 8, or 9')
+        return cleaned
+
 
 class CustomerUpdate(BaseModel):
     """Schema for updating a customer"""
@@ -41,6 +51,17 @@ class CustomerUpdate(BaseModel):
     loyalty_points: Optional[int] = None
     total_purchases: Optional[float] = None
     last_purchase: Optional[str] = None
+
+    @validator('phone')
+    def validate_phone(cls, v):
+        if v is None:
+            return v
+        cleaned = re.sub(r'\D', '', v)
+        if len(cleaned) != 10:
+            raise ValueError('Phone number must be exactly 10 digits')
+        if not re.match(r'^[6-9]', cleaned):
+            raise ValueError('Phone number must start with 6, 7, 8, or 9')
+        return cleaned
 
 
 class CustomerPayment(BaseModel):

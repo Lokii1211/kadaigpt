@@ -104,7 +104,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     } else {
       setCart([...cart, { ...product, quantity: 1 }])
     }
-    addToast(`Added ${product.name}`, 'success')
+    // BUG-006: No toast for trivial cart additions — visual feedback in cart UI is enough
   }
 
   const updateQuantity = (id, delta) => {
@@ -163,7 +163,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     } else {
       setCart([...cart, { ...product, quantity }])
     }
-    addToast(`Added ${quantity} ${product.unit} of ${product.name}`, 'success')
+    // BUG-006: No toast for trivial cart additions
     setShowQtyModal(null)
   }
 
@@ -654,8 +654,15 @@ export default function CreateBill({ addToast, setCurrentPage }) {
 
           {/* Customer — SINGLE ROW — 44px */}
           <div className="cart-customer-row">
-            <input type="tel" placeholder="📱 Phone" value={customer.phone}
-              onChange={(e) => { setCustomer({ ...customer, phone: e.target.value }); if (e.target.value.length >= 10) lookupCustomer(e.target.value); }} />
+            <input type="tel" inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10}
+              placeholder="📱 Phone (10 digits)" value={customer.phone}
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10)
+                setCustomer({ ...customer, phone: cleaned })
+                if (cleaned.length >= 10) lookupCustomer(cleaned)
+              }}
+              style={customer.phone.length > 0 && customer.phone.length < 10 ? { borderColor: '#f59e0b' } : customer.phone.length === 10 ? { borderColor: '#22c55e' } : {}}
+            />
             <input type="text" placeholder="👤 Name" value={customer.name}
               onChange={(e) => setCustomer({ ...customer, name: e.target.value })} />
             {existingCustomer && <span className="loyalty-tag">⭐{existingCustomer.loyalty_points || 0}</span>}

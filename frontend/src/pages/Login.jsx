@@ -447,8 +447,9 @@ export default function Login({ onLogin }) {
         @media (max-width: 480px) {
           .login-page {
             padding: 12px;
-            align-items: flex-start;
-            padding-top: max(40px, env(safe-area-inset-top));
+            align-items: center;
+            padding-top: max(20px, env(safe-area-inset-top));
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
           }
           .login-container {
             border-radius: var(--radius-lg);
