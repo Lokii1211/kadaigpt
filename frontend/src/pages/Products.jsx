@@ -37,7 +37,7 @@ export default function Products({ addToast, setCurrentPage }) {
     const [showAddModal, setShowAddModal] = useState(false)
     const [editProduct, setEditProduct] = useState(null)
     const [newProduct, setNewProduct] = useState({
-        name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'General'
+        name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'General', expiryDate: ''
     })
 
     useEffect(() => {
@@ -124,6 +124,7 @@ export default function Products({ addToast, setCurrentPage }) {
             category: newProduct.category || 'Essentials',
             category_id: null,
             description: newProduct.description || '',
+            expiry_date: newProduct.expiryDate || null,
         }
 
         try {
@@ -147,7 +148,7 @@ export default function Products({ addToast, setCurrentPage }) {
             addToast('✅ Product added successfully!', 'success')
 
             setShowAddModal(false)
-            setNewProduct({ name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'General' })
+            setNewProduct({ name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'General', expiryDate: '' })
 
             // Refresh products list to ensure sync with backend
             setTimeout(() => loadProducts(), 500)
@@ -407,6 +408,22 @@ export default function Products({ addToast, setCurrentPage }) {
                                         <option key={cat} value={cat}>{cat}</option>
                                     ))}
                                 </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Expiry Date <span style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>(optional)</span></label>
+                                <input type="date" className="form-input"
+                                    value={newProduct.expiryDate}
+                                    onChange={(e) => setNewProduct({ ...newProduct, expiryDate: e.target.value })}
+                                    min={new Date().toISOString().split('T')[0]}
+                                />
+                                {newProduct.expiryDate && (() => {
+                                    const daysLeft = Math.ceil((new Date(newProduct.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
+                                    return daysLeft <= 30 ? (
+                                        <span style={{ fontSize: '0.75rem', color: daysLeft <= 7 ? '#ef4444' : '#f59e0b', marginTop: 4, display: 'block' }}>
+                                            ⚠️ {daysLeft <= 0 ? 'Already expired!' : `Expires in ${daysLeft} days`}
+                                        </span>
+                                    ) : null
+                                })()}
                             </div>
                         </div>
                         <div className="modal-footer">

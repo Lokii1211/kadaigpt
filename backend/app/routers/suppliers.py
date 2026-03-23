@@ -234,7 +234,26 @@ async def update_order_status(
     return orders[order_index]
 
 
-# ==================== SUPPLIER CRUD ROUTES ====================
+# ==================== SUPPLIER CRUD ROUTES (DB-backed) ====================
+
+def _supplier_to_dict(s) -> dict:
+    """Convert Supplier ORM object to dict for API response"""
+    return {
+        "id": s.id,
+        "name": s.name,
+        "contact": s.contact,
+        "phone": s.phone,
+        "email": s.email,
+        "address": s.address,
+        "category": s.category or "General",
+        "rating": 4.0,
+        "total_orders": s.total_orders or 0,
+        "pending_amount": s.pending_amount or 0.0,
+        "total_paid": s.total_paid or 0.0,
+        "last_order": s.last_order.isoformat() if s.last_order else None,
+        "created_at": s.created_at.isoformat() if s.created_at else None,
+    }
+
 
 @router.get("", response_model=List[dict])
 async def get_suppliers(
@@ -243,20 +262,36 @@ async def get_suppliers(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get all suppliers for the current user's store
-    """
-    suppliers = get_user_suppliers(current_user.id)
+    """Get all suppliers for the current user's store (DB-backed)"""
+    from app.models import Supplier
     
-    # Apply filters
+    query = select(Supplier).where(
+        Supplier.store_id == current_user.store_id,
+        Supplier.is_active == True
+    )
+    
     if search:
-        search_lower = search.lower()
-        suppliers = [s for s in suppliers if search_lower in s['name'].lower() or search_lower in s['category'].lower()]
-    
+        query = query.where(
+            Supplier.name.ilike(f"%{search}%") | Supplier.category.ilike(f"%{search}%")
+        )
     if category:
-        suppliers = [s for s in suppliers if s['category'].lower() == category.lower()]
+        query = query.where(Supplier.category.ilike(category))
     
-    return suppliers
+    query = query.order_by(desc(Supplier.created_at))
+    result = await db.execute(query)
+    suppliers = result.scalars().all()
+    
+    # Fallback: also include any in-memory suppliers for backwards compat
+    memory_suppliers = get_user_suppliers(current_user.id)
+    db_list = [_supplier_to_dict(s) for s in suppliers]
+    
+    # Merge: DB suppliers take priority, add memory ones not in DB
+    db_phones = {s['phone'] for s in db_list}
+    for ms in memory_suppliers:
+        if ms.get('phone') not in db_phones:
+            db_list.append(ms)
+    
+    return db_list
 
 
 @router.post("", response_model=dict)
@@ -265,37 +300,37 @@ async def create_supplier(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Create a new supplier
-    """
-    suppliers = get_user_suppliers(current_user.id)
+    """Create a new supplier (DB-backed)"""
+    from app.models import Supplier
     
-    # Check if phone already exists
-    if any(s['phone'] == supplier.phone for s in suppliers):
+    # Check duplicate phone
+    existing = await db.execute(
+        select(Supplier).where(
+            Supplier.store_id == current_user.store_id,
+            Supplier.phone == supplier.phone,
+            Supplier.is_active == True
+        )
+    )
+    if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Supplier with this phone already exists"
         )
     
-    new_supplier = {
-        "id": len(suppliers) + 1 if suppliers else 1,
-        "name": supplier.name,
-        "contact": supplier.contact,
-        "phone": supplier.phone,
-        "email": supplier.email,
-        "address": supplier.address,
-        "category": supplier.category,
-        "rating": 4.0,
-        "total_orders": 0,
-        "pending_amount": 0.0,
-        "last_order": None,
-        "created_at": datetime.utcnow().isoformat()
-    }
+    new_supplier = Supplier(
+        store_id=current_user.store_id,
+        name=supplier.name,
+        contact=supplier.contact,
+        phone=supplier.phone,
+        email=supplier.email,
+        address=supplier.address,
+        category=supplier.category,
+    )
+    db.add(new_supplier)
+    await db.commit()
+    await db.refresh(new_supplier)
     
-    suppliers.insert(0, new_supplier)
-    save_user_suppliers(current_user.id, suppliers)
-    
-    return new_supplier
+    return _supplier_to_dict(new_supplier)
 
 
 @router.get("/{supplier_id}", response_model=dict)
@@ -304,19 +339,21 @@ async def get_supplier(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get a specific supplier by ID
-    """
-    suppliers = get_user_suppliers(current_user.id)
-    supplier = next((s for s in suppliers if s['id'] == supplier_id), None)
+    """Get a specific supplier by ID (DB-backed)"""
+    from app.models import Supplier
+    
+    result = await db.execute(
+        select(Supplier).where(
+            Supplier.id == supplier_id,
+            Supplier.store_id == current_user.store_id
+        )
+    )
+    supplier = result.scalar_one_or_none()
     
     if not supplier:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supplier not found"
-        )
+        raise HTTPException(status_code=404, detail="Supplier not found")
     
-    return supplier
+    return _supplier_to_dict(supplier)
 
 
 @router.put("/{supplier_id}", response_model=dict)
@@ -326,27 +363,29 @@ async def update_supplier(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Update a supplier
-    """
-    suppliers = get_user_suppliers(current_user.id)
-    supplier_index = next((i for i, s in enumerate(suppliers) if s['id'] == supplier_id), None)
+    """Update a supplier (DB-backed)"""
+    from app.models import Supplier
     
-    if supplier_index is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supplier not found"
+    result = await db.execute(
+        select(Supplier).where(
+            Supplier.id == supplier_id,
+            Supplier.store_id == current_user.store_id
         )
+    )
+    supplier = result.scalar_one_or_none()
     
-    # Update fields
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    
     update_data = supplier_update.dict(exclude_unset=True)
     for key, value in update_data.items():
-        if value is not None:
-            suppliers[supplier_index][key] = value
+        if value is not None and hasattr(supplier, key):
+            setattr(supplier, key, value)
     
-    save_user_suppliers(current_user.id, suppliers)
+    await db.commit()
+    await db.refresh(supplier)
     
-    return suppliers[supplier_index]
+    return _supplier_to_dict(supplier)
 
 
 @router.delete("/{supplier_id}")
@@ -355,22 +394,24 @@ async def delete_supplier(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Delete a supplier
-    """
-    suppliers = get_user_suppliers(current_user.id)
-    supplier_index = next((i for i, s in enumerate(suppliers) if s['id'] == supplier_id), None)
+    """Soft-delete a supplier (DB-backed)"""
+    from app.models import Supplier
     
-    if supplier_index is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supplier not found"
+    result = await db.execute(
+        select(Supplier).where(
+            Supplier.id == supplier_id,
+            Supplier.store_id == current_user.store_id
         )
+    )
+    supplier = result.scalar_one_or_none()
     
-    deleted_supplier = suppliers.pop(supplier_index)
-    save_user_suppliers(current_user.id, suppliers)
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
     
-    return {"message": f"Supplier '{deleted_supplier['name']}' deleted successfully"}
+    supplier.is_active = False
+    await db.commit()
+    
+    return {"message": f"Supplier '{supplier.name}' deleted successfully"}
 
 
 @router.post("/{supplier_id}/payment", response_model=dict)
@@ -380,17 +421,19 @@ async def record_supplier_payment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Record a payment to supplier
-    """
-    suppliers = get_user_suppliers(current_user.id)
-    supplier_index = next((i for i, s in enumerate(suppliers) if s['id'] == supplier_id), None)
+    """Record a payment to supplier (DB-backed)"""
+    from app.models import Supplier
     
-    if supplier_index is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Supplier not found"
+    result = await db.execute(
+        select(Supplier).where(
+            Supplier.id == supplier_id,
+            Supplier.store_id == current_user.store_id
         )
+    )
+    supplier = result.scalar_one_or_none()
+    
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
     
     if payment.amount <= 0:
         raise HTTPException(
@@ -398,15 +441,14 @@ async def record_supplier_payment(
             detail="Payment amount must be positive"
         )
     
-    supplier = suppliers[supplier_index]
-    new_pending = max(0, supplier['pending_amount'] - payment.amount)
-    supplier['pending_amount'] = new_pending
-    
-    save_user_suppliers(current_user.id, suppliers)
+    supplier.pending_amount = max(0, (supplier.pending_amount or 0) - payment.amount)
+    supplier.total_paid = (supplier.total_paid or 0) + payment.amount
+    await db.commit()
+    await db.refresh(supplier)
     
     return {
         "message": f"Payment of ₹{payment.amount} recorded",
-        "new_pending": new_pending,
-        "supplier": supplier
+        "new_pending": supplier.pending_amount,
+        "supplier": _supplier_to_dict(supplier)
     }
 

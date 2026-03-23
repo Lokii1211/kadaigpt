@@ -302,6 +302,19 @@ export default function CreateBill({ addToast, setCurrentPage }) {
     console.log('📝 Bill data:', billData)
     console.log('📝 Using demo data:', usingDemoData)
 
+    // Credit limit enforcement
+    if (paymentMode === 'Credit') {
+      if (!customer.phone) {
+        addToast('⚠️ Customer phone is required for credit sales', 'error')
+        return
+      }
+      const creditLimit = parseFloat(localStorage.getItem('kadai_credit_limit') || '5000')
+      if (total > creditLimit) {
+        addToast(`⚠️ Bill ₹${total} exceeds credit limit of ₹${creditLimit}. Please use another payment method.`, 'error')
+        return
+      }
+    }
+
     // Generate bill number first
     const newBillNumber = billData.bill_number || `INV-${Date.now().toString().slice(-6)}`
     setBillNumber(newBillNumber)

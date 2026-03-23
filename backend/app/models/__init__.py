@@ -389,6 +389,7 @@ class Customer(Base):
     
     # Financial
     credit = Column(Float, default=0.0)
+    credit_limit = Column(Float, default=5000.0)  # Max credit allowed
     total_purchases = Column(Float, default=0.0)
     
     # Loyalty
@@ -453,3 +454,63 @@ class Notification(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     read_at = Column(DateTime(timezone=True), nullable=True)
 
+
+class Supplier(Base):
+    """Supplier model — persistent storage (was in-memory)"""
+    __tablename__ = "suppliers"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
+    
+    # Basic Info
+    name = Column(String(200), nullable=False)
+    contact = Column(String(200))  # Contact person
+    phone = Column(String(20), nullable=False)
+    email = Column(String(200))
+    address = Column(Text)
+    category = Column(String(100), default="General")
+    
+    # Financial
+    pending_amount = Column(Float, default=0.0)
+    total_orders = Column(Integer, default=0)
+    total_paid = Column(Float, default=0.0)
+    
+    # Status
+    last_order = Column(DateTime)
+    is_active = Column(Boolean, default=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    store = relationship("Store")
+    orders = relationship("PurchaseOrder", back_populates="supplier")
+
+
+class PurchaseOrder(Base):
+    """Purchase orders from suppliers"""
+    __tablename__ = "purchase_orders"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, ForeignKey("stores.id"), nullable=False)
+    supplier_id = Column(Integer, ForeignKey("suppliers.id"), nullable=False)
+    
+    # Order Info
+    order_number = Column(String(50), unique=True, nullable=False)
+    items = Column(JSON)  # List of items with quantity, price
+    item_count = Column(Integer, default=0)
+    amount = Column(Float, default=0.0)
+    
+    # Status
+    status = Column(String(50), default="pending")  # pending, confirmed, shipped, delivered, cancelled
+    notes = Column(Text)
+    expected_delivery = Column(DateTime)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    store = relationship("Store")
+    supplier = relationship("Supplier", back_populates="orders")
