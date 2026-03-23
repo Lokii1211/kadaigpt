@@ -702,6 +702,32 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                 {discountAmount > 0 && <span className="cf-disc">−₹{discountAmount}</span>}
                 <span>Tax ₹{tax}</span>
               </div>
+              {/* Discount Input Row */}
+              <div className="cf-discount-row">
+                <div className="cf-discount-quick">
+                  {[5, 10, 15].map(pct => (
+                    <button
+                      key={pct}
+                      className={discount === pct && discountType === 'percentage' ? 'active' : ''}
+                      onClick={() => { setDiscount(discount === pct && discountType === 'percentage' ? 0 : pct); setDiscountType('percentage') }}
+                    >
+                      {pct}%
+                    </button>
+                  ))}
+                  <input
+                    type="number"
+                    className="cf-discount-input"
+                    placeholder="₹ Flat"
+                    min="0"
+                    value={discountType === 'flat' && discount > 0 ? discount : ''}
+                    onChange={e => { setDiscount(parseInt(e.target.value) || 0); setDiscountType('flat') }}
+                    style={{ width: '70px', padding: '4px 6px', fontSize: '0.75rem', textAlign: 'center', border: '1px solid var(--border-subtle)', borderRadius: '4px', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                  />
+                  {discount > 0 && (
+                    <button className="cf-disc-clear" onClick={() => setDiscount(0)} title="Clear discount">&times;</button>
+                  )}
+                </div>
+              </div>
               {/* Row 3: TOTAL — prominent but compact */}
               <div className="cf-total">
                 <span>TOTAL</span>
@@ -1096,6 +1122,30 @@ export default function CreateBill({ addToast, setCurrentPage }) {
         }
         .cf-disc { color: #16a34a; font-weight: 700; }
         
+        /* Discount Row */
+        .cf-discount-row { padding: 4px 14px; }
+        .cf-discount-quick {
+          display: flex; gap: 6px; align-items: center;
+        }
+        .cf-discount-quick button {
+          padding: 3px 10px; font-size: 0.7rem; font-weight: 600;
+          border: 1px solid var(--border-subtle); border-radius: 4px;
+          background: var(--bg-primary); color: var(--text-secondary);
+          cursor: pointer; transition: all 0.15s;
+        }
+        .cf-discount-quick button.active {
+          background: #16a34a; color: white; border-color: #16a34a;
+        }
+        .cf-discount-quick button:hover:not(.active) {
+          border-color: #16a34a; color: #16a34a;
+        }
+        .cf-disc-clear {
+          background: none !important; border: none !important;
+          color: var(--text-tertiary) !important; font-size: 1.1rem;
+          cursor: pointer; padding: 2px 6px !important;
+        }
+        .cf-disc-clear:hover { color: #ef4444 !important; }
+
         /* Row 3: TOTAL — 40px, prominent but compact */
         .cf-total {
           display: flex;

@@ -390,6 +390,28 @@ class ApiService {
         return this.request(`/bills/${id}`)
     }
 
+    async cancelBill(billId, reason) {
+        return this.request(`/bills/${billId}/cancel`, {
+            method: 'POST',
+            body: JSON.stringify({ reason }),
+        })
+    }
+
+    // Password Reset
+    async forgotPassword(email) {
+        return this.request('/auth/forgot-password', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+        })
+    }
+
+    async resetPassword(token, newPassword) {
+        return this.request('/auth/reset-password', {
+            method: 'POST',
+            body: JSON.stringify({ token, new_password: newPassword }),
+        })
+    }
+
     // OCR endpoint
     async processOCR(imageFile, language = 'en') {
         const formData = new FormData()

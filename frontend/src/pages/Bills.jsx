@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Filter, Download, Eye, Printer, Calendar, X, ChevronDown, FileText, TrendingUp, ArrowUpRight } from 'lucide-react'
+import { Search, Filter, Download, Eye, Printer, Calendar, X, ChevronDown, FileText, TrendingUp, ArrowUpRight, XCircle, AlertTriangle } from 'lucide-react'
 import realDataService from '../services/realDataService'
 import api from '../services/api'
 import EmptyState from '../components/EmptyState'
@@ -11,6 +11,8 @@ export default function Bills({ addToast, setCurrentPage }) {
     const [searchQuery, setSearchQuery] = useState('')
     const [showFilters, setShowFilters] = useState(false)
     const [selectedBill, setSelectedBill] = useState(null)
+    const [cancellingBill, setCancellingBill] = useState(null)
+    const [cancelReason, setCancelReason] = useState('')
     const [filters, setFilters] = useState({
         dateRange: 'all',  // Changed from 'today' to show all bills by default
         paymentMode: 'all',
@@ -157,6 +159,28 @@ export default function Bills({ addToast, setCurrentPage }) {
         setSearchQuery('')
     }
 
+    // Cancel/Void a bill (Manager+ only)
+    const handleCancelBill = async () => {
+        if (!cancellingBill || !cancelReason.trim()) {
+            addToast?.('Please enter a reason for cancellation', 'error')
+            return
+        }
+        try {
+            await api.cancelBill(cancellingBill.id, cancelReason.trim())
+            addToast?.(`Bill ${cancellingBill.bill_number} cancelled. Stock restored.`, 'success')
+            setCancellingBill(null)
+            setCancelReason('')
+            loadBills() // Refresh
+        } catch (error) {
+            const msg = error?.response?.data?.detail || error?.message || 'Failed to cancel bill'
+            if (msg.includes('permission') || msg.includes('403') || msg.includes('role')) {
+                addToast?.('Only Managers and Owners can cancel bills', 'error')
+            } else {
+                addToast?.(msg, 'error')
+            }
+        }
+    }
+
     return (
         <div className="bills-page">
             <div className="page-header">
@@ -278,6 +302,7 @@ export default function Bills({ addToast, setCurrentPage }) {
                                     <th>Items</th>
                                     <th>Amount</th>
                                     <th>Payment</th>
+                                    <th>Status</th>
                                     <th>Date</th>
                                     <th>Actions</th>
                                 </tr>
@@ -295,11 +320,15 @@ export default function Bills({ addToast, setCurrentPage }) {
                                         <td><span className="items-count">{bill.items_count || bill.items?.length || 0} items</span></td>
                                         <td><span className="amount">₹{bill.total?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></td>
                                         <td><span className={`badge badge-${bill.payment_mode?.toLowerCase() === 'cash' ? 'success' : bill.payment_mode?.toLowerCase() === 'upi' ? 'info' : 'warning'}`}>{bill.payment_mode}</span></td>
+                                        <td>
+                                            <span className={`badge badge-${bill.status === 'cancelled' ? 'danger' : bill.status === 'refunded' ? 'warning' : 'success'}`}>
+                                                {bill.status === 'cancelled' ? '❌ Cancelled' : bill.status === 'refunded' ? '↩️ Refunded' : '✅ Completed'}
+                                            </span>
+                                        </td>
                                         <td><span className="date-cell">{formatDate(bill.created_at)}</span></td>
                                         <td>
                                             <div className="action-buttons">
                                                 <button className="btn btn-ghost btn-sm" onClick={async () => {
-                                                    // Fetch full bill details with items
                                                     const fullBill = await realDataService.getBillById(bill.id)
                                                     setSelectedBill(fullBill || bill)
                                                 }} title="View Details">
@@ -308,13 +337,18 @@ export default function Bills({ addToast, setCurrentPage }) {
                                                 <button className="btn btn-ghost btn-sm" onClick={() => printBill(bill)} title="Print Receipt">
                                                     <Printer size={16} />
                                                 </button>
+                                                {bill.status !== 'cancelled' && (
+                                                    <button className="btn btn-ghost btn-sm" onClick={() => setCancellingBill(bill)} title="Cancel Bill" style={{ color: 'var(--danger-500, #ef4444)' }}>
+                                                        <XCircle size={16} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
                                 ))}
                                 {filteredBills.length === 0 && (
                                     <tr>
-                                        <td colSpan={7} className="empty-state">
+                                        <td colSpan={8} className="empty-state">
                                             <FileText size={48} />
                                             <h4>No bills found</h4>
                                             <p>Try adjusting your filters or create a new bill</p>
@@ -403,6 +437,50 @@ export default function Bills({ addToast, setCurrentPage }) {
                 </div>
             )}
 
+            {/* Cancel Bill Confirmation Modal */}
+            {cancellingBill && (
+                <div className="modal-overlay" onClick={() => setCancellingBill(null)}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px' }}>
+                        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #fee2e2, #fecaca)' }}>
+                            <h3 className="modal-title" style={{ color: '#dc2626' }}>
+                                <AlertTriangle size={20} style={{ marginRight: 8 }} />
+                                Cancel Bill
+                            </h3>
+                            <button className="modal-close" onClick={() => setCancellingBill(null)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ marginBottom: 12 }}>
+                                Cancel <strong>{cancellingBill.bill_number}</strong> for <strong>₹{cancellingBill.total?.toFixed(2)}</strong>?
+                            </p>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 16 }}>
+                                ⚠️ Stock will be restored for all items. This action requires Manager/Owner permissions.
+                            </p>
+                            <div className="form-group">
+                                <label className="form-label">Reason for cancellation *</label>
+                                <textarea
+                                    className="form-input"
+                                    value={cancelReason}
+                                    onChange={e => setCancelReason(e.target.value)}
+                                    placeholder="e.g. Customer returned items, wrong bill, duplicate entry..."
+                                    rows={3}
+                                    style={{ resize: 'vertical' }}
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => { setCancellingBill(null); setCancelReason('') }}>Keep Bill</button>
+                            <button
+                                className="btn"
+                                style={{ background: '#dc2626', color: 'white' }}
+                                onClick={handleCancelBill}
+                                disabled={!cancelReason.trim()}
+                            >
+                                <XCircle size={16} /> Cancel Bill
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <style>{`
         .stats-bar { display: flex; gap: 20px; margin-bottom: 20px; }
         .stat-mini { display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); flex: 1; }

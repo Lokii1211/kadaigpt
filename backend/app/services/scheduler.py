@@ -218,9 +218,59 @@ async def generate_weekly_report():
 
 
 async def backup_database():
-    """Create automatic database backup"""
+    """Create automatic database backup to JSON file"""
+    import json
+    import os
+    from pathlib import Path
+    
     logger.info("[Task] Creating database backup...")
-    # Would create backup file
+    
+    try:
+        from app.database import AsyncSessionLocal
+        from app.models import Store, User, Product, Bill, BillItem
+        from sqlalchemy import select
+        
+        backup_dir = Path(__file__).parent.parent.parent / "backups"
+        backup_dir.mkdir(exist_ok=True)
+        
+        async with AsyncSessionLocal() as db:
+            # Fetch all data
+            stores = (await db.execute(select(Store))).scalars().all()
+            users = (await db.execute(select(User))).scalars().all()
+            products = (await db.execute(select(Product))).scalars().all()
+            bills = (await db.execute(select(Bill))).scalars().all()
+            
+            backup_data = {
+                "backup_timestamp": datetime.now().isoformat(),
+                "version": "2.0.0",
+                "stores": [{"id": s.id, "name": s.name, "phone": s.phone, "address": s.address} for s in stores],
+                "users": [{"id": u.id, "email": u.email, "full_name": u.full_name, "role": u.role.value, "store_id": u.store_id} for u in users],
+                "products_count": len(products),
+                "bills_count": len(bills),
+                "products": [{"id": p.id, "name": p.name, "sku": p.sku, "selling_price": p.selling_price, "current_stock": p.current_stock, "store_id": p.store_id} for p in products],
+                "bills": [{"id": b.id, "bill_number": b.bill_number, "total_amount": b.total_amount, "status": b.status.value if b.status else "completed", "store_id": b.store_id} for b in bills],
+            }
+        
+        filename = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        filepath = backup_dir / filename
+        with open(filepath, 'w') as f:
+            json.dump(backup_data, f, indent=2, default=str)
+        
+        logger.info(f"[Task] Backup created: {filepath} ({len(products)} products, {len(bills)} bills)")
+        
+        # Clean up old backups (keep last 30 days)
+        cutoff = datetime.now() - timedelta(days=30)
+        for old_file in backup_dir.glob("backup_*.json"):
+            try:
+                file_time = datetime.fromtimestamp(old_file.stat().st_mtime)
+                if file_time < cutoff:
+                    old_file.unlink()
+                    logger.info(f"[Task] Deleted old backup: {old_file.name}")
+            except Exception:
+                pass
+                
+    except Exception as e:
+        logger.error(f"[Task] Backup failed: {e}")
 
 
 async def sync_offline_data():

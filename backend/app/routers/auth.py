@@ -1,8 +1,9 @@
 """
 KadaiGPT - Authentication Router
-User registration, login, and session management
+User registration, login, session management, password reset & lockout
 """
 import logging
+import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -11,7 +12,8 @@ from sqlalchemy import select
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict
+from pydantic import BaseModel, EmailStr
 
 from app.database import get_db
 from app.config import settings
@@ -30,6 +32,27 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 logger = logging.getLogger("KadaiGPT.Auth")
+
+# ═══════════════════════════════════════════
+# Account lockout tracking (in-memory)
+# ═══════════════════════════════════════════
+_failed_attempts: Dict[str, dict] = {}  # email -> {count, locked_until}
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_MINUTES = 5
+
+# Password reset tokens (in-memory — production should use DB/Redis)
+_reset_tokens: Dict[str, dict] = {}  # token -> {email, expires_at}
+RESET_TOKEN_EXPIRE_MINUTES = 60
+
+
+# Password reset request schemas
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -183,14 +206,43 @@ async def login(
     """
     Login with email and password
     """
+    email = form_data.username.lower().strip()
+    
+    # Check account lockout
+    lockout = _failed_attempts.get(email)
+    if lockout and lockout.get('locked_until'):
+        if datetime.utcnow() < lockout['locked_until']:
+            remaining = int((lockout['locked_until'] - datetime.utcnow()).total_seconds())
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Account locked. Try again in {remaining} seconds."
+            )
+        else:
+            # Lockout expired, reset
+            _failed_attempts.pop(email, None)
+    
     # Find user by email
-    result = await db.execute(select(User).where(User.email == form_data.username))
+    result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
     
     if not user or not verify_password(form_data.password, user.password_hash):
+        # Track failed attempt
+        if email not in _failed_attempts:
+            _failed_attempts[email] = {'count': 0, 'locked_until': None}
+        _failed_attempts[email]['count'] += 1
+        attempts = _failed_attempts[email]['count']
+        
+        if attempts >= MAX_LOGIN_ATTEMPTS:
+            _failed_attempts[email]['locked_until'] = datetime.utcnow() + timedelta(minutes=LOCKOUT_MINUTES)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Too many failed attempts. Account locked for {LOCKOUT_MINUTES} minutes."
+            )
+        
+        remaining = MAX_LOGIN_ATTEMPTS - attempts
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail=f"Incorrect email or password. {remaining} attempt(s) remaining.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -199,6 +251,9 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Account is inactive"
         )
+    
+    # Successful login — clear failed attempts
+    _failed_attempts.pop(email, None)
     
     # Update last login
     user.last_login = datetime.utcnow()
@@ -241,3 +296,93 @@ async def logout(current_user: User = Depends(get_current_active_user)):
     Logout (client should discard token)
     """
     return {"message": "Logged out successfully"}
+
+
+# ═══════════════════════════════════════════
+# PASSWORD RESET ENDPOINTS
+# ═══════════════════════════════════════════
+
+@router.post("/forgot-password")
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Request a password reset token.
+    Always returns success (don't reveal if email exists).
+    """
+    result = await db.execute(select(User).where(User.email == request.email.lower().strip()))
+    user = result.scalar_one_or_none()
+    
+    if user:
+        # Generate secure token
+        token = secrets.token_urlsafe(32)
+        _reset_tokens[token] = {
+            'email': user.email,
+            'user_id': user.id,
+            'expires_at': datetime.utcnow() + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
+        }
+        
+        # Log token for now (production: send via email)
+        logger.info(f"[Password Reset] Token for {user.email}: {token}")
+        # TODO: Send email with reset link
+        # await email_service.send_reset_email(user.email, token)
+    
+    # Always return success (security — don't reveal if email exists)
+    return {
+        "message": "If an account with that email exists, a password reset link has been sent.",
+        "success": True
+    }
+
+
+@router.post("/reset-password")
+async def reset_password(
+    request: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Reset password using a valid token.
+    """
+    token_data = _reset_tokens.get(request.token)
+    
+    if not token_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    if datetime.utcnow() > token_data['expires_at']:
+        _reset_tokens.pop(request.token, None)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset token has expired. Please request a new one."
+        )
+    
+    if len(request.new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 6 characters"
+        )
+    
+    # Update password
+    result = await db.execute(select(User).where(User.id == token_data['user_id']))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.password_hash = get_password_hash(request.new_password)
+    await db.commit()
+    
+    # Invalidate the token (one-time use)
+    _reset_tokens.pop(request.token, None)
+    
+    # Clear any lockout
+    _failed_attempts.pop(user.email, None)
+    
+    logger.info(f"[Password Reset] Password reset successful for {user.email}")
+    
+    return {
+        "message": "Password reset successfully. You can now login with your new password.",
+        "success": True
+    }

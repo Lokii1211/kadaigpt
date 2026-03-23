@@ -16,6 +16,15 @@ export default function Login({ onLogin }) {
     storeName: '',
     storeCode: '', // For staff joining existing store
   })
+  // Forgot password state
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [resetToken, setResetToken] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [forgotStep, setForgotStep] = useState(1) // 1=email, 2=token+password
+  const [forgotLoading, setForgotLoading] = useState(false)
+  const [forgotMessage, setForgotMessage] = useState('')
+  const [forgotError, setForgotError] = useState('')
 
   // Clear error when switching between login/register
   const toggleMode = () => {
@@ -368,7 +377,7 @@ export default function Login({ onLogin }) {
                     <input type="checkbox" id="rememberme" name="rememberme" />
                     <span>Remember me</span>
                   </label>
-                  <button type="button" className="forgot-link">
+                  <button type="button" className="forgot-link" onClick={() => { setShowForgotPassword(true); setForgotStep(1); setForgotEmail(form.email || ''); setForgotMessage(''); setForgotError('') }}>
                     Forgot password?
                   </button>
                 </div>
@@ -406,6 +415,103 @@ export default function Login({ onLogin }) {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="modal-overlay" onClick={() => setShowForgotPassword(false)} style={{ zIndex: 10000 }}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px', margin: '20px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">🔐 Reset Password</h3>
+              <button className="modal-close" onClick={() => setShowForgotPassword(false)}>
+                <span style={{ fontSize: '24px', lineHeight: 1 }}>&times;</span>
+              </button>
+            </div>
+            <div className="modal-body">
+              {forgotMessage && <div style={{ background: '#dcfce7', color: '#166534', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.9rem' }}>{forgotMessage}</div>}
+              {forgotError && <div className="error-alert">{forgotError}</div>}
+
+              {forgotStep === 1 ? (
+                <>
+                  <p style={{ marginBottom: '16px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    Enter your registered email address. We'll send you a password reset token.
+                  </p>
+                  <div className="form-group">
+                    <label className="form-label">Email Address</label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      value={forgotEmail}
+                      onChange={e => setForgotEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      autoFocus
+                    />
+                  </div>
+                  <button
+                    className="btn btn-primary w-full"
+                    disabled={forgotLoading || !forgotEmail.includes('@')}
+                    onClick={async () => {
+                      setForgotLoading(true); setForgotError('');
+                      try {
+                        await api.forgotPassword(forgotEmail);
+                        setForgotMessage('Reset token generated! Check server logs for the token (email coming soon).');
+                        setForgotStep(2);
+                      } catch (err) {
+                        setForgotError(err.message || 'Failed to send reset request');
+                      } finally { setForgotLoading(false) }
+                    }}
+                  >
+                    {forgotLoading ? 'Sending...' : 'Send Reset Token'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p style={{ marginBottom: '16px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    Enter the reset token and your new password.
+                  </p>
+                  <div className="form-group">
+                    <label className="form-label">Reset Token</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={resetToken}
+                      onChange={e => setResetToken(e.target.value)}
+                      placeholder="Paste token here"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">New Password</label>
+                    <input
+                      type="password"
+                      className="form-input"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="Minimum 6 characters"
+                      minLength={6}
+                    />
+                  </div>
+                  <button
+                    className="btn btn-primary w-full"
+                    disabled={forgotLoading || !resetToken || newPassword.length < 6}
+                    onClick={async () => {
+                      setForgotLoading(true); setForgotError('');
+                      try {
+                        await api.resetPassword(resetToken, newPassword);
+                        setForgotMessage('Password reset successfully! You can now login.');
+                        setTimeout(() => { setShowForgotPassword(false); setForgotStep(1); setResetToken(''); setNewPassword('') }, 2000);
+                      } catch (err) {
+                        setForgotError(err.message || 'Failed to reset password');
+                      } finally { setForgotLoading(false) }
+                    }}
+                  >
+                    {forgotLoading ? 'Resetting...' : 'Reset Password'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         /* Login Page - Cross Platform Responsive */
