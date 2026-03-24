@@ -29,6 +29,7 @@ export default function CreateBill({ addToast, setCurrentPage }) {
   const [lookingUpCustomer, setLookingUpCustomer] = useState(false)
   const [usingDemoData, setUsingDemoData] = useState(false)
   const [showQtyModal, setShowQtyModal] = useState(null)
+  const [showBarcodeInput, setShowBarcodeInput] = useState(false)
 
   useEffect(() => {
     loadProducts()
@@ -602,6 +603,19 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+              <button
+                className="barcode-scan-btn"
+                onClick={() => setShowBarcodeInput(true)}
+                title="Scan barcode"
+                style={{
+                  position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                  background: 'var(--primary-500)', color: 'white', border: 'none',
+                  borderRadius: 6, padding: '6px 10px', cursor: 'pointer', fontSize: '0.8rem',
+                  display: 'flex', alignItems: 'center', gap: 4
+                }}
+              >
+                📷 Scan
+              </button>
             </div>
             <div className="category-tabs">
               {categories.map(cat => (
@@ -976,6 +990,66 @@ export default function CreateBill({ addToast, setCurrentPage }) {
               <button className="btn btn-primary" onClick={handlePrint} disabled={printing}>
                 {printing ? <><Loader2 size={18} className="spin" /> Printing...</> : <><Printer size={18} /> Print Receipt</>}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Barcode Scanner Input Modal */}
+      {showBarcodeInput && (
+        <div className="modal-overlay" onClick={() => setShowBarcodeInput(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <div className="modal-header">
+              <h3 className="modal-title">📷 Scan / Enter Barcode</h3>
+              <button className="modal-close" onClick={() => setShowBarcodeInput(false)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
+                Scan with a barcode reader or type the barcode/SKU number manually.
+              </p>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Scan or type barcode here..."
+                autoFocus
+                style={{ fontSize: '1.2rem', fontWeight: 600, textAlign: 'center', letterSpacing: 2 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const code = e.target.value.trim()
+                    if (!code) return
+                    // Search by barcode or SKU
+                    const found = products.find(p =>
+                      p.barcode === code || p.sku === code ||
+                      p.barcode?.toLowerCase() === code.toLowerCase() ||
+                      p.sku?.toLowerCase() === code.toLowerCase()
+                    )
+                    if (found) {
+                      addToCart(found)
+                      addToast(`✅ ${found.name} added via barcode`, 'success')
+                      e.target.value = ''
+                      // Don't close — allow scanning multiple items
+                    } else {
+                      // Try partial name match as fallback
+                      const nameMatch = products.find(p => p.name.toLowerCase().includes(code.toLowerCase()))
+                      if (nameMatch) {
+                        addToCart(nameMatch)
+                        addToast(`✅ ${nameMatch.name} added (matched by name)`, 'success')
+                        e.target.value = ''
+                      } else {
+                        addToast(`❌ No product found for barcode: ${code}`, 'error')
+                      }
+                    }
+                  }
+                }}
+              />
+              <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block', width: '100%' }}>
+                  💡 Tip: Press Enter after scanning. Scanner stays open for multiple items.
+                </span>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowBarcodeInput(false)}>Done</button>
             </div>
           </div>
         </div>

@@ -24,6 +24,8 @@ export default function Settings({ addToast }) {
         autoPrint: localStorage.getItem('kadai_auto_print') === 'true',
         soundEnabled: localStorage.getItem('kadai_sound') !== 'false',
         thermalMode: localStorage.getItem('kadai_thermal') !== 'false',
+        upiId: localStorage.getItem('kadai_upi_id') || '',
+        creditLimit: parseInt(localStorage.getItem('kadai_credit_limit') || '5000'),
     })
 
     useEffect(() => {
@@ -238,6 +240,46 @@ export default function Settings({ addToast }) {
 
                         <button className="btn btn-primary" onClick={saveStoreSettings}>
                             <Check size={18} /> Save Store Info
+                        </button>
+                    </div>
+                </div>
+
+                {/* Payment Settings */}
+                <div className="card settings-card">
+                    <div className="card-header">
+                        <h3 className="card-title">💳 Payment Settings</h3>
+                    </div>
+                    <div className="settings-form">
+                        <div className="form-group">
+                            <label className="form-label">UPI ID (for QR Code)</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={settings.upiId}
+                                onChange={(e) => setSettings({ ...settings, upiId: e.target.value })}
+                                placeholder="yourstore@upi"
+                            />
+                            <p className="form-hint">Displayed as QR code when customer pays via UPI</p>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Customer Credit Limit (₹)</label>
+                            <input
+                                type="number"
+                                className="form-input"
+                                value={settings.creditLimit}
+                                onChange={(e) => setSettings({ ...settings, creditLimit: parseInt(e.target.value) || 0 })}
+                                placeholder="5000"
+                                min="0"
+                                step="500"
+                            />
+                            <p className="form-hint">Max credit per bill. Bills exceeding this on Credit payment will be blocked.</p>
+                        </div>
+                        <button className="btn btn-primary" onClick={() => {
+                            localStorage.setItem('kadai_upi_id', settings.upiId)
+                            localStorage.setItem('kadai_credit_limit', settings.creditLimit.toString())
+                            addToast('Payment settings saved!', 'success')
+                        }}>
+                            <Check size={18} /> Save Payment Settings
                         </button>
                     </div>
                 </div>
