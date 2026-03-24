@@ -868,6 +868,98 @@ export default function CreateBill({ addToast, setCurrentPage }) {
                   ))}
                 </div>
               </div>
+
+              {/* Cash Calculator — shows when Cash selected */}
+              {paymentMode === 'Cash' && (
+                <div className="cash-calc" style={{ marginTop: 16, padding: 14, background: 'var(--bg-tertiary)', borderRadius: 12 }}>
+                  <label className="form-label" style={{ marginBottom: 8 }}>💵 Cash Received</label>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                    {[10, 20, 50, 100, 200, 500, 1000, 2000].map(amt => (
+                      <button
+                        key={amt}
+                        style={{
+                          padding: '6px 12px', fontSize: '0.8rem', fontWeight: 600,
+                          border: '1px solid var(--border-subtle)', borderRadius: 6,
+                          background: 'var(--bg-card)', color: 'var(--text-primary)', cursor: 'pointer'
+                        }}
+                        onClick={() => {
+                          const input = document.getElementById('cash-received-input')
+                          const current = parseFloat(input?.value) || 0
+                          input.value = current + amt
+                          input.dispatchEvent(new Event('input', { bubbles: true }))
+                        }}
+                      >
+                        +₹{amt}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <input
+                      id="cash-received-input"
+                      type="number"
+                      className="form-input"
+                      placeholder="₹ Amount received"
+                      defaultValue={total}
+                      style={{ flex: 1, fontSize: '1.1rem', fontWeight: 700 }}
+                      onInput={(e) => {
+                        const received = parseFloat(e.target.value) || 0
+                        const changeEl = document.getElementById('cash-change-display')
+                        if (changeEl) {
+                          const change = received - total
+                          changeEl.textContent = change >= 0 ? `₹${change.toFixed(2)}` : `₹${Math.abs(change).toFixed(2)} short`
+                          changeEl.style.color = change >= 0 ? '#16a34a' : '#ef4444'
+                        }
+                      }}
+                    />
+                    <button
+                      style={{ padding: '8px 14px', border: '1px solid var(--border-subtle)', borderRadius: 6, background: 'var(--bg-card)', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.8rem' }}
+                      onClick={() => {
+                        const input = document.getElementById('cash-received-input')
+                        input.value = total
+                        input.dispatchEvent(new Event('input', { bubbles: true }))
+                      }}
+                    >
+                      Exact
+                    </button>
+                  </div>
+                  <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-card)', borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
+                    <span style={{ fontWeight: 600 }}>Change to Return:</span>
+                    <span id="cash-change-display" style={{ fontSize: '1.2rem', fontWeight: 700, color: '#16a34a' }}>₹0.00</span>
+                  </div>
+                </div>
+              )}
+
+              {/* UPI QR Code — shows when UPI selected */}
+              {paymentMode === 'UPI' && (
+                <div style={{ marginTop: 16, padding: 14, background: 'var(--bg-tertiary)', borderRadius: 12, textAlign: 'center' }}>
+                  <label className="form-label" style={{ marginBottom: 8 }}>📱 Scan to Pay</label>
+                  <div style={{
+                    width: 180, height: 180, margin: '12px auto',
+                    background: 'white', borderRadius: 12, padding: 12,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '2px solid var(--border-subtle)'
+                  }}>
+                    {/* Generate UPI QR using Google Charts API */}
+                    <img
+                      src={`https://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=${encodeURIComponent(
+                        `upi://pay?pa=${localStorage.getItem('kadai_upi_id') || 'store@upi'}&pn=${localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'}&am=${total}&cu=INR&tn=${billNumber || 'Payment'}`
+                      )}`}
+                      alt="UPI QR Code"
+                      style={{ width: 150, height: 150 }}
+                      onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block' }}
+                    />
+                    <div style={{ display: 'none', color: '#666', fontSize: '0.85rem' }}>
+                      QR unavailable offline.<br />Use UPI ID directly.
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 8 }}>
+                    UPI ID: <strong>{localStorage.getItem('kadai_upi_id') || 'store@upi'}</strong>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: 4 }}>
+                    Amount: ₹{total} • Set UPI ID in Settings
+                  </div>
+                </div>
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => { setShowPayment(false); clearCart(); }}>

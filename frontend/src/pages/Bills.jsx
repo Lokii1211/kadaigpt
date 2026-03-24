@@ -132,6 +132,58 @@ export default function Bills({ addToast, setCurrentPage }) {
         addToast('Bills exported to JSON successfully!', 'success')
     }
 
+    const exportToPDF = () => {
+        const storeName = localStorage.getItem('kadai_store_name') || 'KadaiGPT Store'
+        const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
+        
+        const html = `<!DOCTYPE html><html><head><title>Bills Report - ${storeName}</title>
+        <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #1a1a1a; max-width: 1000px; margin: 0 auto; }
+            h1 { font-size: 22px; margin-bottom: 4px; }
+            .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
+            .stats { display: flex; gap: 20px; margin-bottom: 24px; }
+            .stat-box { padding: 14px 20px; background: #f5f5f5; border-radius: 8px; flex: 1; }
+            .stat-box h3 { font-size: 20px; margin: 0 0 4px 0; color: #ea580c; }
+            .stat-box p { font-size: 11px; margin: 0; color: #888; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background: #1a1a2e; color: white; padding: 10px 8px; text-align: left; }
+            td { padding: 8px; border-bottom: 1px solid #eee; }
+            tr:nth-child(even) { background: #fafafa; }
+            .total-cell { font-weight: 700; color: #ea580c; }
+            .footer { margin-top: 24px; text-align: center; color: #aaa; font-size: 11px; }
+            @media print { body { padding: 10px; } }
+        </style></head><body>
+        <h1>📄 ${storeName} — Bills Report</h1>
+        <p class="subtitle">Generated: ${dateStr} • ${filteredBills.length} bills • Total: ₹${totalRevenue.toLocaleString('en-IN')}</p>
+        <div class="stats">
+            <div class="stat-box"><h3>${filteredBills.length}</h3><p>Bills</p></div>
+            <div class="stat-box"><h3>₹${totalRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3><p>Revenue</p></div>
+            <div class="stat-box"><h3>₹${totalBills > 0 ? Math.round(totalRevenue / totalBills) : 0}</h3><p>Avg Bill</p></div>
+        </div>
+        <table>
+            <thead><tr><th>#</th><th>Invoice</th><th>Date</th><th>Customer</th><th>Items</th><th>Payment</th><th>Total</th></tr></thead>
+            <tbody>
+            ${filteredBills.map((b, i) => `<tr>
+                <td>${i + 1}</td>
+                <td>${b.bill_number}</td>
+                <td>${new Date(b.created_at).toLocaleDateString('en-IN')}</td>
+                <td>${b.customer_name || 'Walk-in'}</td>
+                <td>${b.items_count || b.items?.length || 0}</td>
+                <td>${b.payment_mode}</td>
+                <td class="total-cell">₹${b.total?.toFixed(2)}</td>
+            </tr>`).join('')}
+            </tbody>
+        </table>
+        <p class="footer">Powered by KadaiGPT • ${storeName}</p>
+        </body></html>`
+        
+        const w = window.open('', '_blank')
+        w.document.write(html)
+        w.document.close()
+        setTimeout(() => w.print(), 500)
+        addToast('PDF report opened for printing!', 'success')
+    }
+
     const printBill = async (bill) => {
         try {
             await api.printReceipt({
@@ -239,8 +291,9 @@ export default function Bills({ addToast, setCurrentPage }) {
                             <Download size={18} /> Export
                         </button>
                         <div className="dropdown-menu">
-                            <button onClick={exportToCSV}>Export as CSV</button>
-                            <button onClick={exportToJSON}>Export as JSON</button>
+                            <button onClick={exportToCSV}>📊 Export as CSV</button>
+                            <button onClick={exportToJSON}>📋 Export as JSON</button>
+                            <button onClick={exportToPDF}>📄 Export as PDF</button>
                         </div>
                     </div>
                 </div>

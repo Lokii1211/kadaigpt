@@ -39,6 +39,8 @@ export default function Products({ addToast, setCurrentPage }) {
     const [newProduct, setNewProduct] = useState({
         name: '', sku: '', price: '', unit: 'kg', stock: '', minStock: '', category: 'General', expiryDate: ''
     })
+    const [stockAdjust, setStockAdjust] = useState(null) // { product, newStock, reason }
+    const [showAuditLog, setShowAuditLog] = useState(false)
 
     useEffect(() => {
         loadProducts()
@@ -180,6 +182,37 @@ export default function Products({ addToast, setCurrentPage }) {
         }
     }
 
+    // Stock adjustment with audit trail
+    const handleStockAdjustment = async (product, newStock, reason) => {
+        const oldStock = product.stock
+        try {
+            await api.updateProduct(product.id, { current_stock: Math.max(0, newStock) })
+            setProducts(products.map(p =>
+                p.id === product.id ? { ...p, stock: Math.max(0, newStock) } : p
+            ))
+            // Save audit log
+            const logs = JSON.parse(localStorage.getItem('kadai_stock_audit') || '[]')
+            logs.unshift({
+                id: Date.now(),
+                product_name: product.name,
+                product_id: product.id,
+                old_stock: oldStock,
+                new_stock: newStock,
+                change: newStock - oldStock,
+                reason: reason || 'Manual adjustment',
+                user: localStorage.getItem('kadai_user_name') || 'Unknown',
+                timestamp: new Date().toISOString()
+            })
+            // Keep last 200 entries
+            localStorage.setItem('kadai_stock_audit', JSON.stringify(logs.slice(0, 200)))
+            addToast(`Stock updated: ${product.name} ${oldStock} → ${newStock}`, 'success')
+        } catch (error) {
+            addToast(error.message || 'Failed to update stock', 'error')
+        }
+    }
+
+    const getAuditLogs = () => JSON.parse(localStorage.getItem('kadai_stock_audit') || '[]')
+
     return (
         <div className="products-page">
             <div className="page-header">
@@ -187,6 +220,9 @@ export default function Products({ addToast, setCurrentPage }) {
                     <h1 className="page-title">📦 Inventory Management</h1>
                     <p className="page-subtitle">Track stock levels and manage your products</p>
                 </div>
+                <button className="btn btn-ghost" onClick={() => setShowAuditLog(true)} style={{ marginRight: 8 }}>
+                    📋 Audit Log
+                </button>
                 <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
                     <Plus size={18} /> Add Product
                 </button>
@@ -319,9 +355,9 @@ export default function Products({ addToast, setCurrentPage }) {
 
                                 <div className="product-actions">
                                     <div className="quick-stock">
-                                        <button onClick={() => handleUpdateStock(product.id, product.stock - 1)}>−</button>
-                                        <span>{product.stock}</span>
-                                        <button onClick={() => handleUpdateStock(product.id, product.stock + 1)}>+</button>
+                                        <button onClick={() => setStockAdjust({ product, newStock: product.stock - 1, reason: '' })}>−</button>
+                                        <span style={{ cursor: 'pointer' }} onClick={() => setStockAdjust({ product, newStock: product.stock, reason: '' })}>{product.stock}</span>
+                                        <button onClick={() => setStockAdjust({ product, newStock: product.stock + 1, reason: '' })}>+</button>
                                     </div>
                                     <div className="action-btns">
                                         <button className="btn btn-ghost btn-sm" onClick={() => setEditProduct(product)}>
@@ -431,6 +467,126 @@ export default function Products({ addToast, setCurrentPage }) {
                             <button className="btn btn-primary" onClick={handleAddProduct} disabled={!newProduct.name || !newProduct.price}>
                                 <Save size={18} /> Add Product
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Stock Adjustment Modal */}
+            {stockAdjust && (
+                <div className="modal-overlay" onClick={() => setStockAdjust(null)}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">📦 Adjust Stock</h3>
+                            <button className="modal-close" onClick={() => setStockAdjust(null)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
+                                <strong>{stockAdjust.product.name}</strong> — Current: {stockAdjust.product.stock} {stockAdjust.product.unit}
+                            </p>
+                            <div className="form-group">
+                                <label className="form-label">New Stock Quantity</label>
+                                <input type="number" className="form-input" min="0"
+                                    value={stockAdjust.newStock}
+                                    onChange={e => setStockAdjust({ ...stockAdjust, newStock: parseInt(e.target.value) || 0 })}
+                                    autoFocus
+                                />
+                                {stockAdjust.newStock !== stockAdjust.product.stock && (
+                                    <span style={{ fontSize: '0.8rem', color: stockAdjust.newStock > stockAdjust.product.stock ? '#16a34a' : '#ef4444', marginTop: 4, display: 'block' }}>
+                                        {stockAdjust.newStock > stockAdjust.product.stock ? '+' : ''}{stockAdjust.newStock - stockAdjust.product.stock} {stockAdjust.product.unit}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Reason for Adjustment</label>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                                    {['New Stock Received', 'Damaged/Expired', 'Physical Count', 'Return from Customer', 'Correction'].map(r => (
+                                        <button key={r}
+                                            style={{
+                                                padding: '4px 10px', fontSize: '0.75rem',
+                                                border: `1px solid ${stockAdjust.reason === r ? '#ea580c' : 'var(--border-subtle)'}`,
+                                                borderRadius: 4, cursor: 'pointer',
+                                                background: stockAdjust.reason === r ? 'rgba(234,88,12,0.1)' : 'var(--bg-primary)',
+                                                color: stockAdjust.reason === r ? '#ea580c' : 'var(--text-secondary)'
+                                            }}
+                                            onClick={() => setStockAdjust({ ...stockAdjust, reason: r })}
+                                        >{r}</button>
+                                    ))}
+                                </div>
+                                <input type="text" className="form-input" placeholder="Or type a custom reason..."
+                                    value={stockAdjust.reason} onChange={e => setStockAdjust({ ...stockAdjust, reason: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setStockAdjust(null)}>Cancel</button>
+                            <button className="btn btn-primary"
+                                disabled={!stockAdjust.reason || stockAdjust.newStock === stockAdjust.product.stock}
+                                onClick={() => {
+                                    handleStockAdjustment(stockAdjust.product, stockAdjust.newStock, stockAdjust.reason)
+                                    setStockAdjust(null)
+                                }}
+                            >
+                                <Save size={18} /> Update Stock
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Stock Audit Log Modal */}
+            {showAuditLog && (
+                <div className="modal-overlay" onClick={() => setShowAuditLog(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 640 }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">📋 Stock Adjustment Log</h3>
+                            <button className="modal-close" onClick={() => setShowAuditLog(false)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                            {getAuditLogs().length === 0 ? (
+                                <p style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: 40 }}>No stock adjustments recorded yet.</p>
+                            ) : (
+                                <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '2px solid var(--border-subtle)', textAlign: 'left' }}>
+                                            <th style={{ padding: '8px 6px' }}>Time</th>
+                                            <th style={{ padding: '8px 6px' }}>Product</th>
+                                            <th style={{ padding: '8px 6px' }}>Change</th>
+                                            <th style={{ padding: '8px 6px' }}>Reason</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {getAuditLogs().slice(0, 50).map(log => (
+                                            <tr key={log.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                                <td style={{ padding: '6px', whiteSpace: 'nowrap', color: 'var(--text-tertiary)' }}>
+                                                    {new Date(log.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}{' '}
+                                                    {new Date(log.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                                </td>
+                                                <td style={{ padding: '6px', fontWeight: 500 }}>{log.product_name}</td>
+                                                <td style={{ padding: '6px' }}>
+                                                    <span style={{ color: 'var(--text-tertiary)' }}>{log.old_stock}</span>
+                                                    {' → '}
+                                                    <span style={{ fontWeight: 600 }}>{log.new_stock}</span>
+                                                    <span style={{ marginLeft: 6, fontSize: '0.75rem', fontWeight: 700, color: log.change > 0 ? '#16a34a' : '#ef4444' }}>
+                                                        {log.change > 0 ? `+${log.change}` : log.change}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '6px', color: 'var(--text-secondary)' }}>{log.reason}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-ghost" onClick={() => {
+                                if (confirm('Clear all audit logs?')) {
+                                    localStorage.removeItem('kadai_stock_audit')
+                                    setShowAuditLog(false)
+                                    addToast('Audit log cleared', 'info')
+                                }
+                            }}>Clear Log</button>
+                            <button className="btn btn-secondary" onClick={() => setShowAuditLog(false)}>Close</button>
                         </div>
                     </div>
                 </div>
