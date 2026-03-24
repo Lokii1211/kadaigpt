@@ -30,6 +30,21 @@ export default function DailySummary({ addToast }) {
             const today = new Date()
             const lowStockProducts = products.filter(p => p.stock <= p.minStock)
             const outOfStockProducts = products.filter(p => p.stock === 0)
+            
+            // Expiring Soon: products with expiry_date within 30 days
+            const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
+            const expiringProducts = products.filter(p => {
+                if (!p.expiry_date) return false
+                const expDate = new Date(p.expiry_date)
+                return expDate <= thirtyDaysFromNow && expDate >= today
+            })
+            
+            // New Arrivals: products created in the last 7 days
+            const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+            const newArrivalProducts = products.filter(p => {
+                if (!p.created_at) return false
+                return new Date(p.created_at) >= sevenDaysAgo
+            })
 
             // Calculate totals from bills
             const totalRevenue = bills.reduce((sum, b) => sum + (b.total || 0), 0)
@@ -78,6 +93,10 @@ export default function DailySummary({ addToast }) {
             lowStockProducts.slice(0, 3).forEach(p => {
                 pendingTasks.push({ task: `Reorder ${p.name} (only ${p.stock} units left)`, priority: p.stock === 0 ? 'high' : 'medium' })
             })
+            expiringProducts.slice(0, 3).forEach(p => {
+                const daysLeft = Math.ceil((new Date(p.expiry_date) - today) / (1000 * 60 * 60 * 24))
+                pendingTasks.push({ task: `${p.name} expires in ${daysLeft} days — sell or discount`, priority: daysLeft <= 7 ? 'high' : 'medium' })
+            })
 
             setSummary({
                 date: today.toLocaleDateString('en-IN', {
@@ -104,8 +123,13 @@ export default function DailySummary({ addToast }) {
                 inventory: {
                     lowStock: lowStockProducts.length,
                     outOfStock: outOfStockProducts.length,
-                    newArrivals: 0,
-                    expiringsSoon: 0
+                    newArrivals: newArrivalProducts.length,
+                    expiringsSoon: expiringProducts.length,
+                    expiringList: expiringProducts.slice(0, 5).map(p => ({
+                        name: p.name,
+                        expiry: new Date(p.expiry_date).toLocaleDateString('en-IN'),
+                        daysLeft: Math.ceil((new Date(p.expiry_date) - today) / (1000 * 60 * 60 * 24))
+                    }))
                 },
 
                 customers: {

@@ -53,11 +53,29 @@ export default function Customers({ addToast, setCurrentPage }) {
     const totalCredit = customers.reduce((sum, c) => sum + (c.credit || 0), 0)
     const customersWithCredit = customers.filter(c => (c.credit || 0) > 0).length
 
+    // Customer Segmentation
+    const [segmentFilter, setSegmentFilter] = useState('All')
+    const getSegment = (c) => {
+        const spent = c.totalPurchases || c.totalSpent || 0
+        const visits = c.visits || 0
+        if (spent >= 10000 || visits >= 20) return { label: 'VIP', color: '#8b5cf6', emoji: '👑' }
+        if (spent >= 3000 || visits >= 8) return { label: 'Regular', color: '#3b82f6', emoji: '⭐' }
+        if (visits <= 1) return { label: 'New', color: '#10b981', emoji: '🆕' }
+        return { label: 'At-Risk', color: '#f59e0b', emoji: '⚠️' }
+    }
+    const segments = ['All', 'VIP', 'Regular', 'At-Risk', 'New']
+    const segmentCounts = segments.reduce((acc, s) => {
+        acc[s] = s === 'All' ? customers.length : customers.filter(c => getSegment(c).label === s).length
+        return acc
+    }, {})
+
     // Filter
-    const filteredCustomers = customers.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        (c.phone && c.phone.includes(search))
-    )
+    const filteredCustomers = customers.filter(c => {
+        const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
+            (c.phone && c.phone.includes(search))
+        const matchesSegment = segmentFilter === 'All' || getSegment(c).label === segmentFilter
+        return matchesSearch && matchesSegment
+    })
 
     const handleAddCustomer = async () => {
         if (!newCustomer.name || !newCustomer.phone) {
@@ -268,6 +286,26 @@ export default function Customers({ addToast, setCurrentPage }) {
                 </div>
             </div>
 
+            {/* Segment Filter Tabs */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                {segments.map(seg => (
+                    <button
+                        key={seg}
+                        onClick={() => setSegmentFilter(seg)}
+                        style={{
+                            padding: '6px 14px', fontSize: '0.8rem', fontWeight: 600,
+                            border: `1px solid ${segmentFilter === seg ? '#ea580c' : 'var(--border-subtle)'}`,
+                            borderRadius: 8, cursor: 'pointer',
+                            background: segmentFilter === seg ? 'rgba(234,88,12,0.1)' : 'var(--bg-card)',
+                            color: segmentFilter === seg ? '#ea580c' : 'var(--text-secondary)',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        {seg === 'VIP' ? '👑 ' : seg === 'Regular' ? '⭐ ' : seg === 'At-Risk' ? '⚠️ ' : seg === 'New' ? '🆕 ' : ''}{seg} ({segmentCounts[seg]})
+                    </button>
+                ))}
+            </div>
+
             {/* Empty State */}
             {customers.length === 0 && (
                 <div className="empty-state">
@@ -289,7 +327,17 @@ export default function Customers({ addToast, setCurrentPage }) {
                                 {customer.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
                             </div>
                             <div className="customer-info">
-                                <h3>{customer.name}</h3>
+                                <h3>{customer.name}
+                                    <span style={{
+                                        display: 'inline-block', marginLeft: 8,
+                                        fontSize: '0.65rem', padding: '2px 8px',
+                                        borderRadius: 4, fontWeight: 700,
+                                        background: `${getSegment(customer).color}20`,
+                                        color: getSegment(customer).color
+                                    }}>
+                                        {getSegment(customer).emoji} {getSegment(customer).label}
+                                    </span>
+                                </h3>
                                 <span className="phone"><Phone size={12} /> {customer.phone}</span>
                             </div>
                             {(customer.credit || 0) > 0 && (
